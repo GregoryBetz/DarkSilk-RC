@@ -119,6 +119,7 @@ OBJS= \
     obj/base58.o \
     obj/bloom.o \
     obj/crypter.o \
+	obj/scheduler.o \
     obj/chain.o \
     obj/key.o \
     obj/init.o \
