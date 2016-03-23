@@ -1,16 +1,15 @@
+#include <QMessageBox>
+#include <QPushButton>
+#include <QKeyEvent>
+#include <QSettings>
+
 #include "sandstormconfig.h"
 #include "ui_sandstormconfig.h"
-
 #include "darksilkunits.h"
 #include "guiconstants.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
 #include "init.h"
-
-#include <QMessageBox>
-#include <QPushButton>
-#include <QKeyEvent>
-#include <QSettings>
 
 SandstormConfig::SandstormConfig(QWidget *parent) :
     QDialog(parent),

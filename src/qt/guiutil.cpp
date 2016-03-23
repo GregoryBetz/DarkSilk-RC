@@ -1,14 +1,5 @@
-#include <QApplication>
-
-#include "guiutil.h"
-
-#include "primitives/transaction.h"
-#include "darksilkaddressvalidator.h"
-#include "walletmodel.h"
-#include "darksilkunits.h"
-
-#include "util.h"
-#include "init.h"
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include <QDateTime>
 #include <QDoubleValidator>
@@ -21,9 +12,15 @@
 #include <QFileDialog>
 #include <QDesktopServices>
 #include <QThread>
+#include <QApplication>
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
+#include "guiutil.h"
+#include "primitives/transaction.h"
+#include "darksilkaddressvalidator.h"
+#include "walletmodel.h"
+#include "darksilkunits.h"
+#include "util.h"
+#include "init.h"
 
 #ifdef WIN32
 #ifdef _WIN32_WINNT
@@ -428,7 +425,7 @@ HelpMessageBox::HelpMessageBox(QWidget *parent) :
     header = tr("DarkSilk-Qt") + " " + tr("version") + " " +
         QString::fromStdString(FormatFullVersion()) + "\n\n" +
         tr("Usage:") + "\n" +
-        "  darksilk-qt [" + tr("command-line options") + "]                     " + "\n";
+        "  darksilk-core [" + tr("command-line options") + "]                     " + "\n";
 
     coreOptions = QString::fromStdString(HelpMessage());
 
@@ -551,6 +548,19 @@ QString formatServicesStr(quint64 mask)
 
     return "Unknown";
 
+}
+
+QString getEntryData(QAbstractItemView *view, int column, int role)
+{
+    if(!view || !view->selectionModel())
+        return QString();
+    QModelIndexList selection = view->selectionModel()->selectedRows(column);
+
+    if(!selection.isEmpty()) {
+        // Return first item
+        return (selection.at(0).data(role).toString());
+    }
+    return QString();
 }
 
 } // namespace GUIUtil

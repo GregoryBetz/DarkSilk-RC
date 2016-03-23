@@ -1,13 +1,6 @@
 #ifndef STATISTICSPAGE_H
 #define STATISTICSPAGE_H
 
-#include "clientmodel.h"
-#include "main.h"
-#include "wallet.h"
-#include "base58.h"
-
-#include <QWidget>
-
 #include <QDir>
 #include <QFile>
 #include <QProcess>
@@ -17,7 +10,12 @@
 #include <QMap>
 #include <QSettings>
 #include <QSlider>
+#include <QWidget>
 
+#include "clientmodel.h"
+#include "main.h"
+#include "wallet/wallet.h"
+#include "base58.h"
 
 namespace Ui {
 class StatisticsPage;

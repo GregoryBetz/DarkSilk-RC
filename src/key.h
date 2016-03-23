@@ -5,15 +5,11 @@
 #ifndef DARKSILK_KEY_H
 #define DARKSILK_KEY_H
 
-#include "allocators.h"
-#include "serialize.h"
-#include "uint256.h"
-
 #include <stdexcept>
 #include <vector>
 
-class CPubKey;
-class CExtPubKey;
+#include "allocators.h"
+#include "pubkey.h"
 
 // secp256k1:
 // const unsigned int PRIVATE_KEY_SIZE = 279;
@@ -107,7 +103,7 @@ public:
     // Compute the public key from a private key.
     // This is expensive.
     CPubKey GetPubKey() const;
-
+    
     /**
      * Create a DER-serialized signature.
      * The test_case parameter tweaks the deterministic nonce.

@@ -1,55 +1,63 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "init.h"
-#include "main.h"
-#include "chainparams.h"
-#include "txdb.h"
-#include "rpcserver.h"
-#include "net.h"
-#include "util.h"
-#include "key.h"
-#include "pubkey.h"
-#include "ui_interface.h"
-#include "activestormnode.h"
-#include "stormnode-budget.h"
-#include "stormnode-payments.h"
-#include "stormnodeman.h"
-#include "spork.h"
-#include "stormnodeconfig.h"
-#include "smessage.h"
-#include "txdb-leveldb.h"
-
-#ifdef ENABLE_WALLET
-#include "wallet.h"
-#include "walletdb.h"
-#endif
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
+
 #include <openssl/crypto.h>
+
+#include "init.h"
+#include "main.h"
+#include "chainparams.h"
+#include "sanity.h"
+#include "net.h"
+#include "key.h"
+#include "pubkey.h"
+#include "rpc/rpcserver.h"
+#include "txdb.h"
+#include "ui_interface.h"
+#include "util.h"
+#include "utilmoneystr.h"
+#include "utilstrencodings.h"
+#include "anon/stormnode/activestormnode.h"
+#include "anon/stormnode/stormnode-budget.h"
+#include "anon/stormnode/stormnode-payments.h"
+#include "anon/stormnode/stormnodeman.h"
+#include "anon/stormnode/stormnodeconfig.h"
+#include "anon/stormnode/spork.h"
+#include "smessage.h"
+#include "txdb-leveldb.h"
+
+#ifdef ENABLE_WALLET
+#include "db.h"
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
+#endif
 
 #ifndef WIN32
 #include <signal.h>
 #endif
 
 #ifdef USE_NATIVE_I2P
-#include "i2p.h"
+#include "i2p/i2p.h"
 #endif
 
-using namespace std;
 using namespace boost;
+using namespace std;
 
 #ifdef ENABLE_WALLET
 CWallet* pwalletMain = NULL;
+int nWalletBackups = 10;
 #endif
-CClientUIInterface uiInterface;
+bool fFeeEstimatesInitialized = false;
+bool fRestartRequested = false;  // true: restart false: shutdown
 bool fConfChange;
 unsigned int nNodeLifespan;
 unsigned int nDerivationMethodIndex;
@@ -58,9 +66,27 @@ bool fUseFastIndex;
 bool fOnlyTor = false;
 bool fMinimizeCoinAge;
 
-bool fFeeEstimatesInitialized = false;
+#ifdef WIN32
+// Win32 LevelDB doesn't use filedescriptors, and the ones used for
+// accessing block files, don't count towards to fd_set size limit
+// anyway.
+#define MIN_CORE_FILEDESCRIPTORS 0
+#else
+#define MIN_CORE_FILEDESCRIPTORS 150
+#endif
+
+/** Used to pass flags to the Bind() function */
+enum BindFlags {
+    BF_NONE         = 0,
+    BF_EXPLICIT     = (1U << 0),
+    BF_REPORT_ERROR = (1U << 1),
+    BF_WHITELIST    = (1U << 2),
+};
+
+static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
 
 static const char* FEE_ESTIMATES_FILENAME="fee_estimates.dat";
+CClientUIInterface uiInterface;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -93,7 +119,16 @@ static const char* FEE_ESTIMATES_FILENAME="fee_estimates.dat";
 //
 
 volatile bool fRequestShutdown = false;
-static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
+
+void StartShutdown()
+{
+    fRequestShutdown = true;
+}
+
+bool ShutdownRequested()
+{
+    return fRequestShutdown || fRestartRequested;
+}
 
 class CCoinsViewErrorCatcher : public CCoinsViewBacked
 {
@@ -118,21 +153,16 @@ public:
 static CCoinsViewDB *pcoinsdbview = NULL;
 static CCoinsViewErrorCatcher *pcoinscatcher = NULL;
 
-void StartShutdown()
-{
-    fRequestShutdown = true;
-}
-bool ShutdownRequested()
-{
-    return fRequestShutdown;
-}
 
-void Shutdown()
-{
-    LogPrintf("Shutdown : In progress...\n");
+void PrepareShutdown()
+{   
+    fRequestShutdown = true; // Needed when we shutdown the wallet
+    fRestartRequested = true; // Needed when we restart the wallet
+    LogPrintf("%s: In progress...\n", __func__);
     static CCriticalSection cs_Shutdown;
     TRY_LOCK(cs_Shutdown, lockShutdown);
-    if (!lockShutdown) return;
+    if (!lockShutdown)
+        return;
 
     RenameThread("darksilk-shutoff");
     mempool.AddTransactionsUpdated(1);
@@ -159,6 +189,7 @@ void Shutdown()
             LogPrintf("%s: Failed to write fee estimates to %s\n", __func__, est_path.string());
         fFeeEstimatesInitialized = false;
     }
+
     {
         LOCK(cs_main);
         if (pcoinsTip != NULL && pblocktree != NULL) {
@@ -184,13 +215,34 @@ void Shutdown()
     if (pwalletMain)
         bitdb.Flush(true);
 #endif
+#ifdef WIN32
     boost::filesystem::remove(GetPidFile());
-    UnregisterAllWallets();
+#endif
+    UnregisterAllValidationInterfaces();
+}
+
+/**
+* Shutdown is split into 2 parts:
+* Part 1: shut down everything but the main wallet instance (done in PrepareShutdown() )
+* Part 2: delete wallet instance
+*
+* In case of a restart PrepareShutdown() was already called before, but this method here gets
+* called implicitly when the parent object is deleted. In this case we have to skip the
+* PrepareShutdown() part because it was already executed and just delete the wallet instance.
+*/
+void Shutdown()
+{
+    // Shutdown part 1: prepare shutdown
+    if(!fRestartRequested){
+        PrepareShutdown();
+    }
+
+   // Shutdown part 2: delete wallet instance
 #ifdef ENABLE_WALLET
     delete pwalletMain;
     pwalletMain = NULL;
 #endif
-    LogPrintf("Shutdown : done\n");
+    LogPrintf("%s: done\n", __func__);
 }
 
 //
@@ -227,12 +279,12 @@ bool static BindNativeI2P(/*bool fError = true*/)
 }
 #endif
 
-bool static Bind(const CService &addr, bool fError = true) {
-    if (IsLimited(addr))
+bool static Bind(const CService &addr, unsigned int flags) {
+    if (!(flags & BF_EXPLICIT) && IsLimited(addr))
         return false;
     std::string strError;
-    if (!BindListenPort(addr, strError)) {
-        if (fError)
+    if (!BindListenPort(addr, strError, (flags & BF_WHITELIST) != 0)) {
+        if (flags & BF_REPORT_ERROR)
             return InitError(strError);
         return false;
     }
@@ -278,12 +330,22 @@ std::string HelpMessage()
     strUsage += "  -upnp                  " + _("Use UPnP to map the listening port (default: 0)") + "\n";
 #endif
 #endif
+    strUsage += "  -whitebind=<addr>      " + _("Bind to given address and whitelist peers connecting to it. Use [host]:port notation for IPv6") + "\n";
+    strUsage += "  -whitelist=<netmask>   " + _("Whitelist peers connecting from the given netmask or IP address. Can be specified multiple times.") + "\n";
+    strUsage += "                         " + _("Whitelisted peers cannot be DoS banned and their transactions are always relayed, even if they are already in the mempool, useful e.g. for a gateway") + "\n";
     strUsage += "  -paytxfee=<amt>        " + _("Fee per KB to add to transactions you send") + "\n";
     strUsage += "  -mininput=<amt>        " + _("When creating transactions, ignore inputs with value less than this (default: 0.01)") + "\n";
     strUsage += "  -server                " + _("Accept command line and JSON-RPC commands") + "\n";
 #if !defined(WIN32)
     strUsage += "  -daemon                " + _("Run in the background as a daemon and accept commands") + "\n";
 #endif
+
+    strUsage += "\n" + _("Debugging/Testing options:") + "\n";
+    if (GetBoolArg("-help-debug", false))
+    {
+    strUsage += "  -fuzzmessagestest=<n>  " + _("Randomly fuzz 1 of every <n> network messages") + "\n";
+    }
+
     strUsage += "  -testnet               " + _("Use the test network") + "\n";
     strUsage += "  -litemode=<n>          " + strprintf(_("Disable all Darksilk specific functionality (Stormnodes, Sandstorm, InstantX, Budgeting) (0-1, default: %u)"), 0) + "\n";
     strUsage += "  -debug=<category>      " + _("Output debugging information (default: 0, supplying <category> is optional)") + "\n";
@@ -294,6 +356,7 @@ std::string HelpMessage()
     strUsage += ", qt";
     strUsage += ".\n";
     strUsage += "  -logtimestamps         " + _("Prepend debug output with timestamp (defaultg: 1)") + "\n";    strUsage += "  -shrinkdebugfile       " + _("Shrink debug.log file on client startup (default: 1 when no -debug)") + "\n";
+    strUsage += "  -printtodebuglog       " + strprintf(_("Send trace/debug info to debug.log file (default: %u)"), 1) + "\n";
     strUsage += "  -printtoconsole        " + _("Send trace/debug info to console instead of debug.log file") + "\n";
     strUsage += "  -rpcuser=<user>        " + _("Username for JSON-RPC connections") + "\n";
     strUsage += "  -rpcpassword=<pw>      " + _("Password for JSON-RPC connections") + "\n";
@@ -307,7 +370,7 @@ std::string HelpMessage()
     strUsage += "  -confchange            " + _("Require a confirmations for change (default: 0)") + "\n";
     strUsage += "  -alertnotify=<cmd>     " + _("Execute command when a relevant alert is received (%s in cmd is replaced by message)") + "\n";
     strUsage += "  -upgradewallet         " + _("Upgrade wallet to latest format") + "\n";
-    strUsage += "  -keypool=<n>           " + _("Set key pool size to <n> (default: 1000)") + "\n";
+    strUsage += "  -keypool=<n>             " + strprintf(_("Set key pool size to <n> (default: %u). Run 'keypoolrefill' to apply this to already existing wallets"), DEFAULT_KEYPOOL_SIZE) + "\n"; 
     strUsage += "  -rescan                " + _("Rescan the block chain for missing wallet transactions") + "\n";
     strUsage += "  -salvagewallet         " + _("Attempt to recover private keys from a corrupt wallet.dat") + "\n";
     strUsage += "  -checkblocks=<n>       " + _("How many blocks to check at startup (default: 500, 0 = all)") + "\n";
@@ -332,16 +395,15 @@ std::string HelpMessage()
     strUsage += "  -snconflock=<n>            " + _("Lock stormnodes from stormnode configuration file (default: 1)") + "\n";
     strUsage += "  -stormnodeprivkey=<n>     " + _("Set the stormnode private key") + "\n";
     strUsage += "  -stormnodeaddr=<n>        " + _("Set external address:port to get to this stormnode (example: address:port)") + "\n";
-    strUsage += "  -stormnodeminprotocol=<n> " + _("Ignore stormnodes less than version (example: 60135; default : 0)") + "\n";
+    strUsage += "  -stormnodeminprotocol=<n> " + _("Ignore stormnodes less than version (example: 60700; default : 0)") + "\n";
 
-    strUsage += "\n" + _("Sandstorm options:") + "\n";
-    strUsage += "  -enablesandstorm=<n>          " + _("Enable use of automated sandstorm for funds stored in this wallet (0-1, default: 0)") + "\n";
-    strUsage += "  -sandstormrounds=<n>          " + _("Use N separate stormnodes to anonymize funds  (2-100, default: 2)") + "\n";
-    strUsage += "  -anonymizedarksilkamount=<n> " + _("Keep N DarkSilk anonymized (default: 0)") + "\n";
-    strUsage += "  -liquidityprovider=<n>       " + _("Provide liquidity to Sandstorm by infrequently mixing coins on a continual basis (0-100, default: 0, 1=very frequent, high fees, 100=very infrequent, low fees)") + "\n";
-
+    strUsage += "  -enablesandstorm=<n>          " + strprintf(_("Enable use of automated sandstorm for funds stored in this wallet (0-1, default: %u)"), fEnableSandstorm) + "\n";
+    strUsage += "  -sandstormrounds=<n>          " + strprintf(_("Use N separate stormnodes to anonymize funds  (2-50, default: %u)"), nSandstormRounds) + "\n";
+    strUsage += "  -anonymizedarksilkamount=<n> " + strprintf(_("Keep N DarkSilk anonymized (default: %u)"), nAnonymizeDarkSilkAmount) + "\n";
+    strUsage += "  -liquidityprovider=<n>       " + strprintf(_("Provide liquidity to Sandstorm by infrequently mixing coins on a continual basis (0-100, default: %u, 1=very frequent, high fees, 100=very infrequent, low fees)"), nLiquidityProvider) + "\n";
+ 
     strUsage += "\n" + _("InstantX options:") + "\n";
-    strUsage += "  -enableinstantx=<n>    " + _("Enable instantx, show confirmations for locked transactions (bool, default: true)") + "\n";
+    strUsage += "  -enableinstantx=<n>    " + strprintf(_("Enable instantx, show confirmations for locked transactions (0-1, default: %u)"), fEnableInstantX) + "\n";
     strUsage += "  -instantxdepth=<n>     " + strprintf(_("Show N confirmations for a successfully locked transaction (0-9999, default: %u)"), nInstantXDepth) + "\n"; 
     strUsage += _("Secure messaging options:") + "\n" +
         "  -nosmsg                                  " + _("Disable secure messaging.") + "\n" +
@@ -349,6 +411,20 @@ std::string HelpMessage()
         "  -smsgscanchain                           " + _("Scan the block chain for public key addresses on startup.") + "\n";
 
     return strUsage;
+}
+
+std::string LicenseInfo()
+{
+    return FormatParagraph(strprintf(_("Copyright (C) 2009-%i The Bitcoin Core Developers"), COPYRIGHT_YEAR)) + "\n" +
+           "\n" +
+           FormatParagraph(strprintf(_("Copyright (C) 2015-%i The DarkSilk Core Developers"), COPYRIGHT_YEAR)) + "\n" +
+           "\n" +
+           FormatParagraph(_("This is experimental software.")) + "\n" +
+           "\n" +
+           FormatParagraph(_("Distributed under the MIT software license, see the accompanying file COPYING or <http://www.opensource.org/licenses/mit-license.php>.")) + "\n" +
+           "\n" +
+           FormatParagraph(_("This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit <https://www.openssl.org/> and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard.")) +
+           "\n";
 }
 
 /** Sanity checks
@@ -362,8 +438,8 @@ bool InitSanityCheck(void)
                   "information, visit https://en.darksilk.it/wiki/OpenSSL_and_EC_Libraries");
         return false;
     }
-
-    // TODO: remaining sanity checks, see #4081
+    if (!glibc_sanity_test() || !glibcxx_sanity_test())
+        return false;
 
     return true;
 }
@@ -405,7 +481,15 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
 #endif
 #ifndef WIN32
-    umask(077);
+
+    if (GetBoolArg("-sysperms", false)) {
+#ifdef ENABLE_WALLET
+        if (!GetBoolArg("-disablewallet", false))
+            return InitError("Error: -sysperms is not allowed in combination with enabled wallet functionality");
+#endif
+    } else {
+        umask(077);
+    }
 
     // Clean shutdown on SIGTERM
     struct sigaction sa;
@@ -421,6 +505,11 @@ bool AppInit2(boost::thread_group& threadGroup)
     sigemptyset(&sa_hup.sa_mask);
     sa_hup.sa_flags = 0;
     sigaction(SIGHUP, &sa_hup, NULL);
+
+#if defined (__SVR4) && defined (__sun)
+    // ignore SIGPIPE on Solaris
+    signal(SIGPIPE, SIG_IGN);
+#endif
 #endif
 
     // ********************************************************* Step 2: parameter interactions
@@ -447,11 +536,6 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     if (!SelectParamsFromCommandLine()) {
         return InitError("Invalid use of -testnet");
-    }
-
-    if (TestNet())
-    {
-        SoftSetBoolArg("-irc", true);
     }
 
     if (mapArgs.count("-bind")) {
@@ -498,6 +582,23 @@ bool AppInit2(boost::thread_group& threadGroup)
             LogPrintf("AppInit2 : parameter interaction: -salvagewallet=1 -> setting -rescan=1\n");
     }
 
+    if(!GetBoolArg("-enableinstantx", fEnableInstantX)){
+        if (SoftSetArg("-instantxdepth", 0))
+            LogPrintf("AppInit2 : parameter interaction: -enableinstantx=false -> setting -nInstantXDepth=0\n");
+    }
+
+    if (GetArg("-liquidityprovider", 0) > 0) {
+        int nLiqProvTmp = GetArg("-liquidityprovider", 0);
+        mapArgs["-enablesandstorm"] = "1";
+        LogPrintf("AppInit2 : parameter interaction: -liquidityprovider=%d -> setting -enablesandstorm=1\n", nLiqProvTmp);
+        mapArgs["-sandstormrounds"] = "99999";
+        LogPrintf("AppInit2 : parameter interaction: -liquidityprovider=%d -> setting -sandstormrounds=99999\n", nLiqProvTmp);
+        mapArgs["-anonymizedarksilkamount"] = "999999";
+       LogPrintf("AppInit2 : parameter interaction: -liquidityprovider=%d -> setting -anonymizedarksilkamount=999999\n", nLiqProvTmp);
+        mapArgs["-sandstormmultisession"] = "0";
+        LogPrintf("AppInit2 : parameter interaction: -liquidityprovider=%d -> setting -sandstormmultisession=0\n", nLiqProvTmp);
+    }
+
     // ********************************************************* Step 3: parameter-to-internal-flags
 
     fDebug = !mapMultiArgs["-debug"].empty();
@@ -524,6 +625,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     fServer = GetBoolArg("-server", false);
     fPrintToConsole = GetBoolArg("-printtoconsole", false);
+    fPrintToDebugLog = GetBoolArg("-printtodebuglog", true) && !fPrintToConsole;
     fLogTimestamps = GetBoolArg("-logtimestamps", true);
 #ifdef ENABLE_WALLET
     bool fDisableWallet = GetBoolArg("-disablewallet", false);
@@ -571,11 +673,11 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     std::string strDataDir = GetDataDir().string();
 #ifdef ENABLE_WALLET
-    std::string strWalletFileName = GetArg("-wallet", "wallet.dat");
+    std::string strWalletFile = GetArg("-wallet", "wallet.dat");
 
     // strWalletFileName must be a plain filename without a directory
-    if (strWalletFileName != boost::filesystem::basename(strWalletFileName) + boost::filesystem::extension(strWalletFileName))
-        return InitError(strprintf(_("Wallet %s resides outside data directory %s."), strWalletFileName, strDataDir));
+    if (strWalletFile != boost::filesystem::basename(strWalletFile) + boost::filesystem::extension(strWalletFile))
+        return InitError(strprintf(_("Wallet %s resides outside data directory %s."), strWalletFile, strDataDir));
 #endif
     // Make sure only a single DarkSilk process is using the data directory.
     boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
@@ -617,7 +719,79 @@ bool AppInit2(boost::thread_group& threadGroup)
     // ********************************************************* Step 5: verify database integrity
 #ifdef ENABLE_WALLET
     if (!fDisableWallet) {
-        uiInterface.InitMessage(_("Verifying database integrity..."));
+    
+        filesystem::path backupDir = GetDataDir() / "backups";
+        if (!filesystem::exists(backupDir))
+        {
+            // Always create backup folder to not confuse the operating system's file browser
+            filesystem::create_directories(backupDir);
+        }
+        nWalletBackups = GetArg("-createwalletbackups", 10);
+        nWalletBackups = std::max(0, std::min(10, nWalletBackups));
+        if(nWalletBackups > 0)
+        {
+            if (filesystem::exists(backupDir))
+            {
+                // Create backup of the wallet
+                std::string dateTimeStr = DateTimeStrFormat(".%Y-%m-%d-%H-%M", GetTime());
+                std::string backupPathStr = backupDir.string();
+                backupPathStr += "/" + strWalletFile;
+                std::string sourcePathStr = GetDataDir().string();
+                sourcePathStr += "/" + strWalletFile;
+                boost::filesystem::path sourceFile = sourcePathStr;
+                boost::filesystem::path backupFile = backupPathStr + dateTimeStr;
+                sourceFile.make_preferred();
+                backupFile.make_preferred();
+                if(boost::filesystem::exists(sourceFile)) {
+                    try {
+                        boost::filesystem::copy_file(sourceFile, backupFile);
+                        LogPrintf("Creating backup of %s -> %s\n", sourceFile, backupFile);
+                    } catch(boost::filesystem::filesystem_error &error) {
+                        LogPrintf("Failed to create backup %s\n", error.what());
+                    }
+                }
+                // Keep only the last 10 backups, including the new one of course
+                typedef std::multimap<std::time_t, boost::filesystem::path> folder_set_t;
+                folder_set_t folder_set;
+                boost::filesystem::directory_iterator end_iter;
+                boost::filesystem::path backupFolder = backupDir.string();
+                backupFolder.make_preferred();
+                // Build map of backup files for current(!) wallet sorted by last write time
+                boost::filesystem::path currentFile;
+                for (boost::filesystem::directory_iterator dir_iter(backupFolder); dir_iter != end_iter; ++dir_iter)
+                {
+                    // Only check regular files
+                    if ( boost::filesystem::is_regular_file(dir_iter->status()))
+                    {
+                        currentFile = dir_iter->path().filename();
+                        // Only add the backups for the current wallet, e.g. wallet.dat.*
+                        if(dir_iter->path().stem().string() == strWalletFile)
+                        {
+                            folder_set.insert(folder_set_t::value_type(boost::filesystem::last_write_time(dir_iter->path()), *dir_iter));
+                        }
+                    }
+                }
+                // Loop backward through backup files and keep the N newest ones (1 <= N <= 10)
+                int counter = 0;
+                BOOST_REVERSE_FOREACH(PAIRTYPE(const std::time_t, boost::filesystem::path) file, folder_set)
+                {
+                    counter++;
+                    if (counter > nWalletBackups)
+                    {
+                        // More than nWalletBackups backups: delete oldest one(s)
+                        try {
+                            boost::filesystem::remove(file.second);
+                            LogPrintf("Old backup deleted: %s\n", file.second);
+                        } catch(boost::filesystem::filesystem_error &error) {
+                            LogPrintf("Failed to delete backup %s\n", error.what());
+                        }
+                    }
+                }
+            }
+        }
+
+        LogPrintf("Using wallet %s\n", strWalletFile);
+        uiInterface.InitMessage(_("Verifying wallet..."));
 
         if (!bitdb.Open(GetDataDir()))
         {
@@ -642,13 +816,13 @@ bool AppInit2(boost::thread_group& threadGroup)
         if (GetBoolArg("-salvagewallet", false))
         {
             // Recover readable keypairs:
-            if (!CWalletDB::Recover(bitdb, strWalletFileName, true))
+            if (!CWalletDB::Recover(bitdb, strWalletFile, true))
                 return false;
         }
 
-        if (filesystem::exists(GetDataDir() / strWalletFileName))
+        if (filesystem::exists(GetDataDir() / strWalletFile))
         {
-            CDBEnv::VerifyResult r = bitdb.Verify(strWalletFileName, CWalletDB::Recover);
+            CDBEnv::VerifyResult r = bitdb.Verify(strWalletFile, CWalletDB::Recover);
             if (r == CDBEnv::RECOVER_OK)
             {
                 string msg = strprintf(_("Warning: wallet.dat corrupt, data salvaged!"
@@ -660,6 +834,7 @@ bool AppInit2(boost::thread_group& threadGroup)
             if (r == CDBEnv::RECOVER_FAIL)
                 return InitError(_("wallet.dat corrupt, salvage failed"));
         }
+
     } // (!fDisableWallet)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
@@ -681,6 +856,15 @@ bool AppInit2(boost::thread_group& threadGroup)
             enum Network net = (enum Network)n;
             if (!nets.count(net))
                 SetLimited(net);
+        }
+    }
+
+    if (mapArgs.count("-whitelist")) {
+        BOOST_FOREACH(const std::string& net, mapMultiArgs["-whitelist"]) {
+            CSubNet subnet(net);
+            if (!subnet.IsValid())
+                return InitError(strprintf(_("Invalid netmask specified in -whitelist: '%s'"), net));
+            CNode::AddWhitelistedRange(subnet);
         }
     }
 
@@ -713,22 +897,29 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
 
     // see Step 2: parameter interactions for more information about these
-    fNoListen = !GetBoolArg("-listen", true);
+    fListen = !GetBoolArg("-listen", true);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
 
     bool fBound = false;
-    if (!fNoListen)
-    {
-        std::string strError;
-        if (mapArgs.count("-bind")) {
+    if (fListen) {
+        if (mapArgs.count("-bind") || mapArgs.count("-whitebind")) {
             BOOST_FOREACH(std::string strBind, mapMultiArgs["-bind"]) {
                 CService addrBind;
                 if (!Lookup(strBind.c_str(), addrBind, GetListenPort(), false))
                     return InitError(strprintf(_("Cannot resolve -bind address: '%s'"), strBind));
-                fBound |= Bind(addrBind);
+                fBound |= Bind(addrBind, (BF_EXPLICIT | BF_REPORT_ERROR));
             }
-        } else {
+            BOOST_FOREACH(std::string strBind, mapMultiArgs["-whitebind"]) {
+                CService addrBind;
+                if (!Lookup(strBind.c_str(), addrBind, 0, false))
+                    return InitError(strprintf(_("Cannot resolve -whitebind address: '%s'"), strBind));
+                if (addrBind.GetPort() == 0)
+                    return InitError(strprintf(_("Need to specify a port with -whitebind: '%s'"), strBind));
+                fBound |= Bind(addrBind, (BF_EXPLICIT | BF_REPORT_ERROR | BF_WHITELIST));
+            }
+        }
+        else {
             struct in_addr inaddr_any;
             inaddr_any.s_addr = INADDR_ANY;
             if (!IsLimited(NET_IPV6))
@@ -744,8 +935,7 @@ bool AppInit2(boost::thread_group& threadGroup)
             return InitError(_("Failed to listen on any port. Use -listen=0 if you want this."));
     }
 
-    if (mapArgs.count("-externalip"))
-    {
+    if (mapArgs.count("-externalip")) {
         BOOST_FOREACH(string strAddr, mapMultiArgs["-externalip"]) {
             CService addrLocal(strAddr, GetListenPort(), fNameLookup);
             if (!addrLocal.IsValid())
@@ -801,7 +991,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     bool fLoaded = false;
     while (!fLoaded) {
-        bool fReset = fReindex;
+        //bool fReset = fReindex;
         std::string strLoadError;
 
         uiInterface.InitMessage(_("Loading block index..."));
@@ -865,8 +1055,7 @@ bool AppInit2(boost::thread_group& threadGroup)
             // first suggest a reindex
             if (!fReset) {
                 bool fRet = uiInterface.ThreadSafeMessageBox(
-                    strLoadError + ".\n\n" + _("Do you want to rebuild the block database now?"),
-                    "", CClientUIInterface::MSG_ERROR | CClientUIInterface::BTN_ABORT);
+                    strLoadError + ".\n\n" + _("Do you want to rebuild the block database now?"), "", CClientUIInterface::MSG_ERROR | CClientUIInterface::BTN_ABORT);
                 if (fRet) {
                     fReindex = true;
                     fRequestShutdown = false;
@@ -881,7 +1070,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
 
     // as LoadBlockIndex can take several minutes, it's possible the user
-    // requested to kill darksilk-qt during the last operation. If so, exit.
+    // requested to kill darksilk-core during the last operation. If so, exit.
     // As the program has not fully started yet, Shutdown() is possibly overkill.
     if (fRequestShutdown)
     {
@@ -928,7 +1117,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
         nStart = GetTimeMillis();
         bool fFirstRun = true;
-        pwalletMain = new CWallet(strWalletFileName);
+        pwalletMain = new CWallet(strWalletFile);
         DBErrors nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
         if (nLoadWalletRet != DB_LOAD_OK)
         {
@@ -993,17 +1182,17 @@ bool AppInit2(boost::thread_group& threadGroup)
             pindexRescan = pindexGenesisBlock;
         else
         {
-            CWalletDB walletdb(strWalletFileName);
+            CWalletDB walletdb(strWalletFile);
             CBlockLocator locator;
             if (walletdb.ReadBestBlock(locator))
                 pindexRescan = locator.GetBlockIndex();
             else
                 pindexRescan = pindexGenesisBlock;
         }
-        if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
+        if (pindexBest && pindexBest != pindexRescan)
         {
             uiInterface.InitMessage(_("Rescanning..."));
-            LogPrintf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+            LogPrintf("Rescanning last %i blocks (from block %i)...\n", nBestHeight - pindexRescan->nHeight, pindexRescan->nHeight);
             nStart = GetTimeMillis();
             pwalletMain->ScanForWalletTransactions(pindexRescan, true);
             LogPrintf(" rescan      %15dms\n", GetTimeMillis() - nStart);
@@ -1023,6 +1212,11 @@ bool AppInit2(boost::thread_group& threadGroup)
             vImportFiles.push_back(strFile);
     }
     threadGroup.create_thread(boost::bind(&ThreadImport, vImportFiles));
+    if (pindexBest == NULL) {
+        LogPrintf("Waiting for genesis block to be imported...\n");
+        while (!fRequestShutdown && pindexBest == NULL)
+            MilliSleep(10);
+    }
 
     // ********************************************************* Step 10: load peers
 
@@ -1074,6 +1268,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     CBudgetDB budgetdb;
     CBudgetDB::ReadResult readResult2 = budgetdb.Read(budget);
+
     if (readResult2 == CBudgetDB::FileError)
         LogPrintf("Missing budget cache - budget.dat, will try to recreate\n");
     else if (readResult2 != CBudgetDB::Ok)
@@ -1085,7 +1280,29 @@ bool AppInit2(boost::thread_group& threadGroup)
             LogPrintf("file format is unknown or invalid, please fix it manually\n");
     }
 
+    //flag our cached items so we send them to our peers
+    budget.ResetSync();
+    budget.ClearSeen();
+
+
+    uiInterface.InitMessage(_("Loading stormnode payment cache..."));
+
+    CStormnodePaymentDB snpayments;
+    CStormnodePaymentDB::ReadResult readResult3 = snpayments.Read(stormnodePayments);
+    
+    if (readResult3 == CStormnodePaymentDB::FileError)
+        LogPrintf("Missing Stormnode payment cache - snpayments.dat, will try to recreate\n");
+    else if (readResult3 != CStormnodePaymentDB::Ok)
+    {
+        LogPrintf("Error reading mnpayments.dat: ");
+        if(readResult3 == CStormnodePaymentDB::IncorrectFormat)
+            LogPrintf("magic is ok but data has invalid format, will try to recreate\n");
+        else
+            LogPrintf("file format is unknown or invalid, please fix it manually\n");
+    }
+
     fStormNode = GetBoolArg("-stormnode", false);
+
     if(fStormNode) {
         LogPrintf("IS SANDSTORM STORMNODE\n");
         strStormNodeAddr = GetArg("-stormnodeaddr", "");
@@ -1093,7 +1310,7 @@ bool AppInit2(boost::thread_group& threadGroup)
         LogPrintf(" addr %s\n", strStormNodeAddr.c_str());
 
         if(!strStormNodeAddr.empty()){
-            CService addrTest = CService(strStormNodeAddr);
+            CService addrTest = CService(strStormNodeAddr, fNameLookup);
             if (!addrTest.IsValid()) {
                 return InitError("Invalid -stormnodeaddr address: " + strStormNodeAddr);
             }
@@ -1118,7 +1335,11 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     }
 
-    if(GetBoolArg("-snconflock", true)) {
+    //get the mode of budget voting for this stormnode
+    strBudgetMode = GetArg("-budgetvotemode", "auto");
+
+    if(GetBoolArg("-snconflock", false)&& pwalletMain) {
+        LOCK(pwalletMain->cs_wallet);
         LogPrintf("Locking Stormnodes:\n");
         uint256 snTxHash;
         BOOST_FOREACH(CStormnodeConfig::CStormnodeEntry sne, stormnodeConfig.getEntries()) {
@@ -1129,16 +1350,11 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     }
 
-    //get the mode of budget voting for this stormnode
-    strBudgetMode = GetArg("-budgetvotemode", "auto");
-
-    fEnableSandstorm = GetBoolArg("-enablesandstorm", false);
-    fSandstormMultiSession = GetBoolArg("-sandstormmultisession", false);
+   fEnableSandstorm = GetBoolArg("-enablesandstorm", false);
 
     nSandstormRounds = GetArg("-sandstormrounds", 2);
-    if(nSandstormRounds > 100) nSandstormRounds = 100;
+    if(nSandstormRounds > 16) nSandstormRounds = 16;
     if(nSandstormRounds < 1) nSandstormRounds = 1;
-
 
     nLiquidityProvider = GetArg("-liquidityprovider", 0); //0-100
     if(nLiquidityProvider != 0) {
@@ -1167,24 +1383,8 @@ bool AppInit2(boost::thread_group& threadGroup)
     LogPrintf("Anonymize DarkSilk Amount %d\n", nAnonymizeDarkSilkAmount);
     LogPrintf("Budget Mode %s\n", strBudgetMode.c_str());
 
-    /* Denominations
-       A note about convertability. Within Sandstorm pools, each denomination
-       is convertable to another.
-       For example:
-       1DRK+1000 == (.1DRK+100)*10
-       10DRK+10000 == (1DRK+1000)*10
-    */
-    sandStormDenominations.push_back( (10000       * COIN)+10000000 );
-    sandStormDenominations.push_back( (1000        * COIN)+1000000 );
-    sandStormDenominations.push_back( (100         * COIN)+100000 );
-    sandStormDenominations.push_back( (10          * COIN)+10000 );
-    sandStormDenominations.push_back( (1           * COIN)+1000 );
-    sandStormDenominations.push_back( (.1          * COIN)+100 );
-    /* Disabled till we need them
-    sandStormDenominations.push_back( (.01      * COIN)+10 );
-    sandStormDenominations.push_back( (.001     * COIN)+1 );
-    */
 
+    sandStormPool.InitDenominations();
     sandStormPool.InitCollateralAddress();
 
     threadGroup.create_thread(boost::bind(&ThreadCheckSandStormPool));
@@ -1220,6 +1420,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 #endif
 
     StartNode(threadGroup);
+    
 #ifdef ENABLE_WALLET
     // InitRPCMining is needed here so getwork/getblocktemplate in the GUI debug console works properly.
     InitRPCMining();
@@ -1241,11 +1442,6 @@ bool AppInit2(boost::thread_group& threadGroup)
 
 #ifdef ENABLE_WALLET
     if (pwalletMain) {
-	BOOST_FOREACH(PAIRTYPE(std::string, CStormNodeConfig) storm, pwalletMain->mapMyStormNodes)
-	{
-	    uiInterface.NotifyStormNodeChanged(storm.second);
-	}
-
         // Add wallet transactions that aren't already in a block to mapTransactions
         pwalletMain->ReacceptWalletTransactions();
 

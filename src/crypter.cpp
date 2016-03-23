@@ -1,16 +1,10 @@
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "crypter.h"
-
-#include "script.h"
-#include "scrypt.h"
-
-#include <string>
-#include <vector>
 #include <boost/foreach.hpp>
+
 #include <openssl/crypto.h>
 #include <openssl/ec.h>
 #include <openssl/ecdh.h>
@@ -18,9 +12,17 @@
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+
 #ifdef WIN32
 #include <windows.h>
 #endif
+
+#include <string>
+#include <vector>
+
+#include "crypter.h"
+#include "script/script.h"
+#include "scrypt.h"
 
 bool CCrypter::SetKeyFromPassphrase(const SecureString& strKeyData, const std::vector<unsigned char>& chSalt, const unsigned int nRounds, const unsigned int nDerivationMethod)
 {

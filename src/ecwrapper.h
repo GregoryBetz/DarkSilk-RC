@@ -5,9 +5,10 @@
 #ifndef DARKSILK_EC_WRAPPER_H
 #define DARKSILK_EC_WRAPPER_H
 
+#include <openssl/ec.h>
+
 #include <cstddef>
 #include <vector>
-#include <openssl/ec.h>
 
 class uint256;
 

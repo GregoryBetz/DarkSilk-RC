@@ -2,13 +2,13 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "ecwrapper.h"
-#include "serialize.h"
-#include "uint256.h"
-
 #include <openssl/bn.h>
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
+
+#include "ecwrapper.h"
+#include "serialize.h"
+#include "uint256.h"
 
 // anon namespace
 namespace {

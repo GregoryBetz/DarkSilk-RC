@@ -1,16 +1,16 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
-#include "protocol.h"
-#include "util.h"
-#include "netbase.h"
 
 #ifndef WIN32
 # include <arpa/inet.h>
 #endif
+
+#include "protocol.h"
+#include "util.h"
+#include "utilstrencodings.h"
 
 static const char* ppszTypeName[] =
 {
@@ -21,19 +21,16 @@ static const char* ppszTypeName[] =
     "tx lock request",
     "tx lock vote",
     "spork",
-    "stormnode winner",
-    "stormnode scan",
-    "stormnode vote",
-    "stormnode proposal",
-    "stormnode quorum",
-    "stormnode announce",
-    "stormnode ping",
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown"
+    "sn winner",
+    "sn scan error",
+    "sn budget vote",
+    "sn budget proposal",
+    "sn budget finalized",
+    "sn budget finalized vote",
+    "sn quorum",
+    "sn announce",
+    "sn ping",
+    "sstx"
 };
 
 CMessageHeader::CMessageHeader()
@@ -135,7 +132,7 @@ CInv::CInv(const std::string& strType, const uint256& hashIn)
         }
     }
     if (i == ARRAYLEN(ppszTypeName))
-        throw std::out_of_range(strprintf("CInv::CInv(string, uint256) : unknown type '%s'", strType));
+        LogPrint("net", "CInv::CInv(string, uint256) : unknown type '%s'", strType);
     hash = hashIn;
 }
 
@@ -152,7 +149,7 @@ bool CInv::IsKnownType() const
 const char* CInv::GetCommand() const
 {
     if (!IsKnownType())
-        throw std::out_of_range(strprintf("CInv::GetCommand() : type=%d unknown type", type));
+        LogPrint("net", "CInv::GetCommand() : type=%d unknown type", type);
     return ppszTypeName[type];
 }
 

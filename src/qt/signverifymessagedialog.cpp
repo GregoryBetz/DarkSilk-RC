@@ -1,19 +1,19 @@
+#include <QClipboard>
+
+#include <string>
+#include <vector>
+
 #include "signverifymessagedialog.h"
 #include "ui_signverifymessagedialog.h"
-
 #include "addressbookpage.h"
 #include "base58.h"
 #include "guiutil.h"
 #include "init.h"
 #include "main.h"
 #include "optionsmodel.h"
+#include "utilstrencodings.h"
 #include "walletmodel.h"
-#include "wallet.h"
-
-#include <QClipboard>
-
-#include <string>
-#include <vector>
+#include "wallet/wallet.h"
 
 SignVerifyMessageDialog::SignVerifyMessageDialog(QWidget *parent) :
     QDialog(parent),
@@ -54,13 +54,13 @@ void SignVerifyMessageDialog::setModel(WalletModel *model)
     this->model = model;
 }
 
-void SignVerifyMessageDialog::setAddress_SM(QString address)
+void SignVerifyMessageDialog::setAddress_SM(const QString address)
 {
     ui->addressIn_SM->setText(address);
     ui->messageIn_SM->setFocus();
 }
 
-void SignVerifyMessageDialog::setAddress_VM(QString address)
+void SignVerifyMessageDialog::setAddress_VM(const QString address)
 {
     ui->addressIn_VM->setText(address);
     ui->messageIn_VM->setFocus();

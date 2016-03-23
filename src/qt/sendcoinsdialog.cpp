@@ -1,26 +1,23 @@
+#include <QMessageBox>
+#include <QTextDocument>
+#include <QScrollBar>
+#include <QSettings>
+#include <QClipboard>
+
 #include "sendcoinsdialog.h"
 #include "ui_sendcoinsdialog.h"
-
 #include "walletmodel.h"
 #include "addresstablemodel.h"
 #include "addressbookpage.h"
-
 #include "darksilkunits.h"
 #include "addressbookpage.h"
 #include "optionsmodel.h"
 #include "sendcoinsentry.h"
 #include "guiutil.h"
 #include "askpassphrasedialog.h"
-
 #include "base58.h"
 #include "coincontrol.h"
 #include "coincontroldialog.h"
-
-#include <QMessageBox>
-#include <QTextDocument>
-#include <QScrollBar>
-#include <QSettings>
-#include <QClipboard>
 
 SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
     QDialog(parent),
@@ -123,8 +120,9 @@ void SendCoinsDialog::setModel(WalletModel *model)
             }
         }
 
-        setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance());
-        connect(model, SIGNAL(balanceChanged(CAmount, CAmount, CAmount, CAmount, CAmount)), this, SLOT(setBalance(CAmount, CAmount, CAmount, CAmount, CAmount)));
+        setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance(),
+            model->getWatchBalance(), model->getWatchStake(), model->getWatchUnconfirmedBalance(), model->getWatchImmatureBalance());
+        connect(model, SIGNAL(balanceChanged(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)), this, SLOT(setBalance(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)));
         connect(model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
         updateDisplayUnit();
         
@@ -408,23 +406,27 @@ bool SendCoinsDialog::handleURI(const QString &uri)
     return false;
 }
 
-void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& stake, const CAmount& unconfirmedBalance, const CAmount& immatureBalance, const CAmount& anonymizedBalance)
-{ 
- Q_UNUSED(stake);
- Q_UNUSED(unconfirmedBalance);
- Q_UNUSED(immatureBalance);
- Q_UNUSED(anonymizedBalance);
+void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& stake, const CAmount& unconfirmedBalance, const CAmount& immatureBalance, const CAmount& anonymizedBalance,
+    const CAmount& watchBalance, const CAmount& watchStake, const CAmount& watchUnconfirmedBalance, const CAmount& watchImmatureBalance)
+{
+    Q_UNUSED(stake);
+    Q_UNUSED(unconfirmedBalance);
+    Q_UNUSED(immatureBalance);
+    Q_UNUSED(anonymizedBalance);
+    Q_UNUSED(watchBalance);
+    Q_UNUSED(watchStake);
+    Q_UNUSED(watchUnconfirmedBalance);
+    Q_UNUSED(watchImmatureBalance);
 
-
- if(model && model->getOptionsModel())
- {
-        uint64_t bal = 0;
+    if(model && model->getOptionsModel())
+    {
+        CAmount bal = 0;
         QSettings settings;
         settings.setValue("bUseSandStorm", ui->checkUseSandstorm->isChecked());
         if(ui->checkUseSandstorm->isChecked()) {
-        bal = anonymizedBalance;
+            bal = anonymizedBalance;
         } else {
-        bal = balance;
+            bal = balance;
         }
 
         ui->labelBalance->setText(DarkSilkUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), bal));
@@ -433,7 +435,8 @@ void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& stake, c
 
 void SendCoinsDialog::updateDisplayUnit()
 {
-    setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance());
+    setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance(),
+        model->getWatchBalance(), model->getWatchStake(), model->getWatchUnconfirmedBalance(), model->getWatchImmatureBalance());
     CoinControlDialog::coinControl->useSandStorm = ui->checkUseSandstorm->isChecked();
     coinControlUpdateLabels();
 }

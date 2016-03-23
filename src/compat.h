@@ -1,10 +1,10 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef _DARKSILK_COMPAT_H
-#define _DARKSILK_COMPAT_H 1
+#define _DARKSILK_COMPAT_H
 
 #ifdef WIN32
 #ifdef _WIN32_WINNT
@@ -22,7 +22,8 @@
 #endif
 #define FD_SETSIZE 1024 // max number of fds in fd_set
 
-#include <winsock2.h>
+#include <winsock2.h>     // Must be included before mswsock.h and windows.h
+
 #include <mswsock.h>
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -41,9 +42,7 @@
 #endif
 
 #ifdef WIN32
-#define MSG_NOSIGNAL        0
 #define MSG_DONTWAIT        0
-typedef int socklen_t;
 #else
 typedef u_int SOCKET;
 #include "errno.h"
@@ -60,19 +59,39 @@ typedef u_int SOCKET;
 #define SOCKET_ERROR        -1
 #endif
 
-inline int myclosesocket(SOCKET& hSocket)
-{
-    if (hSocket == INVALID_SOCKET)
-        return WSAENOTSOCK;
 #ifdef WIN32
-    int ret = closesocket(hSocket);
-#else
-    int ret = close(hSocket);
+#ifndef S_IRUSR
+#define S_IRUSR             0400
+#define S_IWUSR             0200
 #endif
-    hSocket = INVALID_SOCKET;
-    return ret;
-}
-#define closesocket(s)      myclosesocket(s)
+#else
+#define MAX_PATH            1024
+#endif
 
+// As Solaris does not have the MSG_NOSIGNAL flag for send(2) syscall, it is defined as 0
+#if !defined(HAVE_MSG_NOSIGNAL) && !defined(MSG_NOSIGNAL)
+#define MSG_NOSIGNAL 0
+#endif
+
+#ifndef WIN32
+// PRIO_MAX is not defined on Solaris
+#ifndef PRIO_MAX
+#define PRIO_MAX 20
+#endif
+#define THREAD_PRIORITY_LOWEST          PRIO_MAX
+#define THREAD_PRIORITY_BELOW_NORMAL    2
+#define THREAD_PRIORITY_NORMAL          0
+#define THREAD_PRIORITY_ABOVE_NORMAL    (-2)
+#endif
+
+size_t strnlen_int( const char *start, size_t max_len);
+
+bool static inline IsSelectableSocket(SOCKET s) {
+#ifdef WIN32
+    return true;
+#else
+    return (s < FD_SETSIZE);
+#endif
+}
 
 #endif

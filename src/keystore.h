@@ -1,21 +1,18 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef DARKSILK_KEYSTORE_H
 #define DARKSILK_KEYSTORE_H
 
-#include "key.h"
-#include "pubkey.h"
-#include "sync.h"
-#include "script.h"
 #include <boost/signals2/signal.hpp>
 #include <boost/variant.hpp>
 
-
-
-class CScript;
+#include "key.h"
+#include "pubkey.h"
+#include "sync.h"
+#include "script/script.h"
 
 /** A txout script template with a specific destination. It is either:
  *  * CNoDestination: no destination set

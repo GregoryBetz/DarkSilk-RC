@@ -6,18 +6,17 @@
 #ifndef DARKSILK_PRIMITIVES_TRANSACTION_H
 #define DARKSILK_PRIMITIVES_TRANSACTION_H
 
+#include <stdio.h>
+
 #include "amount.h"
 #include "uint256.h"
 #include "serialize.h"
-#include "util.h"
-#include "script.h"
+#include "utilmoneystr.h"
+#include "script/script.h"
 #include "timedata.h"
-#include "alias.h"
-#include "cert.h"
-#include "offer.h"
 
-#include <stdio.h>
-
+class CValidationInterface;
+class CValidationState;
 
 /// The maximum allowed size for a serialized block, in bytes (network rule)
 static const unsigned int MAX_BLOCK_SIZE = 20000000; // 20MB Maximum Block Size (50x Bitcoin Core)
@@ -34,7 +33,13 @@ public:
     COutPoint() { SetNull(); }
     COutPoint(uint256 hashIn, unsigned int nIn) { hash = hashIn; n = nIn; }
 
-    IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(FLATDATA(*this));
+    }
+
     void SetNull() { hash = 0; n = (unsigned int) -1; }
     bool IsNull() const { return (hash == 0 && n == (unsigned int) -1); }
 
@@ -113,12 +118,14 @@ public:
         nSequence = nSequenceIn;
     }
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(prevout);
         READWRITE(scriptSig);
         READWRITE(nSequence);
-    )
+    }
 
     bool IsFinal() const
     {
@@ -158,7 +165,7 @@ public:
 class CTxOut
 {
 public:
-    int64_t nValue;
+    CAmount nValue;
     int nRounds;
     CScript scriptPubKey;
 
@@ -167,18 +174,20 @@ public:
         SetNull();
     }
 
-    CTxOut(int64_t nValueIn, CScript scriptPubKeyIn)
+    CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
     {
         nValue = nValueIn;
         nRounds = -10; // an initial value, should be no way to get this by calculations
         scriptPubKey = scriptPubKeyIn;
     }
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(nValue);
         READWRITE(scriptPubKey);
-    )
+    }
 
     void SetNull()
     {
@@ -208,17 +217,17 @@ public:
         return SerializeHash(*this);
     }
 
-    bool IsDust(int64_t MIN_RELAY_TX_FEE) const
+    bool IsDust(CFeeRate minRelayTxFee) const
     {
-        // "Dust" is defined in terms of MIN_RELAY_TX_FEE,
-        // which has units satoshis-per-kilobyte.
-        // If you'd pay more than 1/3 in fees
-        // to spend something, then we consider it dust.
-        // A typical txout is 34 bytes big, and will
-        // need a CTxIn of at least 148 bytes to spend,
-        // so dust is a txout less than 546 satoshis
-        // with default nMinRelayTxFee.
-        return ((nValue*1000)/(3*((int)GetSerializeSize(SER_DISK,0)+148)) < MIN_RELAY_TX_FEE);
+        // "Dust" is defined in terms of CTransaction::minRelayTxFee, which has units duffs-per-kilobyte.
+        // If you'd pay more than 1/3 in fees to spend something, then we consider it dust.
+        // A typical txout is 34 bytes big, and will need a CTxIn of at least 148 bytes to spend
+        // i.e. total is 148 + 32 = 182 bytes. Default -minrelaytxfee is 10000 duffs per kB
+        // and that means that fee per txout is 182 * 10000 / 1000 = 1820 duffs.
+        // So dust is a txout less than 1820 *3 = 5460 duffs
+        // with default -minrelaytxfee = minRelayTxFee = 10000 duffs per kB.
+        size_t nSize = GetSerializeSize(SER_DISK,0)+148u;
+        return (nValue < 3*minRelayTxFee.GetFee(nSize));
     }
 
     friend bool operator==(const CTxOut& a, const CTxOut& b)
@@ -246,14 +255,12 @@ public:
 class CTransaction
 {
 public:
-    class CDarkSilkAddress;
     static const int CURRENT_VERSION=1;
     int nVersion;
     unsigned int nTime;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     unsigned int nLockTime;
-    std::vector<unsigned char> data;
 
     // Denial-of-service detection:
     mutable int nDoS;
@@ -272,15 +279,17 @@ public:
     /// Convert a CMutableTransaction into a CTransaction.
     CTransaction(const CMutableTransaction &tx);
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->nVersion);
         nVersion = this->nVersion;
         READWRITE(nTime);
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
-    )
+    }
 
     void SetNull()
     {
@@ -301,6 +310,9 @@ public:
     {
         return SerializeHash(*this); //TODO (Amir): Use a cached result (need member variables to const).
     }
+
+    // Compute modified tx size for priority calculation (optionally given tx size)
+    unsigned int CalculateModifiedSize(unsigned int nTxSize=0) const;
 
     bool IsCoinBase() const
     {
@@ -333,12 +345,9 @@ public:
         return !(a == b);
     }
 
+    bool CheckTransaction(CValidationState &state);
+
     std::string ToString() const;
-
-    //marketplace
-    bool CheckTransaction() const;
-    bool ReadFromDisk(const CDiskTxPos&);
-
 };
 
 /// A mutable version of CTransaction.
@@ -363,15 +372,17 @@ struct CMutableTransaction
     {
     }
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->nVersion);
         nVersion = this->nVersion;
         READWRITE(this->nTime);
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
-    )
+    }
 
     /// Compute the hash of this CMutableTransaction. This is computed on the
     /// fly, as opposed to GetHash() in CTransaction, which uses a cached result.

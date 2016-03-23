@@ -1,7 +1,7 @@
+#include <QModelIndex>
+
 #include "stormnodeconfigdialog.h"
 #include "ui_stormnodeconfigdialog.h"
-
-#include <QModelIndex>
 
 StormNodeConfigDialog::StormNodeConfigDialog(QWidget *parent, QString nodeAddress, QString privkey) :
     QDialog(parent),

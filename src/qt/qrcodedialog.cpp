@@ -1,15 +1,14 @@
-#include "qrcodedialog.h"
-#include "ui_qrcodedialog.h"
-
-#include "darksilkunits.h"
-#include "guiconstants.h"
-#include "guiutil.h"
-#include "optionsmodel.h"
-
 #include <QPixmap>
 #include <QUrl>
 
 #include <qrencode.h>
+
+#include "qrcodedialog.h"
+#include "ui_qrcodedialog.h"
+#include "darksilkunits.h"
+#include "guiconstants.h"
+#include "guiutil.h"
+#include "optionsmodel.h"
 
 QRCodeDialog::QRCodeDialog(const QString &addr, const QString &label, bool enableReq, QWidget *parent) :
     QDialog(parent),

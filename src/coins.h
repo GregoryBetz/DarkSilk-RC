@@ -6,17 +6,45 @@
 #ifndef DARKSILK_COINS_H
 #define DARKSILK_COINS_H
 
-#include "compressor.h"
-#include "serialize.h"
-#include "uint256.h"
+#include <boost/foreach.hpp>
+#include <boost/unordered_map.hpp>
+
+#include <assert.h>
+
+#include <stdint.h>
+
 #include "undo.h"
 #include "txmempool.h"
 
-#include <assert.h>
-#include <stdint.h>
+class CScriptCompressor;
+/// wrapper for CTxOut that provides a more compact serialization
+class CTxOutCompressorCoin
+{
+private:
+    CTxOut &txout;
 
-#include <boost/foreach.hpp>
-#include <boost/unordered_map.hpp>
+public:
+    static uint64_t CompressAmount(uint64_t nAmount);
+    static uint64_t DecompressAmount(uint64_t nAmount);
+
+    CTxOutCompressorCoin(CTxOut &txoutIn) : txout(txoutIn) { }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        if (!ser_action.ForRead()) {
+            CAmount nVal = CompressAmount(txout.nValue);
+            READWRITE(VARINT(nVal));
+        } else {
+            CAmount nVal = 0;
+            READWRITE(VARINT(nVal));
+            txout.nValue = DecompressAmount(nVal);
+        }
+        CScriptCompressor cscript(REF(txout.scriptPubKey));
+        READWRITE(cscript);
+    }
+};
 
 /**
  * Pruned version of CTransaction: only retains metadata and unspent transaction outputs
@@ -45,7 +73,7 @@
  *    - code = 4 (vout[1] is not spent, and 0 non-zero bytes of bitvector follow)
  *    - unspentness bitvector: as 0 non-zero bytes follow, it has length 0
  *    - vout[1]: 835800816115944e077fe7c803cfa57f29b36bf87c1d35
- *               * 8358: compact amount representation for 60000000000 (600 BTC)
+ *               * 8358: compact amount representation for 60000000000 (600 DRKSLK)
  *               * 00: special txout type pay-to-pubkey-hash
  *               * 816115944e077fe7c803cfa57f29b36bf87c1d35: address uint160
  *    - height = 203998
@@ -61,15 +89,18 @@
  *                2 (1, +1 because both bit 2 and bit 4 are unset) non-zero bitvector bytes follow)
  *  - unspentness bitvector: bits 2 (0x04) and 14 (0x4000) are set, so vout[2+2] and vout[14+2] are unspent
  *  - vout[4]: 86ef97d5790061b01caab50f1b8e9c50a5057eb43c2d9563a4ee
- *             * 86ef97d579: compact amount representation for 234925952 (2.35 BTC)
+ *             * 86ef97d579: compact amount representation for 234925952 (2.35 DRKSLK)
  *             * 00: special txout type pay-to-pubkey-hash
  *             * 61b01caab50f1b8e9c50a5057eb43c2d9563a4ee: address uint160
  *  - vout[16]: bbd123008c988f1a4a4de2161e0f50aac7f17e7f9555caa4
- *              * bbd123: compact amount representation for 110397 (0.001 BTC)
+ *              * bbd123: compact amount representation for 110397 (0.001 DRKSLK)
  *              * 00: special txout type pay-to-pubkey-hash
  *              * 8c988f1a4a4de2161e0f50aac7f17e7f9555caa4: address uint160
  *  - height = 120891
  */
+
+class CTxInUndo;
+
 class CCoins
 {
 public:
@@ -169,9 +200,8 @@ public:
         // txouts themself
 
         for (unsigned int i = 0; i < vout.size(); i++)
-            //TODO (Amir): Put this back. can't find CTxOutCompressor???
-            //if (!vout[i].IsNull())
-            //    nSize += ::GetSerializeSize(CTxOutCompressor(REF(vout[i])), nType, nVersion);
+            if (!vout[i].IsNull())
+                nSize += ::GetSerializeSize(CTxOutCompressorCoin(REF(vout[i])), nType, nVersion);
 
         // height
         nSize += ::GetSerializeSize(VARINT(nHeight), nType, nVersion);
@@ -201,7 +231,7 @@ public:
         // txouts themself
         for (unsigned int i = 0; i < vout.size(); i++) {
             if (!vout[i].IsNull())
-                ::Serialize(s, CTxOutCompressor(REF(vout[i])), nType, nVersion);
+                ::Serialize(s, CTxOutCompressorCoin(REF(vout[i])), nType, nVersion);
         }
         // coinbase height
         ::Serialize(s, VARINT(nHeight), nType, nVersion);
@@ -234,7 +264,7 @@ public:
         vout.assign(vAvail.size(), CTxOut());
         for (unsigned int i = 0; i < vAvail.size(); i++) {
             if (vAvail[i])
-                ::Unserialize(s, REF(CTxOutCompressor(vout[i])), nType, nVersion);
+                ::Unserialize(s, REF(CTxOutCompressorCoin(vout[i])), nType, nVersion);
         }
         // coinbase height
         ::Unserialize(s, VARINT(nHeight), nType, nVersion);
@@ -435,7 +465,7 @@ public:
     unsigned int GetCacheSize() const;
 
     /**
-     * Amount of dash coming in to a transaction
+     * Amount of DarkSilk coming in to a transaction
      * Note that lightweight clients may not know anything besides the hash of previous transactions,
      * so may not be able to calculate this.
      *

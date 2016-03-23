@@ -2,14 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "timedata.h"
+#include <boost/foreach.hpp>
 
+#include "timedata.h"
 #include "netbase.h"
 #include "sync.h"
 #include "ui_interface.h"
 #include "util.h"
-
-#include <boost/foreach.hpp>
+#include "utilstrencodings.h"
 
 using namespace std;
 

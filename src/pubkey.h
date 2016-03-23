@@ -6,12 +6,12 @@
 #ifndef DARKSILK_PUBKEY_H
 #define DARKSILK_PUBKEY_H
 
+#include <stdexcept>
+#include <vector>
+
 #include "hash.h"
 #include "serialize.h"
 #include "uint256.h"
-
-#include <stdexcept>
-#include <vector>
 
 /**
  * secp256k1:
@@ -31,7 +31,7 @@ public:
     CKeyID(const uint160 &in) : uint160(in) { }
 };
 
-/** A reference to a CScript: the Hash160 of its serialization (see script.h) */
+/** A reference to a CScript: the Hash160 of its serialization (see script/script.h) */
 class CScriptID : public uint160
 {
 public:
@@ -170,6 +170,10 @@ public:
 
     // Derive BIP32 child pubkey.
     bool Derive(CPubKey& pubkeyChild, unsigned char ccChild[32], unsigned int nChild, const unsigned char cc[32]) const;
+
+    std::vector<unsigned char> vchPubKey;
+
+	void EncryptData(const std::vector<unsigned char>& data, std::vector<unsigned char>& encrypted);
 
     // Raw for stealth address
     std::vector<unsigned char> Raw() const {

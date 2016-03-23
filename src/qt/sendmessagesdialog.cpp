@@ -1,19 +1,17 @@
-#include "sendmessagesdialog.h"
-#include "ui_sendmessagesdialog.h"
-//#include "init.h"
-#include "walletmodel.h"
-#include "messagemodel.h"
-#include "addressbookpage.h"
-#include "optionsmodel.h"
-#include "sendmessagesentry.h"
-//#include "guiutil.h"
-
 #include <QMessageBox>
 #include <QLocale>
 #include <QTextDocument>
 #include <QScrollBar>
 #include <QClipboard>
 #include <QDataWidgetMapper>
+
+#include "sendmessagesdialog.h"
+#include "ui_sendmessagesdialog.h"
+#include "walletmodel.h"
+#include "messagemodel.h"
+#include "addressbookpage.h"
+#include "optionsmodel.h"
+#include "sendmessagesentry.h"
 
 SendMessagesDialog::SendMessagesDialog(Mode mode, Type type, QWidget *parent) :
     QDialog(parent),

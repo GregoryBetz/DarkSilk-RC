@@ -5,16 +5,14 @@
 #ifndef DARKSILK_LEVELDBWRAPPER_H
 #define DARKSILK_LEVELDBWRAPPER_H
 
-#include "clientversion.h"
-#include "serialize.h"
-#include "streams.h"
-#include "util.h"
-#include "version.h"
-
 #include <boost/filesystem/path.hpp>
 
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
+
+#include "serialize.h"
+#include "streams.h"
+#include "util.h"
 
 class leveldb_error : public std::runtime_error
 {

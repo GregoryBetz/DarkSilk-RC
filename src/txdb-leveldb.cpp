@@ -1,12 +1,8 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-
-#include "txdb-leveldb.h"
-
-#include <map>
 
 #include <boost/version.hpp>
 #include <boost/filesystem.hpp>
@@ -15,14 +11,20 @@
 #include <leveldb/env.h>
 #include <leveldb/cache.h>
 #include <leveldb/filter_policy.h>
+
 #include <memenv/memenv.h>
 
+#include <map>
+
+#include "txdb-leveldb.h"
+#include "net.h"
+#include "protocol.h"
+#include "chainparams.h"
 #include "kernel.h"
 #include "checkpoints.h"
 #include "txdb.h"
 #include "util.h"
-#include "main.h"
-#include "chainparams.h"
+#include "consensus/validation.h"
 
 using namespace std;
 using namespace boost;
@@ -63,6 +65,8 @@ static void init_blockindex(leveldb::Options& options, bool fRemoveOld = false, 
             nFile++;
         }
     }
+
+    options.create_if_missing = true;
 
     filesystem::create_directory(directory);
     LogPrintf("Opening LevelDB in %s\n", directory.string());
@@ -460,12 +464,13 @@ bool CTxDB::LoadBlockIndex()
         boost::this_thread::interruption_point();
         if (pindex->nHeight < nBestHeight-nCheckDepth)
             break;
+        CValidationState state;
         CBlock block;
         if (!block.ReadFromDisk(pindex))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
         // check level 1: verify block validity
         // check level 7: verify block signature too
-        if (nCheckLevel>0 && !block.CheckBlock(true, true, (nCheckLevel>6)))
+        if (nCheckLevel>0 && !block.CheckBlock(state, true, true, (nCheckLevel>10)))
         {
             LogPrintf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString());
             pindexFork = pindex->pprev;
@@ -518,12 +523,13 @@ bool CTxDB::LoadBlockIndex()
                                 {
                                     CTransaction txSpend;
                                     CTransactionPoS txPoS;
+                                    CValidationState state;
                                     if (!txPoS.ReadFromDisk(txSpend, txpos))
                                     {
                                         LogPrintf("LoadBlockIndex(): *** cannot read spending transaction of %s:%i from disk\n", hashTx.ToString(), nOutput);
                                         pindexFork = pindex->pprev;
                                     }
-                                    else if (!txSpend.CheckTransaction())
+                                    else if (!txSpend.CheckTransaction(state))
                                     {
                                         LogPrintf("LoadBlockIndex(): *** spending transaction of %s:%i is invalid\n", hashTx.ToString(), nOutput);
                                         pindexFork = pindex->pprev;

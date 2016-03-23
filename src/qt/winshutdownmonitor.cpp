@@ -2,14 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <QDebug>
+
 #include "winshutdownmonitor.h"
 
 #if defined(Q_OS_WIN) && QT_VERSION >= 0x050000
 #include "init.h"
 
 #include <windows.h>
-
-#include <QDebug>
 
 // If we don't want a message to be processed by Qt, return true and set result to
 // the value that the window procedure should return. Otherwise return false.

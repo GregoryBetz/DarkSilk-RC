@@ -1,18 +1,16 @@
-#include "transactiondesc.h"
+#include <string>
 
+#include "transactiondesc.h"
 #include "darksilkunits.h"
 #include "guiutil.h"
-
 #include "base58.h"
 #include "main.h"
 #include "paymentserver.h"
 #include "transactionrecord.h"
 #include "timedata.h"
 #include "ui_interface.h"
-#include "wallet.h"
+#include "wallet/wallet.h"
 #include "txdb-leveldb.h"
-
-#include <string>
 
 QString TransactionDesc::FormatTxStatus(const CWalletTx& wtx)
 {

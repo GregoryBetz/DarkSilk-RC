@@ -1,20 +1,16 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-
-#include "primitives/block.h"
-#include "primitives/transaction.h"
-#include "txdb.h"
-#include "main.h"
 #include "miner.h"
+#include "primitives/block.h"
+#include "txdb.h"
 #include "kernel.h"
-#include "wallet.h"
-#include "stormnodeman.h"
-#include "stormnode-payments.h"
-#include "spork.h"
+#include "anon/stormnode/stormnodeman.h"
+#include "anon/stormnode/stormnode-payments.h"
+#include "anon/stormnode/spork.h"
 #include "txdb-leveldb.h"
 
 using namespace std;
@@ -127,7 +123,7 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, CAmount* pFe
 
     if (!fProofOfStake)
     {
-        pblock->nVersion = 1; // Proof of Work uses Scrypt
+        pblock->nVersion = 1; // Proof of Work uses Argon2d
         CPubKey pubkey;
         if (!reservekey.GetReservedKey(pubkey))
             return NULL;
@@ -251,8 +247,9 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, CAmount* pFe
                 porphan->dPriority = dPriority;
                 porphan->dFeePerKb = dFeePerKb;
             }
-            else
+            else {
                 vecPriority.push_back(TxPriority(dPriority, dFeePerKb, &(*mi).second));
+            }
         }
 
         // Collect transactions into block
@@ -363,8 +360,8 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake, CAmount* pFe
         CAmount blockValue = GetBlockValue(pindexPrev->nBits, pindexPrev->nHeight, nFees);
         CAmount stormnodePayment = GetStormnodePayment(pindexPrev->nHeight+1, blockValue);
 
-        if ((fDebug && GetBoolArg("-printpriority", false)) || true)
-        LogPrintf("CreateNewBlock(): total size %u, height: %u, PoS: %d, block value: %u, stormnode payment: %u \n",
+        if ((fDebug && GetBoolArg("-printpriority", false)))
+            LogPrintf("CreateNewBlock(): total size %u, height: %u, PoS: %d, block value: %u, stormnode payment: %u \n",
                       nBlockSize, nHeight, fProofOfStake, blockValue, stormnodePayment);
 
         if (!fProofOfStake)
@@ -521,6 +518,17 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
         // Process this block the same as if we had received it from another node
         if (!ProcessBlock(NULL, pblock))
             return error("CheckStake() : ProcessBlock, block not accepted");
+        else
+        {
+            //ProcessBlock successful for PoS. now FixSpentCoins.
+            int nMismatchSpent;
+            CAmount nBalanceInQuestion;
+            wallet.FixSpentCoins(nMismatchSpent, nBalanceInQuestion);
+            if (nMismatchSpent != 0)
+            {
+                LogPrintf("PoS mismatched spent coins = %d and balance affects = %d \n", nMismatchSpent, nBalanceInQuestion);
+            }
+        }
     }
 
     return true;

@@ -1,16 +1,18 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "chainparams.h"
-#include "main.h"
-#include "util.h"
-#include "chainparamsseeds.h"
-
-#include "assert.h"
 #include <boost/assign/list_of.hpp>
+
+#include <assert.h>
+
+#include "chainparams.h"
+#include "chainparamsseeds.h"
+#include "main.h"
+#include "net.h"
+#include "utilstrencodings.h"
 
 using namespace boost::assign;
 

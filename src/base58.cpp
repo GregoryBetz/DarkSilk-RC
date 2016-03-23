@@ -1,20 +1,21 @@
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "base58.h"
-
-#include "hash.h"
-#include "uint256.h"
+#include <boost/variant/apply_visitor.hpp>
+#include <boost/variant/static_visitor.hpp>
 
 #include <assert.h>
-#include <stdint.h>
 #include <string.h>
 #include <vector>
 #include <string>
-#include <boost/variant/apply_visitor.hpp>
-#include <boost/variant/static_visitor.hpp>
+
+#include <stdint.h>
+
+#include "base58.h"
+#include "hash.h"
+#include "uint256.h"
 
 /* All alphanumeric characters except for "0", "I", "O", and "l" */
 static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";

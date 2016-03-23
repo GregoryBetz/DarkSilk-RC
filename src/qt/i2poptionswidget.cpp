@@ -1,13 +1,10 @@
 #include "i2poptionswidget.h"
 #include "ui_i2poptionswidget.h"
-
 #include "optionsmodel.h"
 #include "monitoreddatamapper.h"
 #include "showi2paddresses.h"
-//#include "i2p.h"
 #include "util.h"
 #include "clientmodel.h"
-
 
 I2POptionsWidget::I2POptionsWidget(QWidget *parent) :
     QWidget(parent),

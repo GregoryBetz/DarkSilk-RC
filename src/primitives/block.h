@@ -9,6 +9,7 @@
 #include "primitives/transaction.h"
 #include "crypto/argon2/argon2.h"
 #include "scrypt.h"
+#include "consensus/params.h"
 
 class CTxDB;
 class CWallet;
@@ -17,6 +18,9 @@ class CBlockIndex;
 static const int64_t POW_DRIFT = 10 * 60; // 600 seconds
 static const int64_t POS_DRIFT = 10 * 64; // 640 seconds
 
+//TODO (Amir): Move CheckProofOfWork to pow.cpp/h.
+///! Check whether a block hash satisfies the proof-of-work requirement specified by nBits
+bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&);
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 
 inline int64_t FutureDrift(int64_t nTime, bool fProofOfStake=false) { return nTime + (fProofOfStake ? POS_DRIFT : POW_DRIFT); }
@@ -35,13 +39,13 @@ class CBlockHeader
 {
 public:
     // header
-    static const int CURRENT_VERSION = 2;
-    int nVersion;
+    static const int32_t CURRENT_VERSION = 2;
+    int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
-    unsigned int nTime;
-    unsigned int nBits;
-    unsigned int nNonce;
+    uint32_t nTime;
+    uint32_t nBits;
+    uint32_t nNonce;
 
     // Denial-of-service detection:
     mutable int nDoS;
@@ -49,12 +53,18 @@ public:
 
     CBlockHeader()
     {
-        SetNull();
+        nVersion = CBlockHeader::CURRENT_VERSION;
+        hashPrevBlock = 0;
+        hashMerkleRoot = 0;
+        nTime = 0;
+        nBits = 0;
+        nNonce = 0;
     }
 
+    ADD_SERIALIZE_METHODS;
 
-    IMPLEMENT_SERIALIZE
-    (
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->nVersion);
         nVersion = this->nVersion;
         READWRITE(hashPrevBlock);
@@ -62,17 +72,6 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
-    )
-
-    void SetNull()
-    {
-        nVersion = CBlockHeader::CURRENT_VERSION;
-        hashPrevBlock = 0;
-        hashMerkleRoot = 0;
-        nTime = 0;
-        nBits = 0;
-        nNonce = 0;
-        nDoS = 0;
     }
 
     bool IsNull() const
@@ -83,8 +82,8 @@ public:
     uint256 GetHash() const
     {
         if (nVersion > 1)
-            return HashBlake2b(BEGIN(nVersion), END(nNonce));
-            //return Hash(BEGIN(nVersion), END(nNonce));
+            //return HashBlake2b(BEGIN(nVersion), END(nNonce));
+            return Hash(BEGIN(nVersion), END(nNonce));
         else
             return GetPoWHash();
     }
@@ -103,8 +102,6 @@ public:
     {
         return (int64_t)nTime;
     }
-
-
 };
 
 class CBlock: public CBlockHeader
@@ -120,7 +117,6 @@ public:
     mutable CScript payee;
     mutable std::vector<uint256> vMerkleTree;
 
-
     CBlock()
     {
         SetNull();
@@ -132,21 +128,38 @@ public:
         *((CBlockHeader*)this) = header;
     }
 
-    IMPLEMENT_SERIALIZE
-    (
-        READWRITE(*(CBlockHeader*)this);
+    void SetNull()
+    {
+        nVersion = CBlockHeader::CURRENT_VERSION;
+        hashPrevBlock = 0;
+        hashMerkleRoot = 0;
+        nTime = 0;
+        nBits = 0;
+        nNonce = 0;
+        vtx.clear();
+        vchBlockSig.clear();
+        vMerkleTree.clear();
+        payee = CScript();
+        nDoS = 0;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         // ConnectBlock depends on vtx following header to generate CDiskTxPos
         if (!(nType & (SER_GETHASH|SER_BLOCKHEADERONLY)))
         {
+            READWRITE(*(CBlockHeader*)this);
             READWRITE(vtx);
             READWRITE(vchBlockSig);
         }
-        else if (fRead)
+        else if (ser_action.ForRead())
         {
             const_cast<CBlock*>(this)->vtx.clear();
             const_cast<CBlock*>(this)->vchBlockSig.clear();
         }
-    )
+    }
 
     void UpdateTime(const CBlockIndex* pindexPrev);
 
@@ -240,23 +253,19 @@ public:
 
     std::string ToString() const;
 
-    bool DisconnectAlias(CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs);
-    bool DisconnectOffer(CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs);
-    bool DisconnectCertificate(CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs);
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck=false);
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const uint256& hashProof);
-    bool CheckBlock(bool fCheckPOW=true, bool fCheckMerkleRoot=true, bool fCheckSig=true) const;
+    bool CheckBlock(CValidationState& state, bool fCheckPOW=true, bool fCheckMerkleRoot=true, bool fCheckSig=true);
     bool AcceptBlock();
-    bool SignBlock(CWallet& keystore, int64_t nFees);
+    bool SignBlock(CWallet& keystore, CAmount nFees);
     bool CheckBlockSignature() const;
     void RebuildAddressIndex(CTxDB& txdb);
 
 private:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
 };
-
 
 #endif // DARKSILK_PRIMITIVES_BLOCK_H

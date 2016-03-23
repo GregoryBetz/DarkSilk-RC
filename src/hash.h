@@ -1,13 +1,11 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef DARKSILK_HASH_H
 #define DARKSILK_HASH_H
-
-#include "uint256.h"
-#include "serialize.h"
 
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
@@ -18,6 +16,15 @@
 #include "crypto/argon2/argon2.h"
 
 #include <vector>
+
+#include "uint256.h"
+#include "serialize.h"
+
+static const unsigned int OUTPUT_BYTES = 32;
+
+#ifdef WIN32
+#define UINT32_MAX 0xffffffff  /* 4294967295U */
+#endif
 
 /** A hasher class for DarkSilk's 256-bit hash (double SHA-256). */
 class CHash256 {
@@ -84,9 +91,9 @@ inline uint256 HashBlake2b(const T1 pbegin, const T1 pend)
     static unsigned char pblank[1];
     uint256 hash1;
     blake2b_state S[1];
-    blake2b_init( S, BLAKE2B_OUTBYTES );
+    blake2b_init( S, OUTPUT_BYTES );
     blake2b_update( S, (pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]) );
-    blake2b_final( S, (unsigned char*)&hash1, BLAKE2B_OUTBYTES );
+    blake2b_final( S, (unsigned char*)&hash1, OUTPUT_BYTES );
     return hash1;
 }
 
@@ -261,6 +268,8 @@ typedef struct
 int HMAC_SHA512_Init(HMAC_SHA512_CTX *pctx, const void *pkey, size_t len);
 int HMAC_SHA512_Update(HMAC_SHA512_CTX *pctx, const void *pdata, size_t len);
 int HMAC_SHA512_Final(unsigned char *pmd, HMAC_SHA512_CTX *pctx);
+
+unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char>& vDataToHash);
 
 void BIP32Hash(const unsigned char chainCode[32], unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]); 
 

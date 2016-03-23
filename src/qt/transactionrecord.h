@@ -1,11 +1,11 @@
 #ifndef TRANSACTIONRECORD_H
 #define TRANSACTIONRECORD_H
 
-#include "amount.h"
-#include "uint256.h"
-
 #include <QList>
 #include <QString>
+
+#include "amount.h"
+#include "uint256.h"
 
 class CWallet;
 class CWalletTx;
@@ -56,6 +56,9 @@ public:
 
     /** Current number of blocks (to know whether cached status is still valid) */
     int cur_num_blocks;
+
+    //** Know when to update transaction for ix locks **/
+    int cur_num_ix_locks;
 };
 
 /** UI model for a transaction. A core transaction can be represented by multiple UI transactions if it has
@@ -72,7 +75,13 @@ public:
         SendToOther,
         RecvWithAddress,
         RecvFromOther,
-        SendToSelf
+        SendToSelf,
+        RecvWithSandstorm,
+        SandstormDenominate,
+        SandstormCollateralPayment,
+        SandstormMakeCollaterals,
+        SandstormCreateDenominations,
+        Sandstorm
     };
 
     /** Number of confirmation recommended for accepting a transaction */
@@ -117,6 +126,9 @@ public:
 
     /** Status: can change with block chain update */
     TransactionStatus status;
+
+    ///! Whether the transaction was sent/received with a watch-only address
+    bool involvesWatchAddress;
 
     /** Return the unique identifier for this transaction (part) */
     QString getTxID() const;

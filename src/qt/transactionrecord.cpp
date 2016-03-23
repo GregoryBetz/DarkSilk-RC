@@ -1,12 +1,11 @@
-#include "transactionrecord.h"
+#include <stdint.h>
 
+#include "transactionrecord.h"
 #include "base58.h"
 #include "timedata.h"
-#include "wallet.h"
-#include "sandstorm.h"
-#include "instantx.h"
-
-#include <stdint.h>
+#include "wallet/wallet.h"
+#include "anon/sandstorm/sandstorm.h"
+#include "anon/instantx/instantx.h"
 
 /* Return positive answer if transaction should be shown in list.
  */
@@ -182,6 +181,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
     status.countsForBalance = wtx.IsTrusted() && !(wtx.GetBlocksToMaturity() > 0);
     status.depth = wtx.GetDepthInMainChain();
     status.cur_num_blocks = nBestHeight;
+    status.cur_num_ix_locks = nCompleteTXLocks;
 
     if (!IsFinalTx(wtx, nBestHeight + 1))
     {
@@ -250,7 +250,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
 bool TransactionRecord::statusUpdateNeeded()
 {
     AssertLockHeld(cs_main);
-    return status.cur_num_blocks != nBestHeight;
+    return status.cur_num_blocks != nBestHeight || status.cur_num_ix_locks != nCompleteTXLocks;
 }
 
 QString TransactionRecord::getTxID() const

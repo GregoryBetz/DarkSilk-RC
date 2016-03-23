@@ -14,7 +14,7 @@
     <message>
         <location line="+41"/>
         <source>Copyright © 2009-2016 The Bitcoin Developers
-Copyright (c) 2015-2016 The Silk Network Developers</source>
+Copyright (c) 2015-2016 Silk Network</source>
         <translation>Все права защищены © 2009-2015 Разработчики Bitcoin
 Все права защищены © 2012-2014 Разработчики DarkSilk
 Все права защищены © 2014 Разработчики DarkSilk</translation>

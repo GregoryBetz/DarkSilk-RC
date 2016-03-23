@@ -15,7 +15,7 @@
         <location line="+41"/>
         <source>Copyright © 2009-2016 The Bitcoin Developers
 Copyright © 2012-2014 The NovaCoin developers
-Copyright (c) 2015-2016 The Silk Network Developers</source>
+Copyright (c) 2015-2016 Silk Network</source>
         <translation>版权所有 © 2009-2015 比特币Bitcoin开发组
 版权所有 © 2012-2014 新星币DarkSilk开发组
 版权所有 © 2014 黑币DarkSilk开发组</translation>

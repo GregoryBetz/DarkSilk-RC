@@ -156,18 +156,6 @@ alternate-background-color: rgb(86, 0, 120);</string>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="copyAddressButton">
-               <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(86, 0, 120);
-alternate-background-color: rgb(86, 0, 120);</string>
-               </property>
-               <property name="text">
-                <string>Copy &amp;Address</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <spacer name="horizontalSpacer">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -214,12 +202,17 @@ alternate-background-color: rgb(86, 0, 120);</string>
              </column>
              <column>
               <property name="text">
-               <string>Status</string>
+               <string>Donation %</string>
               </property>
              </column>
              <column>
               <property name="text">
-               <string>Collateral Address</string>
+               <string>Donation Address</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Status</string>
               </property>
              </column>
             </widget>
@@ -242,18 +235,6 @@ alternate-background-color: rgb(86, 0, 120);</string>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="getConfigButton">
-               <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(86, 0, 120);
-alternate-background-color: rgb(86, 0, 120);</string>
-               </property>
-               <property name="text">
-                <string>&amp;Get Config</string>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QPushButton" name="removeButton">
                <property name="styleSheet">
                 <string notr="true">color: rgb(255, 255, 255);
@@ -262,6 +243,18 @@ alternate-background-color: rgb(86, 0, 120);</string>
                </property>
                <property name="text">
                 <string>&amp;Remove</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="UpdateButton">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 255, 255);
+background-color: rgb(86, 0, 120);
+alternate-background-color: rgb(86, 0, 120);</string>
+               </property>
+               <property name="text">
+                <string>&amp;Update</string>
                </property>
               </widget>
              </item>
@@ -285,43 +278,6 @@ alternate-background-color: rgb(86, 0, 120);</string>
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QPushButton" name="startButton">
-               <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(86, 0, 120);
-alternate-background-color: rgb(86, 0, 120);</string>
-               </property>
-               <property name="text">
-                <string>&amp;Start</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="stopButton">
-               <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(86, 0, 120);
-alternate-background-color: rgb(86, 0, 120);</string>
-               </property>
-               <property name="text">
-                <string>Sto&amp;p</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
             </layout>
            </item>
            <item>
@@ -330,6 +286,18 @@ alternate-background-color: rgb(86, 0, 120);</string>
               <number>0</number>
              </property>
              <item>
+              <widget class="QPushButton" name="startButton">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 255, 255);
+background-color: rgb(86, 0, 120);
+alternate-background-color: rgb(86, 0, 120);</string>
+               </property>
+               <property name="text">
+                <string>S&amp;tart</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QPushButton" name="startAllButton">
                <property name="styleSheet">
                 <string notr="true">color: rgb(255, 255, 255);
@@ -337,19 +305,7 @@ background-color: rgb(86, 0, 120);
 alternate-background-color: rgb(86, 0, 120);</string>
                </property>
                <property name="text">
-                <string>S&amp;tart All</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="stopAllButton">
-               <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);
-background-color: rgb(86, 0, 120);
-alternate-background-color: rgb(86, 0, 120);</string>
-               </property>
-               <property name="text">
-                <string>St&amp;op All</string>
+                <string>St&amp;art All</string>
                </property>
               </widget>
              </item>

@@ -1,8 +1,6 @@
 #ifndef COINCONTROLDIALOG_H
 #define COINCONTROLDIALOG_H
 
-#include "amount.h"
-
 #include <QAbstractButton>
 #include <QAction>
 #include <QDialog>
@@ -11,6 +9,8 @@
 #include <QPoint>
 #include <QString>
 #include <QTreeWidgetItem>
+
+#include "amount.h"
 
 class WalletModel;
 class CCoinControl;

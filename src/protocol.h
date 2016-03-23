@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,16 +8,16 @@
 # error This header can only be compiled as C++.
 #endif
 
-#ifndef __INCLUDED_PROTOCOL_H__
-#define __INCLUDED_PROTOCOL_H__
+#ifndef INCLUDED_PROTOCOL_H
+#define INCLUDED_PROTOCOL_H
+
+#include <string>
+
+#include <stdint.h>
 
 #include "chainparams.h"
 #include "serialize.h"
 #include "netbase.h"
-
-#include <stdint.h>
-#include <string>
-
 
 /** Message header.
  * (4) message start.
@@ -27,36 +27,40 @@
  */
 class CMessageHeader
 {
-    public:
-        CMessageHeader();
-        CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
+public:
+    typedef unsigned char MessageStartChars[MESSAGE_START_SIZE];
 
-        std::string GetCommand() const;
-        bool IsValid() const;
+    CMessageHeader();
+    CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
 
-        IMPLEMENT_SERIALIZE
-            (
-             READWRITE(FLATDATA(pchMessageStart));
-             READWRITE(FLATDATA(pchCommand));
-             READWRITE(nMessageSize);
-             READWRITE(nChecksum);
-            )
+    std::string GetCommand() const;
+    bool IsValid() const;
 
-    // TODO: make private (improves encapsulation)
-    public:
-        enum {
-            COMMAND_SIZE=12,
-            MESSAGE_SIZE_SIZE=sizeof(int),
-            CHECKSUM_SIZE=sizeof(int),
+    ADD_SERIALIZE_METHODS;
 
-            MESSAGE_SIZE_OFFSET=MESSAGE_START_SIZE+COMMAND_SIZE,
-            CHECKSUM_OFFSET=MESSAGE_SIZE_OFFSET+MESSAGE_SIZE_SIZE,
-            HEADER_SIZE=MESSAGE_START_SIZE+COMMAND_SIZE+MESSAGE_SIZE_SIZE+CHECKSUM_SIZE
-        };
-        char pchMessageStart[MESSAGE_START_SIZE];
-        char pchCommand[COMMAND_SIZE];
-        unsigned int nMessageSize;
-        unsigned int nChecksum;
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(FLATDATA(pchMessageStart));
+        READWRITE(FLATDATA(pchCommand));
+        READWRITE(nMessageSize);
+        READWRITE(nChecksum);
+    }
+
+// TODO: make private (improves encapsulation)
+public:
+    enum {
+        COMMAND_SIZE=12,
+        MESSAGE_SIZE_SIZE=sizeof(int),
+        CHECKSUM_SIZE=sizeof(int),
+
+        MESSAGE_SIZE_OFFSET=MESSAGE_START_SIZE+COMMAND_SIZE,
+        CHECKSUM_OFFSET=MESSAGE_SIZE_OFFSET+MESSAGE_SIZE_SIZE,
+        HEADER_SIZE=MESSAGE_START_SIZE+COMMAND_SIZE+MESSAGE_SIZE_SIZE+CHECKSUM_SIZE
+    };
+    char pchMessageStart[MESSAGE_START_SIZE];
+    char pchCommand[COMMAND_SIZE];
+    unsigned int nMessageSize;
+    unsigned int nChecksum;
 };
 
 /** nServices flags */
@@ -77,23 +81,24 @@ class CAddress : public CService
 
         void Init();
 
-        IMPLEMENT_SERIALIZE
-            (
-             CAddress* pthis = const_cast<CAddress*>(this);
-             CService* pip = (CService*)pthis;
-             if (fRead)
-                 pthis->Init();
-             if (nType & SER_DISK)
-                 READWRITE(nVersion);
-             if ((nType & SER_DISK) ||
-                 (nVersion >= CADDR_TIME_VERSION && !(nType & SER_GETHASH)))
-                 READWRITE(nTime);
-             READWRITE(nServices);
-             READWRITE(*pip);
-            )
+        ADD_SERIALIZE_METHODS;
+
+        template <typename Stream, typename Operation>
+        inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+            CAddress* pthis = const_cast<CAddress*>(this);
+            CService* pip = (CService*)pthis;
+            if (ser_action.ForRead())
+                pthis->Init();
+            if (nType & SER_DISK)
+                READWRITE(nVersion);
+            if ((nType & SER_DISK) ||
+                (nVersion >= CADDR_TIME_VERSION && !(nType & SER_GETHASH)))
+                READWRITE(nTime);
+            READWRITE(nServices);
+            READWRITE(*pip);
+        }
 
         void print() const;
-
 
     // TODO: make private (improves encapsulation)
     public:
@@ -114,11 +119,13 @@ class CInv
         CInv(int typeIn, const uint256& hashIn);
         CInv(const std::string& strType, const uint256& hashIn);
 
-        IMPLEMENT_SERIALIZE
-        (
+        ADD_SERIALIZE_METHODS;
+
+        template <typename Stream, typename Operation>
+        inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
             READWRITE(type);
             READWRITE(hash);
-        )
+        }
 
         friend bool operator<(const CInv& a, const CInv& b);
 
@@ -143,6 +150,7 @@ enum {
     MSG_TXLOCK_VOTE,
     MSG_SPORK,
     MSG_STORMNODE_WINNER,
+    MSG_STORMNODE_SCANNING_ERROR,
     MSG_BUDGET_VOTE,
     MSG_BUDGET_PROPOSAL,
     MSG_BUDGET_FINALIZED,
@@ -154,4 +162,4 @@ enum {
 };
 
 
-#endif // __INCLUDED_PROTOCOL_H__
+#endif // INCLUDED_PROTOCOL_H

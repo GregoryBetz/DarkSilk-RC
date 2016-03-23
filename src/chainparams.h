@@ -1,17 +1,16 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DARKSILK_CHAIN_PARAMS_H
-#define DARKSILK_CHAIN_PARAMS_H
+#ifndef DARKSILK_CHAINPARAMS_H
+#define DARKSILK_CHAINPARAMS_H
+
+#include <vector>
 
 #include "bignum.h"
 #include "uint256.h"
-#include "util.h"
-
-#include <vector>
 
 using namespace std;
 
@@ -24,6 +23,15 @@ class CBlock;
 struct CDNSSeedData {
     string name, host;
     CDNSSeedData(const string &strName, const string &strHost) : name(strName), host(strHost) {}
+};
+
+typedef std::map<int, uint256> MapCheckpoints;
+
+struct CCheckpointData {
+    MapCheckpoints mapCheckpoints;
+    int64_t nTimeLastCheckpoint;
+    int64_t nTransactionsLastCheckpoint;
+    double fTransactionsPerDay;
 };
 
 /**
@@ -66,6 +74,7 @@ public:
     const vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char> &Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
     virtual const vector<CAddress>& FixedSeeds() const = 0;
+    const CCheckpointData& Checkpoints() const { return checkpointData; }
     int RPCPort() const { return nRPCPort; }
     int FirstPOSBlock() const { return nFirstPOSBlock; }
     std::string StormnodePaymentPubKey() const { return strStormnodePaymentsPubKey; }
@@ -92,6 +101,7 @@ protected:
     int nFirstPOSBlock;
     int nPoolMaxTransactions;
     std::string strSandstormPoolDummyAddress;
+    CCheckpointData checkpointData;
 };
 
 /**

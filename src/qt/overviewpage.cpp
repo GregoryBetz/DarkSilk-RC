@@ -1,8 +1,14 @@
+#include <QAbstractItemDelegate>
+#include <QPainter>
+#include <QTimer>
+#include <QDebug>
+#include <QScrollArea>
+#include <QScroller>
+
 #include "overviewpage.h"
 #include "ui_overviewpage.h"
-
 #include "clientmodel.h"
-#include "sandstorm.h"
+#include "anon/sandstorm/sandstorm.h"
 #include "sandstormconfig.h"
 #include "walletmodel.h"
 #include "darksilkunits.h"
@@ -12,13 +18,6 @@
 #include "guiutil.h"
 #include "guiconstants.h"
 #include "init.h"
-
-#include <QAbstractItemDelegate>
-#include <QPainter>
-#include <QTimer>
-#include <QDebug>
-#include <QScrollArea>
-#include <QScroller>
 
 #define DECORATION_SIZE 64
 #define NUM_ITEMS 6
@@ -95,6 +94,7 @@ public:
     int unit;
 
 };
+
 #include "overviewpage.moc"
 
 OverviewPage::OverviewPage(QWidget *parent) :
@@ -103,25 +103,20 @@ OverviewPage::OverviewPage(QWidget *parent) :
     clientModel(0),
     walletModel(0),
     currentBalance(-1),
-    currentStake(0),
+    currentStake(-1),
     currentUnconfirmedBalance(-1),
     currentImmatureBalance(-1),
+    currentAnonymizedBalance(-1),
+    currentWatchOnlyBalance(-1),
+    currentWatchUnconfBalance(-1),
+    currentWatchImmatureBalance(-1),
+    currentWatchOnlyStake(-1),
     txdelegate(new TxViewDelegate()),
     filter(0)
 {
     ui->setupUi(this);
 
-    fLiteMode = GetBoolArg("-litemode", false);
-
     ui->frameSandstorm->setVisible(true);
-
-    QScroller::grabGesture(ui->scrollArea, QScroller::LeftMouseButtonGesture);
-    ui->scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    ui->scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    ui->columnTwoWidget->setContentsMargins(0,0,0,0);
-    ui->columnTwoWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-    ui->columnTwoWidget->setMinimumWidth(300);
 
     // Recent transactions
     ui->listTransactions->setItemDelegate(txdelegate);
@@ -129,36 +124,37 @@ OverviewPage::OverviewPage(QWidget *parent) :
     ui->listTransactions->setMinimumHeight(NUM_ITEMS * (DECORATION_SIZE + 2));
     ui->listTransactions->setAttribute(Qt::WA_MacShowFocusRect, false);
 
+    fLiteMode = GetBoolArg("-litemode", false);
+    if(fLiteMode){
+        ui->frameSandstorm->setVisible(false);
+    } else {
+        if(fStormNode){
+            ui->toggleSandstorm->setText("(" + tr("Disabled") + ")");
+            ui->sandstormAuto->setText("(" + tr("Disabled") + ")");
+            ui->sandstormReset->setText("(" + tr("Disabled") + ")");
+            ui->frameSandstorm->setEnabled(false);
+        } else {
+            if(!fEnableSandstorm){
+                ui->toggleSandstorm->setText(tr("Start Sandstorm Mixing"));
+            } else {
+                ui->toggleSandstorm->setText(tr("Stop Sandstorm Mixing"));
+            }
+            timer = new QTimer(this);
+            connect(timer, SIGNAL(timeout()), this, SLOT(sandStormStatus()));
+            if(!GetBoolArg("-reindexaddr", false))
+                timer->start(60000);
+        }
+    }
+
     connect(ui->listTransactions, SIGNAL(clicked(QModelIndex)), this, SLOT(handleTransactionClicked(QModelIndex)));
 
     // init "out of sync" warning labels
     ui->labelWalletStatus->setText("(" + tr("out of sync") + ")");
     ui->labelTransactionsStatus->setText("(" + tr("out of sync") + ")");
 
-
     showingSandStormMessage = 0;
     sandstormActionCheck = 0;
     lastNewBlock = 0;
-
-    if(fLiteMode){
-        ui->frameSandstorm->setVisible(false);
-    } else {
-    qDebug() << "Sandstorm Status Timer";
-        timer = new QTimer(this);
-        connect(timer, SIGNAL(timeout()), this, SLOT(sandStormStatus()));
-        timer->start(60000);
-    }
-
-    if(fStormNode || fLiteMode){
-        ui->toggleSandstorm->setText("(" + tr("Disabled") + ")");
-        ui->sandstormAuto->setText("(" + tr("Disabled") + ")");
-        ui->sandstormReset->setText("(" + tr("Disabled") + ")");
-        ui->toggleSandstorm->setEnabled(false);
-    }else if(!fEnableSandstorm){
-        ui->toggleSandstorm->setText(tr("Start Sandstorm"));
-    } else {
-        ui->toggleSandstorm->setText(tr("Stop Sandstorm"));
-    }
 
     // start with displaying the "out of sync" warnings
     showOutOfSyncWarning(true);
@@ -186,7 +182,9 @@ OverviewPage::~OverviewPage()
     delete ui;
 }
 
-void OverviewPage::setBalance(const CAmount& balance, const CAmount& stake, const CAmount& unconfirmedBalance, const CAmount& immatureBalance, const CAmount& anonymizedBalance)
+void OverviewPage::setBalance(const CAmount& balance, const CAmount& stake, const CAmount& unconfirmedBalance,
+                              const CAmount& immatureBalance, const CAmount& anonymizedBalance, const CAmount& watchOnlyBalance,
+                              const CAmount& watchOnlyStake, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance)
 {
     int unit = walletModel->getOptionsModel()->getDisplayUnit();
     currentBalance = balance;
@@ -194,13 +192,21 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& stake, cons
     currentUnconfirmedBalance = unconfirmedBalance;
     currentImmatureBalance = immatureBalance;
     currentAnonymizedBalance = anonymizedBalance;
+    currentWatchOnlyBalance = watchOnlyBalance;
+    currentWatchUnconfBalance = watchUnconfBalance;
+    currentWatchImmatureBalance = watchImmatureBalance;
+    currentWatchOnlyStake = watchOnlyStake;
+
     ui->labelBalance->setText(DarkSilkUnits::formatWithUnit(unit, balance));
     ui->labelStake->setText(DarkSilkUnits::formatWithUnit(unit, stake));
     ui->labelUnconfirmed->setText(DarkSilkUnits::formatWithUnit(unit, unconfirmedBalance));
     ui->labelImmature->setText(DarkSilkUnits::formatWithUnit(unit, immatureBalance));
-    ui->labelTotal->setText(DarkSilkUnits::formatWithUnit(unit, balance + stake + unconfirmedBalance + immatureBalance));
     ui->labelAnonymized->setText(DarkSilkUnits::formatWithUnit(unit, anonymizedBalance));
-
+    ui->labelTotal->setText(DarkSilkUnits::formatWithUnit(nDisplayUnit, balance + stake + unconfirmedBalance + immatureBalance));
+    ui->labelWatchAvailable->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchOnlyBalance));
+    ui->labelWatchPending->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchUnconfBalance));
+    ui->labelWatchImmature->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchImmatureBalance));
+    ui->labelWatchTotal->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchOnlyBalance + watchUnconfBalance + watchImmatureBalance));
     // only show immature (newly mined) balance if it's non-zero, so as not to complicate things
     // for the non-mining users
     bool showImmature = immatureBalance != 0;
@@ -210,6 +216,29 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& stake, cons
     if(cachedTxLocks != nCompleteTXLocks){
         cachedTxLocks = nCompleteTXLocks;
         ui->listTransactions->update();
+    }
+}
+
+// show/hide watch-only labels
+void OverviewPage::updateWatchOnlyLabels(bool showWatchOnly)
+{
+    ui->labelSpendable->setVisible(showWatchOnly);      // show spendable label (only when watch-only is active)
+    ui->labelWatchonly->setVisible(showWatchOnly);      // show watch-only label
+    ui->lineWatchBalance->setVisible(showWatchOnly);    // show watch-only balance separator line
+    ui->labelWatchStake->setVisible(showWatchOnly);    // show watch-only balance separator line
+    ui->labelWatchAvailable->setVisible(showWatchOnly); // show watch-only available balance
+    ui->labelWatchPending->setVisible(showWatchOnly);   // show watch-only pending balance
+    ui->labelWatchTotal->setVisible(showWatchOnly);     // show watch-only total balance
+
+    if (!showWatchOnly){
+        ui->labelWatchImmature->hide();
+    }
+    else{
+        ui->labelBalance->setIndent(20);
+        ui->labelStake->setIndent(20);
+        ui->labelUnconfirmed->setIndent(20);
+        ui->labelImmature->setIndent(20);
+        ui->labelTotal->setIndent(20);
     }
 }
 
@@ -242,14 +271,19 @@ void OverviewPage::setWalletModel(WalletModel *model)
         ui->listTransactions->setModelColumn(TransactionTableModel::ToAddress);
 
         // Keep up to date with wallet
-        setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance());
-        connect(model, SIGNAL(balanceChanged(CAmount, CAmount, CAmount, CAmount, CAmount)), this, SLOT(setBalance(CAmount, CAmount, CAmount, CAmount, CAmount)));
+        setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance(), model->getAnonymizedBalance(),
+            model->getWatchBalance(), model->getWatchStake(), model->getWatchUnconfirmedBalance(), model->getWatchImmatureBalance());
+        connect(model, SIGNAL(balanceChanged(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)), this, SLOT(setBalance(CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount, CAmount)));
 
         connect(model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
+        connect(model->getOptionsModel(), SIGNAL(sandstormRoundsChanged()), this, SLOT(updateSandstormProgress()));
+        connect(model->getOptionsModel(), SIGNAL(anonymizeDarkSilkAmountChanged()), this, SLOT(updateSandstormProgress()));
 
         connect(ui->sandstormAuto, SIGNAL(clicked()), this, SLOT(sandstormAuto()));
         connect(ui->sandstormReset, SIGNAL(clicked()), this, SLOT(sandstormReset()));
         connect(ui->toggleSandstorm, SIGNAL(clicked()), this, SLOT(toggleSandstorm()));
+        updateWatchOnlyLabels(model->haveWatchOnly());
+        connect(model, SIGNAL(notifyWatchonlyChanged(bool)), this, SLOT(updateWatchOnlyLabels(bool)));
     }
 
     // update the display unit, to not use the default ("DRKSLK")
@@ -260,8 +294,10 @@ void OverviewPage::updateDisplayUnit()
 {
     if(walletModel && walletModel->getOptionsModel())
     {
+        nDisplayUnit = walletModel->getOptionsModel()->getDisplayUnit();
         if(currentBalance != -1)
-            setBalance(currentBalance, walletModel->getStake(), currentUnconfirmedBalance, currentImmatureBalance, currentAnonymizedBalance);
+            setBalance(currentBalance, currentStake, currentUnconfirmedBalance, currentImmatureBalance, currentAnonymizedBalance,
+                currentWatchOnlyBalance, currentWatchOnlyStake, currentWatchUnconfBalance, currentWatchImmatureBalance);
 
         // Update txdelegate->unit with the current unit
         txdelegate->unit = walletModel->getOptionsModel()->getDisplayUnit();
@@ -383,18 +419,19 @@ void OverviewPage::updateSandstormProgress()
 
 void OverviewPage::sandStormStatus()
 {
+    //TODO: Remove this line after TODO below is implemented
     if(IsInitialBlockDownload()) return;
-    
-    int nBestHeight = pindexBest->nHeight;
+ 
+    //TODO
+    //if(!stormnodeSync.IsBlockchainSynced() || ShutdownRequested()) return;
 
-    if(nBestHeight != sandStormPool.cachedNumBlocks)
-    {
-        //we we're processing lots of blocks, we'll just leave
-        if(GetTime() - lastNewBlock < 10) return;
-        lastNewBlock = GetTime();
+    static int64_t nLastSSProgressBlockTime = 0;
 
-        updateSandstormProgress();
-    }
+    int nBestHeight = clientModel->getNumBlocks();
+
+    // we we're processing more then 1 block per second, we'll just leave
+    if(((nBestHeight - sandStormPool.cachedNumBlocks) / (GetTimeMillis() - nLastSSProgressBlockTime + 1) > 1)) return;
+    nLastSSProgressBlockTime = GetTimeMillis();
 
     if(!fEnableSandstorm) {
         if(nBestHeight != sandStormPool.cachedNumBlocks)

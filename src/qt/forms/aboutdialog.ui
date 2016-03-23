@@ -7,16 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>593</width>
-    <height>387</height>
+    <height>319</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>About DarkSilk</string>
-  </property>
-  <property name="styleSheet">
-   <string notr="true">background-color: rgb(0, 0, 0);
-alternate-background-color: rgb(0, 0, 0);
-color: rgb(255, 255, 255);</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
@@ -55,7 +50,7 @@ color: rgb(255, 255, 255);</string>
           <cursorShape>IBeamCursor</cursorShape>
          </property>
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#ffffff;&quot;&gt;DarkSilk&lt;/span&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt; version&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;b&gt;DarkSilk&lt;/b&gt; version</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -68,7 +63,7 @@ color: rgb(255, 255, 255);</string>
           <cursorShape>IBeamCursor</cursorShape>
          </property>
          <property name="text">
-          <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;0.3.666-beta&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string notr="true">1.0.0.0</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -96,7 +91,9 @@ color: rgb(255, 255, 255);</string>
         <cursorShape>IBeamCursor</cursorShape>
        </property>
        <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Copyright © 2009-2016 The Bitcoin Developers&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Copyright (c) 2015-2016 The Silk Network Developers&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>Copyright © 2009-2016 The Bitcoin developers
+Copyright © 2012-2016 The NovaCoin developers
+Copyright © 2015-2016 Silk Network</string>
        </property>
        <property name="textInteractionFlags">
         <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -108,13 +105,13 @@ color: rgb(255, 255, 255);</string>
        <property name="cursor">
         <cursorShape>IBeamCursor</cursorShape>
        </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(0, 0, 0);
-alternate-background-color: rgb(86, 0, 120);
-color: rgb(255, 255, 255);</string>
-       </property>
        <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;This is experimental software.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Distributed under the MIT/X11 software license, see the accompanying file COPYING or &amp;lt;a href=&amp;quot;http://www.opensource.org/licenses/mit-license.php&amp;quot;&amp;gt;http://www.opensource.org/licenses/mit-license.php&amp;lt;/a&amp;gt;.&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit (&amp;lt;a href=&amp;quot;https://www.openssl.org/&amp;quot;&amp;gt;https://www.openssl.org/&amp;lt;/a&amp;gt;) and cryptographic software written by Eric Young (&amp;lt;a href=&amp;quot;mailto:eay@cryptsoft.com&amp;quot;&amp;gt;eay@cryptsoft.com&amp;lt;/a&amp;gt;) and UPnP software written by Thomas Bernard.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>
+This is experimental software.
+
+Distributed under the MIT/X11 software license, see the accompanying file COPYING or &lt;a href=&quot;http://www.opensource.org/licenses/mit-license.php&quot;&gt;http://www.opensource.org/licenses/mit-license.php&lt;/a&gt;.
+
+This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit (&lt;a href=&quot;https://www.openssl.org/&quot;&gt;https://www.openssl.org/&lt;/a&gt;) and cryptographic software written by Eric Young (&lt;a href=&quot;mailto:eay@cryptsoft.com&quot;&gt;eay@cryptsoft.com&lt;/a&gt;) and UPnP software written by Thomas Bernard.</string>
        </property>
        <property name="textFormat">
         <enum>Qt::RichText</enum>
@@ -142,9 +139,6 @@ color: rgb(255, 255, 255);</string>
      </item>
      <item>
       <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(86, 0, 120);</string>
-       </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>

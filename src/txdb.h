@@ -1,19 +1,19 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef DARKSILK_TXDB_H
 #define DARKSILK_TXDB_H
 
-#include "leveldbwrapper.h"
-#include "main.h"
-
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "leveldbwrapper.h"
+#include "main.h"
 
 class CCoinsStats;
 class CCoins;

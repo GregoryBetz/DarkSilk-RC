@@ -1,5 +1,3 @@
-#include "notificator.h"
-
 #include <QMetaType>
 #include <QVariant>
 #include <QIcon>
@@ -20,6 +18,8 @@
 #include <ApplicationServices/ApplicationServices.h>
 #include "macnotificationhandler.h"
 #endif
+
+#include "notificator.h"
 
 // https://wiki.ubuntu.com/NotificationDevelopmentGuidelines recommends at least 128
 const int FREEDESKTOP_NOTIFICATION_ICON_SIZE = 128;

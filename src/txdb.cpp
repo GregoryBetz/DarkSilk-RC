@@ -3,13 +3,13 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "txdb.h"
-#include "uint256.h"
-#include "txdb-leveldb.h"
+#include <boost/thread.hpp>
 
 #include <stdint.h>
 
-#include <boost/thread.hpp>
+#include "txdb.h"
+#include "uint256.h"
+#include "txdb-leveldb.h"
 
 using namespace std;
 

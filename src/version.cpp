@@ -6,7 +6,7 @@
 #include "version.h"
 
 // Name of client reported in the 'version' message. Report the same name
-// for both darksilkd and darksilk-qt, to make it harder for attackers to
+// for both darksilkd and darksilk-core, to make it harder for attackers to
 // target servers or GUI users specifically.
 const std::string CLIENT_NAME("DRKSLK");
 
@@ -64,7 +64,7 @@ const std::string CLIENT_NAME("DRKSLK");
 
 #ifdef USE_NATIVE_I2P
 
-#include "i2pbuild.h"
+#include "i2p/i2pbuild.h"
 
 #define BUILD_I2P_NATIVE_DESC_FROM_COMMIT(maj,min,rev,build,commit) \
     "v" DO_STRINGIZE(maj) "." DO_STRINGIZE(min) "." DO_STRINGIZE(rev) "." DO_STRINGIZE(build) "-r" commit

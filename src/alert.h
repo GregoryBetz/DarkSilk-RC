@@ -1,19 +1,20 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef _DARKSILKALERT_H_
-#define _DARKSILKALERT_H_ 1
-
-#include "serialize.h"
-#include "sync.h"
+#ifndef DARKSILKALERT_H
+#define DARKSILKALERT_H
 
 #include <map>
 #include <set>
-#include <stdint.h>
 #include <string>
+
+#include <stdint.h>
+
+#include "serialize.h"
+#include "sync.h"
 
 class CAlert;
 class CNode;
@@ -47,8 +48,10 @@ public:
     std::string strStatusBar;
     std::string strReserved;
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->nVersion);
         nVersion = this->nVersion;
         READWRITE(nRelayUntil);
@@ -64,15 +67,14 @@ public:
         READWRITE(LIMITED_STRING(strComment, 65536));
         READWRITE(LIMITED_STRING(strStatusBar, 256));
         READWRITE(LIMITED_STRING(strReserved, 256));
-    )
+    }
 
     void SetNull();
 
     std::string ToString() const;
-    void print() const;
 };
 
-/** An alert is a combination of a serialized CUnsignedAlert and a signature. */
+///! An alert is a combination of a serialized CUnsignedAlert and a signature.
 class CAlert : public CUnsignedAlert
 {
 public:
@@ -84,11 +86,13 @@ public:
         SetNull();
     }
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(vchMsg);
         READWRITE(vchSig);
-    )
+    }
 
     void SetNull();
     bool IsNull() const;
@@ -100,11 +104,10 @@ public:
     bool RelayTo(CNode* pnode) const;
     bool CheckSignature() const;
     bool ProcessAlert(bool fThread = true);
+    static void Notify(const std::string& strMessage, bool fThread);
 
-    /*
-     * Get copy of (active) alert object by hash. Returns a null alert if it is not found.
-     */
+    //! Get copy of (active) alert object by hash. Returns a null alert if it is not found.
     static CAlert getAlertByHash(const uint256 &hash);
 };
 
-#endif
+#endif // DARKSILKALERT_H

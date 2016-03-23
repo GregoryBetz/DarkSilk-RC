@@ -9,8 +9,7 @@ class TransactionTablePriv;
 class TransactionRecord;
 class WalletModel;
 
-/** UI model for the transaction table of a wallet.
- */
+///! UI model for the transaction table of a wallet.
 class TransactionTableModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -24,7 +23,8 @@ public:
         Date = 1,
         Type = 2,
         ToAddress = 3,
-        Amount = 4
+        Amount = 4,
+        Watchonly = 5
     };
 
     /** Roles to get specific information from a transaction row.
@@ -35,6 +35,10 @@ public:
         TypeRole = Qt::UserRole,
         /** Date and time this transaction was created */
         DateRole,
+        /** Watch-only boolean */
+        WatchonlyRole,
+        /** Watch-only icon */
+        WatchonlyDecorationRole,
         /** Long description (HTML format) */
         LongDescriptionRole,
         /** Address of transaction */
@@ -74,7 +78,11 @@ private:
     QString formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed=true) const;
     QString formatTooltip(const TransactionRecord *rec) const;
     QVariant txStatusDecoration(const TransactionRecord *wtx) const;
+    QVariant txWatchonlyDecoration(const TransactionRecord *wtx) const;
     QVariant txAddressDecoration(const TransactionRecord *wtx) const;
+
+    void subscribeToCoreSignals();
+    void unsubscribeFromCoreSignals();
 
 public slots:
     void updateTransaction(const QString &hash, int status);

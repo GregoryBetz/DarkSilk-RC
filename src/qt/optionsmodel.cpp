@@ -1,15 +1,14 @@
-#include "optionsmodel.h"
-
-#include "darksilkunits.h"
-#include "init.h"
-#include "wallet.h"
-#include "walletdb.h"
-#include "guiutil.h"
-
 #include <QSettings>
 
+#include "optionsmodel.h"
+#include "darksilkunits.h"
+#include "init.h"
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
+#include "guiutil.h"
+
 #ifdef USE_NATIVE_I2P
-#include "i2p.h"
+#include "i2p/i2p.h"
 #include <sstream>
 
 #define I2P_OPTIONS_SECTION_NAME    "I2P"
@@ -35,10 +34,15 @@ private:
 
 bool fUseBlackTheme;
 
-OptionsModel::OptionsModel(QObject *parent) :
+OptionsModel::OptionsModel(QObject *parent, bool resetSettings) :
     QAbstractListModel(parent)
 {
-    Init();
+    Init(resetSettings);
+}
+
+void OptionsModel::addOverriddenOption(const std::string &option)
+{
+    strOverriddenByCommandLine += QString::fromStdString(option) + "=" + QString::fromStdString(mapArgs[option]) + " ";
 }
 
 bool static ApplyProxySettings()
@@ -105,9 +109,17 @@ std::string& FormatI2POptionsString(
 }
 #endif
 
-void OptionsModel::Init()
+void OptionsModel::Init(bool resetSettings)
 {
+    if (resetSettings)
+        Reset();
+
+    this->resetSettings = resetSettings;
+
     QSettings settings;
+
+    // Ensure restart flag is unset on client startup
+    setRestartRequired(false);
 
     // These are Qt-only settings:
     nDisplayUnit = settings.value("nDisplayUnit", DarkSilkUnits::DRKSLK).toInt();
@@ -119,28 +131,49 @@ void OptionsModel::Init()
     language = settings.value("language", "").toString();
     fUseBlackTheme = settings.value("fUseBlackTheme", true).toBool();
 
+    if (!settings.contains("digits"))
+        settings.setValue("digits", "2");
+    if (!settings.contains("theme"))
+        settings.setValue("theme", "");
+
+    // Sandstorm
     if (!settings.contains("nSandstormRounds"))
         settings.setValue("nSandstormRounds", 2);
+    if (!SoftSetArg("-sandstormrounds", settings.value("nSandstormRounds").toString().toStdString()))
+        addOverriddenOption("-sandstormrounds");
+    nSandstormRounds = settings.value("nSandstormRounds").toInt();
 
-    if (!settings.contains("nAnonymizeDarkSilkAmount"))
-        settings.setValue("nAnonymizeDarkSilkAmount", 1000);
+    if (!settings.contains("nAnonymizeDarkSilkAmount")) {
+        // for migration from old settings
+        if (!settings.contains("nAnonymizeDarkSilkAmount"))
+            settings.setValue("nAnonymizeDarkSilkAmount", 1000);
+        else
+            settings.setValue("nAnonymizeDarkSilkAmount", settings.value("nAnonymizeDarkSilkAmount").toInt());
+    }
+    if (!SoftSetArg("-anonymizedarksilkamount", settings.value("nAnonymizeDarkSilkAmount").toString().toStdString()))
+        addOverriddenOption("-anonymizedarksilkamount");
+    nAnonymizeDarkSilkAmount = settings.value("nAnonymizeDarkSilkAmount").toInt();
 
-    nSandstormRounds = settings.value("nSandstormRounds").toLongLong();
-    nAnonymizeDarkSilkAmount = settings.value("nAnonymizeDarkSilkAmount").toLongLong();
+    // Network
+    if (!settings.contains("fUseUPnP"))
+        settings.setValue("fUseUPnP", DEFAULT_UPNP);
+    if (!SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
+        addOverriddenOption("-upnp");
 
-    // These are shared with core DarkSilk; we want
-    // command-line options to override the GUI settings:
-    if (settings.contains("fUseUPnP"))
-        SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool());
-    if (settings.contains("addrProxy") && settings.value("fUseProxy").toBool())
-        SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString());
-    if (!language.isEmpty())
-        SoftSetArg("-lang", language.toStdString());
+    if (!settings.contains("fListen"))
+        settings.setValue("fListen", DEFAULT_LISTEN);
+    if (!SoftSetBoolArg("-listen", settings.value("fListen").toBool()))
+        addOverriddenOption("-listen");
 
-    if (settings.contains("nSandstormRounds"))
-        SoftSetArg("-sandstormrounds", settings.value("nSandstormRounds").toString().toStdString());
-    if (settings.contains("nAnonymizeDarkSilkAmount"))
-        SoftSetArg("-anonymizedarksilkamount", settings.value("nAnonymizeDarkSilkAmount").toString().toStdString());
+    if (!settings.contains("fUseProxy"))
+        settings.setValue("fUseProxy", false);
+    if (!settings.contains("addrProxy"))
+        settings.setValue("addrProxy", "127.0.0.1:9050");
+    // Only try to set -proxy, if user has enabled fUseProxy
+    if (settings.value("fUseProxy").toBool() && !SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString()))
+        addOverriddenOption("-proxy");
+    else if(!settings.value("fUseProxy").toBool() && !GetArg("-proxy", "").empty())
+        addOverriddenOption("-proxy");
 
 #ifdef USE_NATIVE_I2P
     ScopeGroupHelper s(settings, I2P_OPTIONS_SECTION_NAME);
@@ -198,6 +231,19 @@ void OptionsModel::Init()
 #endif
 }
 
+void OptionsModel::Reset()
+{
+    QSettings settings;
+
+    // Remove all entries from our QSettings object
+    settings.clear();
+    resetSettings = true; // Needed in dash.cpp during shotdown to also remove the window positions
+
+    // default setting for OptionsModel::StartAtStartup - disabled
+    if (GUIUtil::GetStartOnSystemStartup())
+        GUIUtil::SetStartOnSystemStartup(false);
+}
+
 int OptionsModel::rowCount(const QModelIndex & parent) const
 {
     return OptionIDRowCount;
@@ -215,7 +261,11 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         case MinimizeToTray:
             return QVariant(fMinimizeToTray);
         case MapPortUPnP:
-            return settings.value("fUseUPnP", GetBoolArg("-upnp", true));
+#ifdef USE_UPNP
+            return settings.value("fUseUPnP");
+#else
+            return false;
+#endif
         case MinimizeOnClose:
             return QVariant(fMinimizeOnClose);
         case ProxyUse:
@@ -238,16 +288,18 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return QVariant((qint64) nTransactionFee);
         case ReserveBalance:
             return QVariant((qint64) nReserveBalance);
-        case DisplayUnit:
+        case SandstormRounds:
+            return settings.value("nSandstormRounds");
+        case AnonymizeDarkSilkAmount:
+            return settings.value("nAnonymizeDarkSilkAmount");
+        case Listen:
+            return settings.value("fListen");
+         case DisplayUnit:
             return QVariant(nDisplayUnit);
         case Language:
             return settings.value("language", "");
         case CoinControlFeatures:
             return QVariant(fCoinControlFeatures);
-        case SandstormRounds:
-            return QVariant(nSandstormRounds);
-        case AnonymizeDarkSilkAmount:
-            return QVariant(nAnonymizeDarkSilkAmount);
         case UseBlackTheme:
             return QVariant(fUseBlackTheme);
 #ifdef USE_NATIVE_I2P
@@ -375,6 +427,12 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             settings.setValue("nDisplayUnit", nDisplayUnit);
             emit displayUnitChanged(nDisplayUnit);
             break;
+        case Digits:
+            if (settings.value("digits") != value) {
+                settings.setValue("digits", value);
+                setRestartRequired(true);
+            }
+            break; 
         case Language:
             settings.setValue("language", value);
             break;
@@ -389,14 +447,26 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             settings.setValue("fUseBlackTheme", fUseBlackTheme);
             break;
         case SandstormRounds:
-            nSandstormRounds = value.toInt();
-            settings.setValue("nSandstormRounds", nSandstormRounds);
-            emit sandstormRoundsChanged(nSandstormRounds);
+            if (settings.value("nSandstormRounds") != value)
+            {
+                nSandstormRounds = value.toInt();
+                settings.setValue("nSandstormRounds", nSandstormRounds);
+                emit sandstormRoundsChanged();
+            }
             break;
         case AnonymizeDarkSilkAmount:
-            nAnonymizeDarkSilkAmount = value.toInt();
-            settings.setValue("nAnonymizeDarkSilkAmount", nAnonymizeDarkSilkAmount);
-            emit AnonymizeDarkSilkAmountChanged(nAnonymizeDarkSilkAmount);
+            if (settings.value("nAnonymizeDarkSilkAmount") != value)
+            {
+                nAnonymizeDarkSilkAmount = value.toInt();
+                settings.setValue("nAnonymizeDarkSilkAmount", nAnonymizeDarkSilkAmount);
+                emit anonymizeDarkSilkAmountChanged();
+            }
+            break;
+        case Listen:
+            if (settings.value("fListen") != value) {
+                settings.setValue("fListen", value);
+                setRestartRequired(true);
+            }
             break;
 #ifdef USE_NATIVE_I2P
         case I2PUseI2POnly:
@@ -525,6 +595,18 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
     return successful;
 }
 
+/** Updates current unit in memory, settings and emits displayUnitChanged(newUnit) signal */
+void OptionsModel::setDisplayUnit(const QVariant &value)
+{
+    if (!value.isNull())
+    {
+        QSettings settings;
+        nDisplayUnit = value.toInt();
+        settings.setValue("nDisplayUnit", nDisplayUnit);
+        emit displayUnitChanged(nDisplayUnit);
+    }
+}
+
 qint64 OptionsModel::getTransactionFee()
 {
     return nTransactionFee;
@@ -553,4 +635,16 @@ bool OptionsModel::getMinimizeOnClose()
 int OptionsModel::getDisplayUnit()
 {
     return nDisplayUnit;
+}
+
+void OptionsModel::setRestartRequired(bool fRequired)
+{
+    QSettings settings;
+    return settings.setValue("fRestartRequired", fRequired);
+}
+
+bool OptionsModel::isRestartRequired()
+{
+    QSettings settings;
+    return settings.value("fRestartRequired", false).toBool();
 }

@@ -1,16 +1,15 @@
+#include <QApplication>
+#include <QClipboard>
+
 #include "sendcoinsentry.h"
 #include "ui_sendcoinsentry.h"
-
 #include "guiutil.h"
 #include "darksilkunits.h"
 #include "addressbookpage.h"
 #include "walletmodel.h"
 #include "optionsmodel.h"
 #include "addresstablemodel.h"
-#include "stealth.h"
-
-#include <QApplication>
-#include <QClipboard>
+#include "anon/stealth/stealth.h"
 
 SendCoinsEntry::SendCoinsEntry(QWidget *parent) :
     QFrame(parent),

@@ -1,25 +1,24 @@
-#include "clientmodel.h"
-
-#include "guiconstants.h"
-#include "peertablemodel.h"
-
-#include "optionsmodel.h"
-#include "addresstablemodel.h"
-#include "transactiontablemodel.h"
-
-#include "chainparams.h"
-#include "alert.h"
-#include "main.h"
-#include "ui_interface.h"
-#include "stormnodeman.h"
-#include "stormnode-sync.h"
 
 #include <QDateTime>
 #include <QTimer>
 #include <QDebug>
 
+#include "clientmodel.h"
+#include "guiconstants.h"
+#include "bantablemodel.h"
+#include "peertablemodel.h"
+#include "optionsmodel.h"
+#include "addresstablemodel.h"
+#include "transactiontablemodel.h"
+#include "chainparams.h"
+#include "alert.h"
+#include "main.h"
+#include "ui_interface.h"
+#include "anon/stormnode/stormnodeman.h"
+#include "anon/stormnode/stormnode-sync.h"
+
 #ifdef USE_NATIVE_I2P
-#include "i2p.h"
+#include "i2p/i2p.h"
 #endif
 
 static const int64_t nClientStartupTime = GetTime();
@@ -28,12 +27,14 @@ ClientModel::ClientModel(OptionsModel *optionsModel, QObject *parent) :
     QObject(parent),
     optionsModel(optionsModel),
     peerTableModel(0),
+    banTableModel(0),
     cachedNumBlocks(0),
     cachedStormnodeCountString(""),
     numBlocksAtStartup(-1),
     pollTimer(0)
 {
     peerTableModel = new PeerTableModel(this);
+    banTableModel = new BanTableModel(this);
     pollTimer = new QTimer(this);
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(updateTimer()));
     pollTimer->start(MODEL_UPDATE_DELAY);
@@ -92,6 +93,15 @@ QDateTime ClientModel::getLastBlockDate() const
         return QDateTime::fromTime_t(Params().GenesisBlock().nTime); // Genesis block's time of current network
 }
 
+long ClientModel::getMempoolSize() const
+{
+    return mempool.size();
+}
+
+size_t ClientModel::getMempoolDynamicUsage() const
+{
+    return mempool.DynamicMemoryUsage();
+}
 
 void ClientModel::updateTimer()
 {
@@ -113,6 +123,8 @@ void ClientModel::updateTimer()
     }
 
     emit bytesChanged(getTotalBytesRecv(), getTotalBytesSent());
+
+    emit mempoolSizeChanged(getMempoolSize(), getMempoolDynamicUsage());
 }
 
 void ClientModel::updateSnTimer()
@@ -238,6 +250,11 @@ void ClientModel::generateI2PDestination(QString& pub, QString& priv) const
 QString ClientModel::formatFullVersion() const
 {
     return QString::fromStdString(FormatFullVersion());
+}
+
+BanTableModel *ClientModel::getBanTableModel()
+{
+    return banTableModel;
 }
 
 QString ClientModel::formatBuildDate() const

@@ -1,16 +1,6 @@
-#include "coincontroldialog.h"
-#include "ui_coincontroldialog.h"
-
-#include "addresstablemodel.h"
-#include "base58.h"
-#include "coincontrol.h"
-#include "darksilkunits.h"
-#include "guiutil.h"
-#include "init.h"
-#include "optionsmodel.h"
-#include "sandstorm.h"
-#include "wallet.h"
-#include "walletmodel.h"
+// Copyright (c) 2011-2016 The Bitcoin developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <QApplication>
 #include <QCheckBox>
@@ -26,6 +16,19 @@
 #include <QString>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+
+#include "coincontroldialog.h"
+#include "ui_coincontroldialog.h"
+#include "addresstablemodel.h"
+#include "base58.h"
+#include "coincontrol.h"
+#include "darksilkunits.h"
+#include "guiutil.h"
+#include "init.h"
+#include "optionsmodel.h"
+#include "anon/sandstorm/sandstorm.h"
+#include "wallet/wallet.h"
+#include "walletmodel.h"
 
 using namespace std;
 QList<CAmount> CoinControlDialog::payAmounts;
@@ -110,6 +113,10 @@ CoinControlDialog::CoinControlDialog(QWidget *parent) :
     // (un)select all
     connect(ui->pushButtonSelectAll, SIGNAL(clicked()), this, SLOT(buttonSelectAllClicked()));
 
+    // change coin control first column label due Qt4 bug. 
+    // see https://github.com/bitcoin/bitcoin/issues/5716
+    ui->treeWidget->headerItem()->setText(COLUMN_CHECKBOX, QString());
+
     ui->treeWidget->setColumnWidth(COLUMN_CHECKBOX, 84);
     ui->treeWidget->setColumnWidth(COLUMN_AMOUNT, 100);
     ui->treeWidget->setColumnWidth(COLUMN_LABEL, 170);
@@ -177,6 +184,8 @@ void CoinControlDialog::buttonSelectAllClicked()
             if (ui->treeWidget->topLevelItem(i)->checkState(COLUMN_CHECKBOX) != state)
                 ui->treeWidget->topLevelItem(i)->setCheckState(COLUMN_CHECKBOX, state);
     ui->treeWidget->setEnabled(true);
+    if (state == Qt::Unchecked)
+        coinControl->UnSelectAll(); // just to be sure
     CoinControlDialog::updateLabels(model, this);
 }
 
@@ -369,8 +378,7 @@ void CoinControlDialog::radioListMode(bool checked)
 // checkbox clicked by user
 void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
 {
-    //TODO (Amir): redo this with new sandstorm.
-    /*if (column == COLUMN_CHECKBOX && item->text(COLUMN_TXHASH).length() == 64) // transaction hash is 64 characters (this means its a child node, so its not a parent node in tree mode)
+    if (column == COLUMN_CHECKBOX && item->text(COLUMN_TXHASH).length() == 64) // transaction hash is 64 characters (this means its a child node, so its not a parent node in tree mode)
     {
         COutPoint outpt(uint256(item->text(COLUMN_TXHASH).toStdString()), item->text(COLUMN_VOUT_INDEX).toUInt());
 
@@ -381,7 +389,7 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
         else {
             coinControl->Select(outpt);
             CTxIn vin(outpt);
-            int rounds = GetInputSandstormRounds(vin);
+            int rounds = pwalletMain->GetInputSandstormRounds(vin);
             if(coinControl->useSandStorm && rounds < nSandstormRounds) {
                 QMessageBox::warning(this, windowTitle(),
                     tr("Non-anonymized input selected. <b>Sandstorm will be disabled.</b><br><br>If you still want to use Sandstorm, please deselect all non-nonymized inputs first and then check Sandstorm checkbox again."),
@@ -389,12 +397,25 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
                 coinControl->useSandStorm = false;
             }
         }
-            
+
         // selection changed -> update labels
         if (ui->treeWidget->isEnabled()) // do not update on every click for (un)select all
             CoinControlDialog::updateLabels(model, this);
-    }*/
+    }
+
+    // todo: this is a temporary qt5 fix: when clicking a parent node in tree mode, the parent node
+    //       including all childs are partially selected. But the parent node should be fully selected
+    //       as well as the childs. Childs should never be partially selected in the first place.
+    //       Please remove this ugly fix, once the bug is solved upstream.
+#if QT_VERSION >= 0x050000
+    else if (column == COLUMN_CHECKBOX && item->childCount() > 0)
+    {
+        if (item->checkState(COLUMN_CHECKBOX) == Qt::PartiallyChecked && item->child(0)->checkState(COLUMN_CHECKBOX) == Qt::PartiallyChecked)
+            item->setCheckState(COLUMN_CHECKBOX, Qt::Checked);
+    }
+#endif
 }
+
 // helper function, return human readable label for priority number
 QString CoinControlDialog::getPriorityLabel(double dPriority)
 {
@@ -433,7 +454,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     // nPayAmount
     CAmount nPayAmount = 0;
     bool fDust = false;
-    CTransaction txDummy; //TODO (AA): Do we need CMutableTransaction???
+    CMutableTransaction txDummy;
     foreach(const CAmount &amount, CoinControlDialog::payAmounts)
     {
         nPayAmount += amount;
@@ -442,10 +463,12 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
         {
             CTxOut txout(amount, (CScript)vector<unsigned char>(24, 0));
             txDummy.vout.push_back(txout);
+            if (txout.IsDust(::minRelayTxFee))
+               fDust = true;
         }
     }
 
-    QString sPriorityLabel      = "";
+    QString sPriorityLabel      = tr("none");
     CAmount nAmount             = 0;
     CAmount nPayFee             = 0;
     CAmount nAfterFee           = 0;
@@ -456,7 +479,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     double dPriorityInputs      = 0;
     unsigned int nQuantity      = 0;
     int nQuantityUncompressed   = 0;
-    
+
     vector<COutPoint> vCoinControl;
     vector<COutput>   vOutputs;
     coinControl->ListSelected(vCoinControl);
@@ -500,13 +523,13 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
         dPriority = dPriorityInputs / (nBytes - nBytesInputs + (nQuantityUncompressed * 29)); // 29 = 180 - 151 (uncompressed public keys are over the limit. max 151 bytes of the input are ignored for priority)         sPriorityLabel = CoinControlDialog::getPriorityLabel(dPriority);
         
         // Fee
-        int64_t nFee = nTransactionFee * (1 + (int64_t)nBytes / 1000);
+        CAmount nFee = nTransactionFee * (1 + (CAmount)nBytes / 1000);
 
         // IX Fee
         if(coinControl->useInstantX) nFee = max(nFee, CENT);
         
         // Min Fee
-        int64_t nMinFee = GetMinFee(CTransaction(txDummy), nBytes, AllowFree(dPriority), GMF_SEND);
+        CAmount nMinFee = GetMinFee(CTransaction(txDummy), nBytes, AllowFree(dPriority), GMF_SEND);
         
         nPayFee = max(nFee, nMinFee);
         
@@ -578,19 +601,19 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     dialog->findChild<QLabel *>("labelCoinControlChange")       ->setEnabled(nPayAmount > 0);
     
     // stats
-    l1->setText(QString::number(nQuantity));                                 // Quantity        
+    l1->setText(QString::number(nQuantity));                                  // Quantity        
     l2->setText(DarkSilkUnits::formatWithUnit(nDisplayUnit, nAmount));        // Amount
     l3->setText(DarkSilkUnits::formatWithUnit(nDisplayUnit, nPayFee));        // Fee
     l4->setText(DarkSilkUnits::formatWithUnit(nDisplayUnit, nAfterFee));      // After Fee
-    l5->setText(((nBytes > 0) ? "~" : "") + QString::number(nBytes));                                    // Bytes
-    l6->setText(sPriorityLabel);                                             // Priority
-    l7->setText(fDust ? tr("yes") : tr("no")); // Low Output / Dust
+    l5->setText(((nBytes > 0) ? "~" : "") + QString::number(nBytes));         // Bytes
+    l6->setText(sPriorityLabel);                                              // Priority
+    l7->setText(fDust ? tr("yes") : tr("no"));                                // Dust
     l8->setText(DarkSilkUnits::formatWithUnit(nDisplayUnit, nChange));        // Change
     
     // turn labels "red"
-    l5->setStyleSheet((nBytes >= 10000) ? "color:red;" : "");               // Bytes >= 10000
-    l6->setStyleSheet((dPriority <= 576000) ? "color:red;" : "");         // Priority < "medium"
-    l7->setStyleSheet((fDust) ? "color:red;" : "");                                     // Dust = "yes"
+    l5->setStyleSheet((nBytes >= 10000) ? "color:red;" : "");                 // Bytes >= 10000
+    l6->setStyleSheet((dPriority <= 576000) ? "color:red;" : "");             // Priority < "medium"
+    l7->setStyleSheet((fDust) ? "color:red;" : "");                           // Dust = "yes"
 
     // tool tips
     l5->setToolTip(tr("This label turns red, if the transaction size is bigger than 10000 bytes.\n\n This means a fee of at least %1 per kb is required.\n\n Can vary +/- 1 Byte per input.").arg(DarkSilkUnits::formatWithUnit(nDisplayUnit, CENT)));
@@ -708,12 +731,12 @@ void CoinControlDialog::updateView()
             itemOutput->setText(COLUMN_DATE, QDateTime::fromTime_t(out.tx->GetTxTime()).toUTC().toString("yy-MM-dd hh:mm"));
             
             // Sandstorm rounds
-            //TODO (Amir): put GetInputSandstormRounds back
-            //CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
-            int rounds = 0; //GetInputSandstormRounds(vin);
+            CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
+            int rounds = pwalletMain->GetInputSandstormRounds(vin);
 
-            if(rounds > 0) itemOutput->setText(COLUMN_SANDSTORM_ROUNDS, strPad(QString::number(rounds), 15, " "));
-            else itemOutput->setText(COLUMN_SANDSTORM_ROUNDS, strPad(QString("n/a"), 15, " "));
+            if(rounds > 0) itemOutput->setText(COLUMN_SANDSTORM_ROUNDS, strPad(QString::number(rounds), 101, " "));
+            else itemOutput->setText(COLUMN_SANDSTORM_ROUNDS, strPad(QString("n/a"), 101, " "));
+            
             // confirmations
             itemOutput->setText(COLUMN_CONFIRMATIONS, strPad(QString::number(out.nDepth), 8, " "));
             
@@ -751,6 +774,7 @@ void CoinControlDialog::updateView()
             dPrioritySum = dPrioritySum / (nInputSum + 78);
             itemWalletAddress->setText(COLUMN_CHECKBOX, "(" + QString::number(nChildren) + ")");
             itemWalletAddress->setText(COLUMN_AMOUNT, DarkSilkUnits::format(nDisplayUnit, nSum));
+            itemWalletAddress->setToolTip(COLUMN_AMOUNT, DarkSilkUnits::format(nDisplayUnit, nSum));
             itemWalletAddress->setText(COLUMN_AMOUNT_INT64, strPad(QString::number(nSum), 15, " "));
             itemWalletAddress->setText(COLUMN_PRIORITY, CoinControlDialog::getPriorityLabel(dPrioritySum));
             itemWalletAddress->setText(COLUMN_PRIORITY_INT64, strPad(QString::number((int64_t)dPrioritySum), 20, " "));

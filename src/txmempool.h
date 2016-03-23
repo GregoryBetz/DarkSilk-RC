@@ -1,19 +1,20 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef DARKSILK_TXMEMPOOL_H
 #define DARKSILK_TXMEMPOOL_H
 
-#include "primitives/transaction.h"
-#include "sync.h"
-#include "coins.h"
-#include "amount.h"
-#include "alias.h"
-#include "offer.h"
-#include "cert.h"
 #include <boost/circular_buffer.hpp>
+#include "boost/multi_index_container.hpp"
+#include "boost/multi_index/ordered_index.hpp"
+
+#include "amount.h"
+#include "coins.h"
+#include "primitives/transaction.h"
+#include "consensus/validation.h"
+#include "sync.h"
 
 inline double AllowFreeThreshold()
 {
@@ -27,7 +28,7 @@ inline bool AllowFree(double dPriority)
     return dPriority > AllowFreeThreshold();
 }
 
-/// CTxMemPool stores these:
+///! CTxMemPool stores these:
 class CTxMemPoolEntry
 {
 private:
@@ -38,6 +39,15 @@ private:
     int64_t nTime; //! Local time when entering the mempool
     double dPriority; //! Priority when entering the mempool
     unsigned int nHeight; //! Chain height when entering the mempool
+    // Information about descendants of this transaction that are in the
+    // mempool; if we remove this transaction we must remove all of these
+    // descendants as well.  if nCountWithDescendants is 0, treat this entry as
+    // dirty, and nSizeWithDescendants and nModFeesWithDescendants will not be
+    // correct.
+    uint64_t nCountWithDescendants; //! number of descendant transactions
+    uint64_t nSizeWithDescendants;  //! ... and size
+    CAmount nModFeesWithDescendants;  //! ... and total fees (all including us)
+    CAmount feeDelta; //! Used for determining the priority of the transaction for mining in a block
 
 public:
     CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
@@ -51,11 +61,30 @@ public:
     size_t GetTxSize() const { return nTxSize; }
     int64_t GetTime() const { return nTime; }
     unsigned int GetHeight() const { return nHeight; }
+
+    uint64_t GetCountWithDescendants() const { return nCountWithDescendants; }
+    uint64_t GetSizeWithDescendants() const { return nSizeWithDescendants; }
+    CAmount GetModFeesWithDescendants() const { return nModFeesWithDescendants; }
+
+    CAmount GetModifiedFee() const { return nFee + feeDelta; }
+
+    // Updates the fee delta used for mining priority score, and the
+    // modified fees with descendants.
+    void UpdateFeeDelta(CAmount feeDelta);
+
 };
 
-/**
- * Keep track of fee/priority for transactions confirmed within N blocks
- */
+struct update_fee_delta
+{
+    update_fee_delta(CAmount _feeDelta) : feeDelta(_feeDelta) { }
+
+    void operator() (CTxMemPoolEntry &e) { e.UpdateFeeDelta(feeDelta); }
+
+private:
+    CAmount feeDelta;
+};
+
+///! Keep track of fee/priority for transactions confirmed within N blocks
 class CBlockAverage
 {
 private:
@@ -251,7 +280,7 @@ public:
             }
             BOOST_FOREACH(const CTxMemPoolEntry* entry, e)
             {
-                // Fees are stored and reported as BTC-per-kb:
+                // Fees are stored and reported as DRKSLK-per-kb:
                 CFeeRate feeRate(entry->GetFee(), entry->GetTxSize());
                 double dPriority = entry->GetPriority(entry->GetHeight()); // Want priority when it went IN
                 seenTxConfirm(feeRate, minRelayFee, dPriority, i);
@@ -376,8 +405,83 @@ public:
         assert(history.size() > 0);
     }
 };
+class CCoinsViewCache;
 
-/*
+// extracts a TxMemPoolEntry's transaction hash
+struct mempoolentry_txid
+{
+    typedef uint256 result_type;
+    result_type operator() (const CTxMemPoolEntry &entry) const
+    {
+        return entry.GetTx().GetHash();
+    }
+};
+
+/** \class CompareTxMemPoolEntryByDescendantScore
+ *
+ *  Sort an entry by max(score/size of entry's tx, score/size with all descendants).
+ */
+class CompareTxMemPoolEntryByDescendantScore
+{
+public:
+    bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b)
+    {
+        bool fUseADescendants = UseDescendantScore(a);
+        bool fUseBDescendants = UseDescendantScore(b);
+
+        double aModFee = fUseADescendants ? a.GetModFeesWithDescendants() : a.GetModifiedFee();
+        double aSize = fUseADescendants ? a.GetSizeWithDescendants() : a.GetTxSize();
+
+        double bModFee = fUseBDescendants ? b.GetModFeesWithDescendants() : b.GetModifiedFee();
+        double bSize = fUseBDescendants ? b.GetSizeWithDescendants() : b.GetTxSize();
+
+        // Avoid division by rewriting (a/b > c/d) as (a*d > c*b).
+        double f1 = aModFee * bSize;
+        double f2 = aSize * bModFee;
+
+        if (f1 == f2) {
+            return a.GetTime() >= b.GetTime();
+        }
+        return f1 < f2;
+    }
+
+    // Calculate which score to use for an entry (avoiding division).
+    bool UseDescendantScore(const CTxMemPoolEntry &a)
+    {
+        double f1 = (double)a.GetModifiedFee() * a.GetSizeWithDescendants();
+        double f2 = (double)a.GetModFeesWithDescendants() * a.GetTxSize();
+        return f2 > f1;
+    }
+};
+
+/** \class CompareTxMemPoolEntryByScore
+ *
+ *  Sort by score of entry ((fee+delta)/size) in descending order
+ */
+class CompareTxMemPoolEntryByScore
+{
+public:
+    bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b)
+    {
+        double f1 = (double)a.GetModifiedFee() * b.GetTxSize();
+        double f2 = (double)b.GetModifiedFee() * a.GetTxSize();
+        if (f1 == f2) {
+            return b.GetTx().GetHash() < a.GetTx().GetHash();
+        }
+        return f1 > f2;
+    }
+};
+
+class CompareTxMemPoolEntryByEntryTime
+{
+public:
+    bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b)
+    {
+        return a.GetTime() < b.GetTime();
+    }
+};
+
+/**
  * CTxMemPool stores valid-according-to-the-current-best-chain
  * transactions that may be included in the next block.
  *
@@ -386,40 +490,147 @@ public:
  * are added to the pool: if a new transaction double-spends
  * an input of a transaction in the pool, it is dropped,
  * as are non-standard transactions.
+ *
+ * CTxMemPool::mapTx, and CTxMemPoolEntry bookkeeping:
+ *
+ * mapTx is a boost::multi_index that sorts the mempool on 4 criteria:
+ * - transaction hash
+ * - feerate [we use max(feerate of tx, feerate of tx with all descendants)]
+ * - time in mempool
+ * - mining score (feerate modified by any fee deltas from PrioritiseTransaction)
+ *
+ * Note: the term "descendant" refers to in-mempool transactions that depend on
+ * this one, while "ancestor" refers to in-mempool transactions that a given
+ * transaction depends on.
+ *
+ * In order for the feerate sort to remain correct, we must update transactions
+ * in the mempool when new descendants arrive.  To facilitate this, we track
+ * the set of in-mempool direct parents and direct children in mapLinks.  Within
+ * each CTxMemPoolEntry, we track the size and fees of all descendants.
+ *
+ * Usually when a new transaction is added to the mempool, it has no in-mempool
+ * children (because any such children would be an orphan).  So in
+ * addUnchecked(), we:
+ * - update a new entry's setMemPoolParents to include all in-mempool parents
+ * - update the new entry's direct parents to include the new tx as a child
+ * - update all ancestors of the transaction to include the new tx's size/fee
+ *
+ * When a transaction is removed from the mempool, we must:
+ * - update all in-mempool parents to not track the tx in setMemPoolChildren
+ * - update all ancestors to not include the tx's size/fees in descendant state
+ * - update all in-mempool children to not include it as a parent
+ *
+ * These happen in UpdateForRemoveFromMempool().  (Note that when removing a
+ * transaction along with its descendants, we must calculate that set of
+ * transactions to be removed before doing the removal, or else the mempool can
+ * be in an inconsistent state where it's impossible to walk the ancestors of
+ * a transaction.)
+ *
+ * In the event of a reorg, the assumption that a newly added tx has no
+ * in-mempool children is false.  In particular, the mempool is in an
+ * inconsistent state while new transactions are being added, because there may
+ * be descendant transactions of a tx coming from a disconnected block that are
+ * unreachable from just looking at transactions in the mempool (the linking
+ * transactions may also be in the disconnected block, waiting to be added).
+ * Because of this, there's not much benefit in trying to search for in-mempool
+ * children in addUnchecked().  Instead, in the special case of transactions
+ * being added from a disconnected block, we require the caller to clean up the
+ * state, to account for in-mempool, out-of-block descendants for all the
+ * in-block transactions by calling UpdateTransactionsFromBlock().  Note that
+ * until this is called, the mempool state is not consistent, and in particular
+ * mapLinks may not be correct (and therefore functions like
+ * CalculateMemPoolAncestors() and CalculateDescendants() that rely
+ * on them to walk the mempool are not generally safe to use).
+ *
+ * Computational limits:
+ *
+ * Updating all in-mempool ancestors of a newly added transaction can be slow,
+ * if no bound exists on how many in-mempool ancestors there may be.
+ * CalculateMemPoolAncestors() takes configurable limits that are designed to
+ * prevent these calculations from being too CPU intensive.
+ *
+ * Adding transactions from a disconnected block can be very time consuming,
+ * because we don't have a way to limit the number of in-mempool descendants.
+ * To bound CPU processing, we limit the amount of work we're willing to do
+ * to properly update the descendant information for a tx being added from
+ * a disconnected block.  If we would exceed the limit, then we instead mark
+ * the entry as "dirty", and set the feerate for sorting purposes to be equal
+ * the feerate of the transaction without any descendants.
+ *
  */
 class CTxMemPool
 {
 private:
-    CTransaction tx;
+    bool fSanityCheck;
     unsigned int nTransactionsUpdated;
     CFeeRate minRelayFee; //! Passed to constructor to avoid dependency on main
+    uint64_t cachedInnerUsage; //! sum of dynamic memory usage of all the map elements (NOT the maps themselves)
 
 public:
     mutable CCriticalSection cs;
     std::map<uint256, CTransaction> mapTx;
+    std::map<uint256, CTxMemPoolEntry> mapTxNew;
     std::map<COutPoint, CInPoint> mapNextTx;
     CMinerPolicyEstimator* minerPolicyEstimator;
+    uint64_t totalTxSize; //! sum of all mempool tx' byte sizes
+    std::map<uint256, std::pair<double, CAmount> > mapDeltas;
 
     //CTxMemPool();
     CTxMemPool(const CFeeRate& _minRelayFee);
     ~CTxMemPool();
 
-    bool fSanityCheck;
+    ///! If sanity-checking is turned on, check makes sure the pool is
+    ///! consistent (does not contain two transactions that spend the same inputs,
+    ///! all inputs are in the mapNextTx array). If sanity-checking is turned off,
+    ///! check does nothing.
+    void check(const CCoinsViewCache *pcoins) const;
+
+    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry);
     bool addUnchecked(const uint256& hash, CTransaction &tx);
+
+    void setSanityCheck(bool _fSanityCheck) { fSanityCheck = _fSanityCheck; }
+
+
+
     bool remove(const CTransaction &tx, bool fRecursive = false);
     bool removeConflicts(const CTransaction &tx);
+    void remove(const CTransaction &tx, std::list<CTransaction>& removed, bool fRecursive = false);
+    void removeConflicts(const CTransaction &tx, std::list<CTransaction>& removed);
+    void removeCoinbaseSpends(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight);
+    void removeForBlock(const std::vector<CTransaction>& vtx, unsigned int nBlockHeight,
+                        std::list<CTransaction>& conflicts);
+
     void clear();
     void queryHashes(std::vector<uint256>& vtxid);
     unsigned int GetTransactionsUpdated() const;
     void AddTransactionsUpdated(unsigned int n);
     bool ReadFeeEstimates(CAutoFile& filein);
     bool WriteFeeEstimates(CAutoFile& fileout) const;
-    bool ExistsInMemPool(std::vector<unsigned char> vchToFind, opcodetype type);
+    void ClearPrioritisation(const uint256 hash);
+
+    size_t DynamicMemoryUsage() const;
+
+    /** When adding transactions from a disconnected block back to the mempool,
+     *  new mempool entries may have children in the mempool (which is generally
+     *  not the case when otherwise adding transactions).
+     *  UpdateTransactionsFromBlock() will find child transactions and update the
+     *  descendant state for each transaction in hashesToUpdate (excluding any
+     *  child transactions present in hashesToUpdate, which are already accounted
+     *  for).  Note: hashesToUpdate should be the set of transactions from the
+     *  disconnected block that have been accepted back into the mempool.
+     */
+    void UpdateTransactionsFromBlock(const std::vector<uint256> &hashesToUpdate);
 
     unsigned long size() const
     {
         LOCK(cs);
         return mapTx.size();
+    }
+
+    uint64_t GetTotalTxSize()
+    {
+        LOCK(cs);
+        return totalTxSize;
     }
 
     bool exists(uint256 hash) const
@@ -429,6 +640,40 @@ public:
     }
 
     bool lookup(uint256 hash, CTransaction& result) const;
+
+    typedef boost::multi_index_container<
+        CTxMemPoolEntry,
+        boost::multi_index::indexed_by<
+            // sorted by txid
+            boost::multi_index::ordered_unique<mempoolentry_txid>,
+            // sorted by fee rate
+            boost::multi_index::ordered_non_unique<
+                boost::multi_index::identity<CTxMemPoolEntry>,
+                CompareTxMemPoolEntryByDescendantScore
+            >,
+            // sorted by entry time
+            boost::multi_index::ordered_non_unique<
+                boost::multi_index::identity<CTxMemPoolEntry>,
+                CompareTxMemPoolEntryByEntryTime
+                >,
+            // sorted by score (for mining prioritization)
+            boost::multi_index::ordered_unique<
+                boost::multi_index::identity<CTxMemPoolEntry>,
+                CompareTxMemPoolEntryByScore
+            >
+        >
+    > indexed_transaction_set;
+
+    typedef indexed_transaction_set::nth_index<0>::type::iterator txiter;
+    struct CompareIteratorByHash {
+        bool operator()(const txiter &a, const txiter &b) const {
+            return a->GetTx().GetHash() < b->GetTx().GetHash();
+        }
+    };
+    typedef std::set<txiter, CompareIteratorByHash> setEntries;
+private:
+    typedef std::map<txiter, setEntries, CompareIteratorByHash> cacheMap;
+
 };
 
 

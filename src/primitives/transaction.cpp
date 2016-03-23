@@ -3,7 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "transaction.h"
+#include "primitives/transaction.h"
 
 CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), nTime(tx.nTime), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime)
 {
@@ -46,7 +46,7 @@ double CTransaction::ComputePriority(double dPriorityInputs, unsigned int nTxSiz
     return dPriorityInputs / nTxSize;
 }
 
-bool CTransaction::CheckTransaction() const
+bool CTransaction::CheckTransaction(CValidationState &state)
 {
     // Basic checks that don't depend on any context
     if (vin.empty())
@@ -58,7 +58,7 @@ bool CTransaction::CheckTransaction() const
         return DoS(100, error("CTransaction::CheckTransaction() : size limits failed"));
 
     // Check for negative or overflow output values
-    int64_t nValueOut = 0;
+    CAmount nValueOut = 0;
     for (unsigned int i = 0; i < vout.size(); i++)
     {
         const CTxOut& txout = vout[i];
@@ -94,96 +94,6 @@ bool CTransaction::CheckTransaction() const
                 return DoS(10, error("CTransaction::CheckTransaction() : prevout is null"));
     }
 
-    if (nVersion != DRKSLK_TX_VERSION)
-    return true;
-    
-    vector<vector<unsigned char> > vvch;
-    int op;
-    int nOut;
-    string err = "";
-        
-    // alias
-    if(DecodeAliasTx(*this, op, nOut, vvch, -1)) {
-        if (vvch[0].size() > MAX_NAME_LENGTH) {
-            return DoS(100, error("CTransaction::CheckTransaction() : alias transaction with alias too long"));
-        }
-        switch (op) {
-            case OP_ALIAS_ACTIVATE:
-                if (vvch[1].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : aliasactivate tx with rand too big"));
-                break;
-            case OP_ALIAS_UPDATE:
-                if (vvch[1].size() > MAX_VALUE_LENGTH)
-                    return DoS(100, error("CTransaction::CheckTransaction() : aliasupdate tx with value too long"));
-                break;
-            default:
-                return DoS(100, error("CTransaction::CheckTransaction() : alias transaction has unknown op"));
-        }
-        
-    }
-
-    // offer
-    else if(DecodeOfferTx(*this, op, nOut, vvch, -1)) {
-        if (vvch[0].size() > MAX_NAME_LENGTH) {
-            return DoS(100, error("CTransaction::CheckTransaction() : offer transaction with offer guid too long"));
-        }
-        switch (op) {
-            case OP_OFFER_ACTIVATE:
-                if (vvch[1].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : offeractivate tx with rand too big"));
-                break;
-            case OP_OFFER_UPDATE:
-                if (vvch[1].size() > MAX_VALUE_LENGTH)
-                    return DoS(100, error("CTransaction::CheckTransaction() : offerupdate tx with value too long"));
-                break;
-            case OP_OFFER_ACCEPT: 
-                if (vvch[1].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : offeraccept tx with accept rand too big"));
-                break;
-            case OP_OFFER_REFUND: 
-                if (vvch[1].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : offerrefund tx with accept rand too big"));
-                if (vvch[2].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : offerrefund tx with refund status too long"));
-                break;
-            default:
-                return DoS(100, error("CTransaction::CheckTransaction() : offer transaction has unknown op"));
-        
-        }
-    }
-
-    // cert
-    else if(DecodeCertTx(*this, op, nOut, vvch, -1)) {
-        if (vvch[0].size() > MAX_NAME_LENGTH) {
-            return DoS(100, error("CTransaction::CheckTransaction() : cert transaction with cert title too long"));
-        }
-        switch (op) {
-
-            case OP_CERT_ACTIVATE:
-                if (vvch[1].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : cert tx with rand too big"));
-                if (vvch[2].size() > MAX_NAME_LENGTH)
-                    return DoS(100, error("CTransaction::CheckTransaction() : cert tx with value too long"));
-                break;
-            case OP_CERT_UPDATE:
-                if (vvch[1].size() > MAX_NAME_LENGTH)
-                    return DoS(100, error("CTransaction::CheckTransaction() : cert tx with value too long"));
-                break;
-            case OP_CERT_TRANSFER:
-                if (vvch[0].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : cert transfer tx with cert rand too big"));
-                if (vvch[1].size() > 20)
-                    return DoS(100, error("CTransaction::CheckTransaction() : cert transfer tx with invalid hash length"));
-                break;
-            default:
-                return DoS(100, error("CTransaction::CheckTransaction() : cert transaction has unknown op"));
-        }
-        
-    }
-    if(err != "")
-    {
-        return DoS(10, error(err.c_str()));
-    }
     return true;
 }
 
@@ -285,3 +195,20 @@ bool TransactionSignatureChecker::CheckSig(const vector<unsigned char>& vchSigIn
     return true;
 }
 
+unsigned int CTransaction::CalculateModifiedSize(unsigned int nTxSize) const
+{
+    // In order to avoid disincentivizing cleaning up the UTXO set we don't count
+    // the constant overhead for each txin and up to 110 bytes of scriptSig (which
+    // is enough to cover a compressed pubkey p2sh redemption) for priority.
+    // Providing any more cleanup incentive than making additional inputs free would
+    // risk encouraging people to create junk outputs to redeem later.
+    if (nTxSize == 0)
+        nTxSize = ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION);
+    for (std::vector<CTxIn>::const_iterator it(vin.begin()); it != vin.end(); ++it)
+    {
+        unsigned int offset = 41U + std::min(110U, (unsigned int)it->scriptSig.size());
+        if (nTxSize > offset)
+            nTxSize -= offset;
+    }
+    return nTxSize;
+}

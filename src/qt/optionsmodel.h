@@ -16,24 +16,26 @@ class OptionsModel : public QAbstractListModel
     Q_OBJECT
 
 public:
-    explicit OptionsModel(QObject *parent = 0);
+    explicit OptionsModel(QObject *parent = 0, bool resetSettings = false);
 
     enum OptionID {
-        StartAtStartup,    // bool
-        MinimizeToTray,    // bool
-        MapPortUPnP,       // bool
-        MinimizeOnClose,   // bool
-        ProxyUse,          // bool
-        ProxyIP,           // QString
-        ProxyPort,         // int
-        Fee,               // qint64
-        ReserveBalance,    // qint64
-        DisplayUnit,       // DarkSilkUnits::Unit
-        Language,          // QString
-        CoinControlFeatures, // bool
-        UseBlackTheme,     // bool
-        SandstormRounds,    // int
-        AnonymizeDarkSilkAmount, //int
+        StartAtStartup,             // bool
+        MinimizeToTray,             // bool
+        MapPortUPnP,                // bool
+        MinimizeOnClose,            // bool
+        ProxyUse,                   // bool
+        ProxyIP,                    // QString
+        ProxyPort,                  // int
+        Fee,                        // qint64
+        ReserveBalance,             // qint64
+        DisplayUnit,                // DarkSilkUnits::Unit
+        Digits,                     // QString
+        Language,                   // QString
+        CoinControlFeatures,        // bool
+        UseBlackTheme,              // bool
+        SandstormRounds,            // int
+        AnonymizeDarkSilkAmount,    //int
+        Listen,                     // bool
 #ifdef USE_NATIVE_I2P
         I2PUseI2POnly,              // bool
         I2PSAMHost,                 // QString
@@ -58,11 +60,14 @@ public:
         OptionIDRowCount,
     };
 
-    void Init();
+    void Init(bool resetSettings = false);
+    void Reset();
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const;
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
+    /** Updates current unit in memory, settings and emits displayUnitChanged(newUnit) signal */
+    void setDisplayUnit(const QVariant &value);
 
     /* Explicit getters */
     qint64 getTransactionFee();
@@ -72,12 +77,24 @@ public:
     int getDisplayUnit();
     bool getCoinControlFeatures();
     QString getLanguage() { return language; }
+    const QString& getOverriddenByCommandLine() { return strOverriddenByCommandLine; }
+
+    /* Restart flag helper */
+    void setRestartRequired(bool fRequired);
+    bool isRestartRequired();
+    bool resetSettings;
 
 private:
     int nDisplayUnit;
     bool fMinimizeToTray;
     bool fMinimizeOnClose;
     bool fCoinControlFeatures;
+    /* settings that were overriden by command-line */
+    QString strOverriddenByCommandLine;
+
+    /// Add option to list of GUI options overridden through command line/config file
+    void addOverriddenOption(const std::string &option);
+
     QString language;
 #ifdef USE_NATIVE_I2P
     int i2pInboundQuantity;
@@ -100,9 +117,9 @@ signals:
     void displayUnitChanged(int unit);
     void transactionFeeChanged(qint64);
     void reserveBalanceChanged(qint64);
+    void sandstormRoundsChanged();
+    void anonymizeDarkSilkAmountChanged();
     void coinControlFeaturesChanged(bool);
-    void sandstormRoundsChanged(int);
-    void AnonymizeDarkSilkAmountChanged(int);
 };
 
 #endif // OPTIONSMODEL_H

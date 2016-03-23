@@ -6,16 +6,43 @@
 #ifndef DARKSILK_UNDO_H
 #define DARKSILK_UNDO_H
 
-#include "compressor.h"
-#include "primitives/transaction.h"
-#include "serialize.h"
+#include "script/compressor.h"
 
-/** Undo information for a CTxIn
- *
- *  Contains the prevout's CTxOut being spent, and if this was the
- *  last output of the affected transaction, its metadata as well
- *  (coinbase or not, height, transaction version)
- */
+///  Undo information for a CTxIn
+///  Contains the prevout's CTxOut being spent, and if this was the
+///  last output of the affected transaction, its metadata as well
+///  (coinbase or not, height, transaction version)
+
+class CScriptCompressor;
+/// wrapper for CTxOut that provides a more compact serialization
+class CTxOutCompressorUndo
+{
+private:
+    CTxOut &txout;
+
+public:
+    static uint64_t CompressAmount(uint64_t nAmount);
+    static uint64_t DecompressAmount(uint64_t nAmount);
+
+    CTxOutCompressorUndo(CTxOut &txoutIn) : txout(txoutIn) { }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        if (!ser_action.ForRead()) {
+            CAmount nVal = CompressAmount(txout.nValue);
+            READWRITE(VARINT(nVal));
+        } else {
+            CAmount nVal = 0;
+            READWRITE(VARINT(nVal));
+            txout.nValue = DecompressAmount(nVal);
+        }
+        CScriptCompressor cscript(REF(txout.scriptPubKey));
+        READWRITE(cscript);
+    }
+};
+
 class CTxInUndo
 {
 public:
@@ -27,11 +54,10 @@ public:
     CTxInUndo() : txout(), fCoinBase(false), nHeight(0), nVersion(0) {}
     CTxInUndo(const CTxOut &txoutIn, bool fCoinBaseIn = false, unsigned int nHeightIn = 0, int nVersionIn = 0) : txout(txoutIn), fCoinBase(fCoinBaseIn), nHeight(nHeightIn), nVersion(nVersionIn) { }
 
-    //TODO (Amir): Put this back. can't find CTxOutCompressor???
     unsigned int GetSerializeSize(int nType, int nVersion) const {
-        return 0; //::GetSerializeSize(VARINT(nHeight*2+(fCoinBase ? 1 : 0)), nType, nVersion) +
-               //(nHeight > 0 ? ::GetSerializeSize(VARINT(this->nVersion), nType, nVersion) : 0) +
-               //::GetSerializeSize(CTxOutCompressor(REF(txout)), nType, nVersion);
+        return ::GetSerializeSize(VARINT(nHeight*2+(fCoinBase ? 1 : 0)), nType, nVersion) +
+               (nHeight > 0 ? ::GetSerializeSize(VARINT(this->nVersion), nType, nVersion) : 0) +
+               ::GetSerializeSize(CTxOutCompressorUndo(REF(txout)), nType, nVersion);
     }
 
     template<typename Stream>
@@ -39,7 +65,7 @@ public:
         ::Serialize(s, VARINT(nHeight*2+(fCoinBase ? 1 : 0)), nType, nVersion);
         if (nHeight > 0)
             ::Serialize(s, VARINT(this->nVersion), nType, nVersion);
-        ::Serialize(s, CTxOutCompressor(REF(txout)), nType, nVersion);
+        ::Serialize(s, CTxOutCompressorUndo(REF(txout)), nType, nVersion);
     }
 
     template<typename Stream>
@@ -50,20 +76,37 @@ public:
         fCoinBase = nCode & 1;
         if (nHeight > 0)
             ::Unserialize(s, VARINT(this->nVersion), nType, nVersion);
-        ::Unserialize(s, REF(CTxOutCompressor(REF(txout))), nType, nVersion);
+        ::Unserialize(s, REF(CTxOutCompressorUndo(REF(txout))), nType, nVersion);
     }
 };
 
-/** Undo information for a CTransaction */
+/// Undo information for a CTransaction
 class CTxUndo
 {
 public:
     // undo information for all txins
     std::vector<CTxInUndo> vprevout;
 
-    IMPLEMENT_SERIALIZE(
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(vprevout);
-    )
+    }
+};
+
+//! Undo information for a CBlock
+class CBlockUndo
+{
+public:
+    std::vector<CTxUndo> vtxundo; // for all but the coinbase
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(vtxundo);
+    }
 };
 
 #endif // DARKSILK_UNDO_H

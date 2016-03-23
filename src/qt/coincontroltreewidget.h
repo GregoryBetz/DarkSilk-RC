@@ -1,5 +1,9 @@
-#ifndef COINCONTROLTREEWIDGET_H
-#define COINCONTROLTREEWIDGET_H
+// Copyright (c) 2011-2016 The Bitcoin developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef DARKSILK_QT_COINCONTROLTREEWIDGET_H
+#define DARKSILK_QT_COINCONTROLTREEWIDGET_H
 
 #include <QKeyEvent>
 #include <QTreeWidget>
@@ -14,4 +18,4 @@ protected:
   virtual void  keyPressEvent(QKeyEvent *event);
 };
 
-#endif // COINCONTROLTREEWIDGET_H
+#endif // DARKSILK_QT_COINCONTROLTREEWIDGET_H

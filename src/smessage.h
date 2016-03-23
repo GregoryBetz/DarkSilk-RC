@@ -9,10 +9,10 @@
 #include <leveldb/write_batch.h>
 
 #include "net.h"
-#include "db.h"
-#include "wallet.h"
+#include "wallet/db.h"
+#include "wallet/wallet.h"
 #include "base58.h"
-#include "lz4/lz4.h"
+#include "crypto/lz4/lz4.h"
 
 
 const unsigned int SMSG_HDR_LEN         = 104;               // length of unencrypted header, 4 + 2 + 1 + 8 + 16 + 33 + 32 + 4 +4
@@ -202,12 +202,14 @@ public:
     bool            fReceiveEnabled;
     bool            fReceiveAnon;
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->sAddress);
         READWRITE(this->fReceiveEnabled);
         READWRITE(this->fReceiveAnon);
-    );
+    }
 };
 
 class SecMsgOptions
@@ -240,8 +242,8 @@ public:
         // Try to keep the key data out of swap (and be a bit over-careful to keep the IV that we don't even use out of swap)
         // Note that this does nothing about suspend-to-disk (which will put all our key data on disk)
         // Note as well that at no point in this program is any attempt made to prevent stealing of keys by reading the memory of the running process.
-        LockedPageManager::instance.LockRange(&chKey[0], sizeof chKey);
-        LockedPageManager::instance.LockRange(&chIV[0], sizeof chIV);
+        LockedPageManager::Instance().LockRange(&chKey[0], sizeof chKey);
+        LockedPageManager::Instance().LockRange(&chIV[0], sizeof chIV);
         fKeySet = false;
     }
 
@@ -252,8 +254,8 @@ public:
         memset(&chIV, 0, sizeof chIV);
         fKeySet = false;
 
-        LockedPageManager::instance.LockRange(&chKey[0], sizeof chKey);
-        LockedPageManager::instance.LockRange(&chIV[0], sizeof chIV);
+        LockedPageManager::Instance().LockRange(&chKey[0], sizeof chKey);
+        LockedPageManager::Instance().LockRange(&chIV[0], sizeof chIV);
     }
 
     bool SetKey(const std::vector<uint8_t>& vchNewKey, uint8_t* chNewIV);
@@ -273,15 +275,17 @@ public:
     std::string               sAddrOutbox;    // owned address this copy was encrypted with
     std::vector<uint8_t>      vchMessage;     // message header + encryped payload
 
-    IMPLEMENT_SERIALIZE
-    (
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->timeReceived);
         READWRITE(this->status);
         READWRITE(this->folderId);
         READWRITE(this->sAddrTo);
         READWRITE(this->sAddrOutbox);
         READWRITE(this->vchMessage);
-    );
+    }
 };
 
 class SecMsgDB

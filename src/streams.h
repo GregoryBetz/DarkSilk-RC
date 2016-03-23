@@ -6,20 +6,21 @@
 #ifndef DARKSILK_STREAMS_H
 #define DARKSILK_STREAMS_H
 
-#include "allocators.h"
-#include "serialize.h"
-
 #include <algorithm>
 #include <assert.h>
 #include <ios>
 #include <limits>
 #include <map>
 #include <set>
-#include <stdint.h>
 #include <string>
 #include <string.h>
 #include <utility>
 #include <vector>
+
+#include <stdint.h>
+
+#include "allocators.h"
+#include "serialize.h"
 
 /// Double ended buffer combining vector and stream-like interfaces.
 /// >> and << read and write unformatted data using the above serialization templates.
@@ -317,7 +318,7 @@ public:
 /// Will automatically close the file when it goes out of scope if not null.
 /// If you're returning the file pointer, return file.release().
 /// If you need to close the file early, use file.fclose() instead of fclose(file).
-class CAutoFile //TODO(Amir): implement new CAutoFile class
+class CAutoFile
 {
 protected:
     FILE* file;
@@ -357,7 +358,7 @@ public:
     FILE** operator&()          { return &file; }
     FILE* operator=(FILE* pnew) { return file = pnew; }
     bool operator!()            { return (file == NULL); }
-
+    FILE* Get() const           { return file; }
 
     //
     // Stream subset

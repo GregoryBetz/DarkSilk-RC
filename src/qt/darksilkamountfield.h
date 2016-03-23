@@ -1,9 +1,9 @@
 #ifndef DARKSILKAMOUNTFIELD_H
 #define DARKSILKAMOUNTFIELD_H
 
-#include "amount.h"
-
 #include <QWidget>
+
+#include "amount.h"
 
 QT_BEGIN_NAMESPACE
 class QDoubleSpinBox;

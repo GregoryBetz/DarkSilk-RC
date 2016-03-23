@@ -1,27 +1,11 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef DARKSILK_UTIL_H
 #define DARKSILK_UTIL_H
-
-#ifndef WIN32
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#endif
-
-#include "serialize.h"
-#include "tinyformat.h"
-#include "amount.h"
-
-#include <map>
-#include <list>
-#include <utility>
-#include <vector>
-#include <string>
 
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
@@ -36,7 +20,24 @@
 #include <openssl/rand.h>
 #include <openssl/bn.h>
 
+#ifndef WIN32
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
+
+#include <exception>
+#include <map>
+#include <list>
+#include <utility>
+#include <vector>
+#include <string>
+
 #include <stdint.h>
+
+#include "serialize.h"
+#include "tinyformat.h"
+#include "amount.h"
 
 class uint256;
 
@@ -123,7 +124,6 @@ extern int nSandstormRounds;
 extern int nAnonymizeDarkSilkAmount;
 extern int nLiquidityProvider;
 extern bool fEnableSandstorm;
-extern bool fSandstormMultiSession;
 extern int64_t enforceStormnodePaymentsTime;
 extern std::string strStormNodeAddr;
 extern int nStormnodeMinProtocol;
@@ -131,7 +131,6 @@ extern int keysLoaded;
 extern bool fSucessfullyLoaded;
 extern std::vector<CAmount> sandStormDenominations;
 extern std::string strBudgetMode;
-extern bool fSandstormMultiSession;
 extern bool fDebug;
 extern bool fDebugSmsg;
 extern bool fNoSmsg;
@@ -140,7 +139,7 @@ extern bool fPrintToDebugLog;
 extern bool fServer;
 extern bool fCommandLine;
 extern std::string strMiscWarning;
-extern bool fNoListen;
+extern bool fLogIPs;
 extern bool fLogTimestamps;
 extern volatile bool fReopenDebugLog;
 
@@ -213,24 +212,7 @@ void RandAddSeedPerfmon();
 
 void PrintException(std::exception* pex, const char* pszThread);
 void PrintExceptionContinue(std::exception* pex, const char* pszThread);
-void ParseString(const std::string& str, char c, std::vector<std::string>& v);
-std::string FormatMoney(CAmount n, bool fPlus=false);
-bool ParseMoney(const std::string& str, CAmount& nRet);
-bool ParseMoney(const char* pszIn, CAmount& nRet);
-std::string SanitizeString(const std::string& str);
-std::vector<unsigned char> ParseHex(const char* psz);
-std::vector<unsigned char> ParseHex(const std::string& str);
-bool IsHex(const std::string& str);
-std::vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid = NULL);
-std::string DecodeBase64(const std::string& str);
-std::string EncodeBase64(const unsigned char* pch, size_t len);
-std::string EncodeBase64(const std::string& str);
-SecureString DecodeBase64Secure(const SecureString& input);
-SecureString EncodeBase64Secure(const SecureString& input);
-std::vector<unsigned char> DecodeBase32(const char* p, bool* pfInvalid = NULL);
-std::string DecodeBase32(const std::string& str);
-std::string EncodeBase32(const unsigned char* pch, size_t len);
-std::string EncodeBase32(const std::string& str);
+
 void ParseParameters(int argc, const char*const argv[]);
 bool WildcardMatch(const char* psz, const char* mask);
 bool WildcardMatch(const std::string& str, const std::string& mask);
@@ -268,59 +250,15 @@ bool TruncateFile(FILE *file, unsigned int length);
 std::string FormatI2PNativeFullVersion();
 #endif
 
-
-/**
- * Convert string to signed 32-bit integer with strict parse error feedback.
- * @returns true if the entire string could be parsed as valid integer,
- *   false if not the entire string could be parsed or when overflow or underflow occurred.
- */
-bool ParseInt32(const std::string& str, int32_t *out);
-
-
-/** 
- * Format a paragraph of text to a fixed width, adding spaces for
- * indentation to any added line.
- */
-std::string FormatParagraph(const std::string in, size_t width=79, size_t indent=0);
-
-
-
-inline std::string i64tostr(int64_t n)
+//TODO(AA) - Remove this and chaintrust/blocktrust after chainactive
+inline std::string leftTrim(std::string src, char chr)
 {
-    return strprintf("%d", n);
-}
+    std::string::size_type pos = src.find_first_not_of(chr, 0);
 
-inline std::string itostr(int n)
-{
-    return strprintf("%d", n);
-}
+    if(pos > 0)
+        src.erase(0, pos);
 
-inline int64_t atoi64(const char* psz)
-{
-#ifdef _MSC_VER
-    return _atoi64(psz);
-#else
-    return strtoll(psz, NULL, 10);
-#endif
-}
-
-inline int64_t atoi64(const std::string& str)
-{
-#ifdef _MSC_VER
-    return _atoi64(str.c_str());
-#else
-    return strtoll(str.c_str(), NULL, 10);
-#endif
-}
-
-inline int atoi(const std::string& str)
-{
-    return atoi(str.c_str());
-}
-
-inline int roundint(double d)
-{
-    return (int)(d > 0 ? d + 0.5 : d - 0.5);
+    return src;
 }
 
 inline int64_t roundint64(double d)
@@ -333,39 +271,9 @@ inline int64_t abs64(int64_t n)
     return (n >= 0 ? n : -n);
 }
 
-inline std::string leftTrim(std::string src, char chr)
+inline int roundint(double d)
 {
-    std::string::size_type pos = src.find_first_not_of(chr, 0);
-
-    if(pos > 0)
-        src.erase(0, pos);
-
-    return src;
-}
-
-template<typename T>
-std::string HexStr(const T itbegin, const T itend, bool fSpaces=false)
-{
-    std::string rv;
-    static const char hexmap[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
-                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-    rv.reserve((itend-itbegin)*3);
-    for(T it = itbegin; it < itend; ++it)
-    {
-        unsigned char val = (unsigned char)(*it);
-        if(fSpaces && it != itbegin)
-            rv.push_back(' ');
-        rv.push_back(hexmap[val>>4]);
-        rv.push_back(hexmap[val&15]);
-    }
-
-    return rv;
-}
-
-template<typename T>
-inline std::string HexStr(const T& vch, bool fSpaces=false)
-{
-    return HexStr(vch.begin(), vch.end(), fSpaces);
+    return (int)(d > 0 ? d + 0.5 : d - 0.5);
 }
 
 inline int64_t GetPerformanceCounter()
@@ -485,21 +393,6 @@ static inline uint32_t insecure_rand(void)
  */
 void seed_insecure_rand(bool fDeterministic=false);
 
-/**
- * Timing-attack-resistant comparison.
- * Takes time proportional to length
- * of first argument.
- */
-template <typename T>
-bool TimingResistantEqual(const T& a, const T& b)
-{
-    if (b.size() == 0) return a.size() == 0;
-    size_t accumulator = a.size() ^ b.size();
-    for (size_t i = 0; i < a.size(); i++)
-        accumulator |= a[i] ^ b[i%b.size()];
-    return accumulator == 0;
-}
-
 /** Median filter over a stream of values.
  * Returns the median of the last N numbers
  */
@@ -562,11 +455,6 @@ inline void SetThreadPriority(int nPriority)
     SetThreadPriority(GetCurrentThread(), nPriority);
 }
 #else
-
-#define THREAD_PRIORITY_LOWEST          PRIO_MAX
-#define THREAD_PRIORITY_BELOW_NORMAL    2
-#define THREAD_PRIORITY_NORMAL          0
-#define THREAD_PRIORITY_ABOVE_NORMAL    0
 
 inline void SetThreadPriority(int nPriority)
 {

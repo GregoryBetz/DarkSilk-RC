@@ -1,11 +1,14 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef DARKSILK_SERIALIZE_H
 #define DARKSILK_SERIALIZE_H
+
+#include <boost/type_traits/is_fundamental.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <string>
 #include <vector>
@@ -13,18 +16,14 @@
 #include <set>
 #include <cassert>
 #include <limits>
-#include <stdint.h>
 #include <cstring>
 #include <cstdio>
 
-#include <boost/type_traits/is_fundamental.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <stdint.h>
 
 #include "allocators.h"
 #include "version.h"
 
-class CAutoFile;
-class CDataStream;
 class CScript;
 
 static const unsigned int MAX_SIZE = 0x02000000;
@@ -47,7 +46,7 @@ inline T* NCONST_PTR(const T* val)
     return const_cast<T*>(val);
 }
 
-/** 
+/**
  * Get begin pointer of vector (non-const version).
  * @note These functions avoid the undefined case of indexing into an empty
  * vector, as well as that of indexing after the end of the vector.
@@ -76,7 +75,6 @@ inline const T* end_ptr(const std::vector<T,TAl>& v)
     return v.empty() ? NULL : (&v[0] + v.size());
 }
 
-
 /////////////////////////////////////////////////////////////////
 //
 // Templates for serializing to anything that looks like a stream,
@@ -89,7 +87,6 @@ enum
     SER_NETWORK         = (1 << 0),
     SER_DISK            = (1 << 1),
     SER_GETHASH         = (1 << 2),
-
     // modifiers
     SER_SKIPSIG         = (1 << 16),
     SER_BLOCKHEADERONLY = (1 << 17),
@@ -99,53 +96,13 @@ enum
 #endif
 };
 
-#define IMPLEMENT_SERIALIZE(statements)    \
-    unsigned int GetSerializeSize(int nType, int nVersion) const  \
-    {                                           \
-        CSerActionGetSerializeSize ser_action;  \
-        const bool fGetSize = true;             \
-        const bool fWrite = false;              \
-        const bool fRead = false;               \
-        unsigned int nSerSize = 0;              \
-        ser_streamplaceholder s;                \
-        assert(fGetSize||fWrite||fRead); /* suppress warning */ \
-        s.nType = nType;                        \
-        s.nVersion = nVersion;                  \
-        {statements}                            \
-        return nSerSize;                        \
-    }                                           \
-    template<typename Stream>                   \
-    void Serialize(Stream& s, int nType, int nVersion) const  \
-    {                                           \
-        CSerActionSerialize ser_action;         \
-        const bool fGetSize = false;            \
-        const bool fWrite = true;               \
-        const bool fRead = false;               \
-        unsigned int nSerSize = 0;              \
-        assert(fGetSize||fWrite||fRead); /* suppress warning */ \
-        {statements}                            \
-    }                                           \
-    template<typename Stream>                   \
-    void Unserialize(Stream& s, int nType, int nVersion)  \
-    {                                           \
-        CSerActionUnserialize ser_action;       \
-        const bool fGetSize = false;            \
-        const bool fWrite = false;              \
-        const bool fRead = true;                \
-        unsigned int nSerSize = 0;              \
-        assert(fGetSize||fWrite||fRead); /* suppress warning */ \
-        {statements}                            \
-    }
+#define READWRITE(obj)      (::SerReadWrite(s, (obj), nType, nVersion, ser_action))
 
-#define READWRITE(obj)      (nSerSize += ::SerReadWrite(s, (obj), nType, nVersion, ser_action))
-#define READWRITES(obj)	    (::SerReadWrite(s, (obj), nType, nVersion, ser_action))
-
-
-/** 
+/**
  * Implement three methods for serializable objects. These are actually wrappers over
  * "SerializationOp" template, which implements the body of each class' serialization
  * code. Adding "ADD_SERIALIZE_METHODS" in the body of the class causes these wrappers to be
- * added as members. 
+ * added as members.
  */
 #define ADD_SERIALIZE_METHODS                                                          \
     size_t GetSerializeSize(int nType, int nVersion) const {                         \
@@ -161,8 +118,6 @@ enum
     void Unserialize(Stream& s, int nType, int nVersion) {                           \
         SerializationOp(s, CSerActionUnserialize(), nType, nVersion);                \
     }
-
-
 
 //
 // Basic types
@@ -215,11 +170,6 @@ template<typename Stream> inline void Unserialize(Stream& s, double& a,         
 inline unsigned int GetSerializeSize(bool a, int, int=0)                          { return sizeof(char); }
 template<typename Stream> inline void Serialize(Stream& s, bool a, int, int=0)    { char f=a; WRITEDATA(s, f); }
 template<typename Stream> inline void Unserialize(Stream& s, bool& a, int, int=0) { char f; READDATA(s, f); a=f; }
-
-
-
-
-
 
 //
 // Compact size
@@ -525,10 +475,6 @@ template<typename K, typename Pred, typename A> unsigned int GetSerializeSize(co
 template<typename Stream, typename K, typename Pred, typename A> void Serialize(Stream& os, const std::set<K, Pred, A>& m, int nType, int nVersion);
 template<typename Stream, typename K, typename Pred, typename A> void Unserialize(Stream& is, std::set<K, Pred, A>& m, int nType, int nVersion);
 
-
-
-
-
 //
 // If none of the specialized versions above matched, default to calling member function.
 // "int nType" is changed to "long nType" to keep from getting an ambiguous overload error.
@@ -552,10 +498,6 @@ inline void Unserialize(Stream& is, T& a, long nType, int nVersion)
 {
     a.Unserialize(is, (int)nType, nVersion);
 }
-
-
-
-
 
 //
 // string
@@ -583,19 +525,17 @@ void Unserialize(Stream& is, std::basic_string<C>& str, int, int)
         is.read((char*)&str[0], nSize * sizeof(str[0]));
 }
 
-
-
-//
-// vector
-//
+/**
+ * vector
+ */
 template<typename T, typename A>
-unsigned int GetSerializeSize_impl(const std::vector<T, A>& v, int nType, int nVersion, const boost::true_type&)
+unsigned int GetSerializeSize_impl(const std::vector<T, A>& v, int nType, int nVersion, const unsigned char&)
 {
     return (GetSizeOfCompactSize(v.size()) + v.size() * sizeof(T));
 }
 
-template<typename T, typename A>
-unsigned int GetSerializeSize_impl(const std::vector<T, A>& v, int nType, int nVersion, const boost::false_type&)
+template<typename T, typename A, typename V>
+unsigned int GetSerializeSize_impl(const std::vector<T, A>& v, int nType, int nVersion, const V&)
 {
     unsigned int nSize = GetSizeOfCompactSize(v.size());
     for (typename std::vector<T, A>::const_iterator vi = v.begin(); vi != v.end(); ++vi)
@@ -606,20 +546,20 @@ unsigned int GetSerializeSize_impl(const std::vector<T, A>& v, int nType, int nV
 template<typename T, typename A>
 inline unsigned int GetSerializeSize(const std::vector<T, A>& v, int nType, int nVersion)
 {
-    return GetSerializeSize_impl(v, nType, nVersion, boost::is_fundamental<T>());
+    return GetSerializeSize_impl(v, nType, nVersion, T());
 }
 
 
 template<typename Stream, typename T, typename A>
-void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVersion, const boost::true_type&)
+void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVersion, const unsigned char&)
 {
     WriteCompactSize(os, v.size());
     if (!v.empty())
         os.write((char*)&v[0], v.size() * sizeof(T));
 }
 
-template<typename Stream, typename T, typename A>
-void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVersion, const boost::false_type&)
+template<typename Stream, typename T, typename A, typename V>
+void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVersion, const V&)
 {
     WriteCompactSize(os, v.size());
     for (typename std::vector<T, A>::const_iterator vi = v.begin(); vi != v.end(); ++vi)
@@ -629,12 +569,12 @@ void Serialize_impl(Stream& os, const std::vector<T, A>& v, int nType, int nVers
 template<typename Stream, typename T, typename A>
 inline void Serialize(Stream& os, const std::vector<T, A>& v, int nType, int nVersion)
 {
-    Serialize_impl(os, v, nType, nVersion, boost::is_fundamental<T>());
+    Serialize_impl(os, v, nType, nVersion, T());
 }
 
 
 template<typename Stream, typename T, typename A>
-void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const boost::true_type&)
+void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const unsigned char&)
 {
     // Limit size per read so bogus size value won't cause out of memory
     v.clear();
@@ -649,8 +589,8 @@ void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion,
     }
 }
 
-template<typename Stream, typename T, typename A>
-void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const boost::false_type&)
+template<typename Stream, typename T, typename A, typename V>
+void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const V&)
 {
     v.clear();
     unsigned int nSize = ReadCompactSize(is);
@@ -670,10 +610,8 @@ void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion,
 template<typename Stream, typename T, typename A>
 inline void Unserialize(Stream& is, std::vector<T, A>& v, int nType, int nVersion)
 {
-    Unserialize_impl(is, v, nType, nVersion, boost::is_fundamental<T>());
+    Unserialize_impl(is, v, nType, nVersion, T());
 }
-
-
 
 //
 // others derived from vector
@@ -694,8 +632,6 @@ void Unserialize(Stream& is, CScript& v, int nType, int nVersion)
 {
     Unserialize(is, (std::vector<unsigned char>&)v, nType, nVersion);
 }
-
-
 
 //
 // pair
@@ -719,8 +655,6 @@ void Unserialize(Stream& is, std::pair<K, T>& item, int nType, int nVersion)
     Unserialize(is, item.first, nType, nVersion);
     Unserialize(is, item.second, nType, nVersion);
 }
-
-
 
 //
 // 3 tuple
@@ -750,8 +684,6 @@ void Unserialize(Stream& is, boost::tuple<T0, T1, T2>& item, int nType, int nVer
     Unserialize(is, boost::get<1>(item), nType, nVersion);
     Unserialize(is, boost::get<2>(item), nType, nVersion);
 }
-
-
 
 //
 // 4 tuple
@@ -784,8 +716,6 @@ void Unserialize(Stream& is, boost::tuple<T0, T1, T2, T3>& item, int nType, int 
     Unserialize(is, boost::get<2>(item), nType, nVersion);
     Unserialize(is, boost::get<3>(item), nType, nVersion);
 }
-
-
 
 //
 // map
@@ -820,8 +750,6 @@ void Unserialize(Stream& is, std::map<K, T, Pred, A>& m, int nType, int nVersion
         mi = m.insert(mi, item);
     }
 }
-
-
 
 //
 // set
@@ -861,8 +789,21 @@ void Unserialize(Stream& is, std::set<K, Pred, A>& m, int nType, int nVersion)
 // Support for IMPLEMENT_SERIALIZE and READWRITE macro
 //
 class CSerActionGetSerializeSize { };
-class CSerActionSerialize { };
-class CSerActionUnserialize { };
+//class CSerActionSerialize { };
+//class CSerActionUnserialize { };
+
+
+/// Support for ADD_SERIALIZE_METHODS and READWRITE macro
+///
+struct CSerActionSerialize
+{
+    bool ForRead() const { return false; }
+};
+
+struct CSerActionUnserialize
+{
+    bool ForRead() const { return true; }
+};
 
 template<typename Stream, typename T>
 inline unsigned int SerReadWrite(Stream& s, const T& obj, int nType, int nVersion, CSerActionGetSerializeSize ser_action)
@@ -920,4 +861,4 @@ public:
         return nSize;
     }
 };
-#endif
+#endif // DARKSILK_SERIALIZE_H

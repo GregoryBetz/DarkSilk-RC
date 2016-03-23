@@ -30,14 +30,8 @@ Notes:
 
 */
 
-#include "smessage.h"
-
-#include <stdint.h>
-#include <time.h>
-#include <map>
-#include <stdexcept>
-#include <sstream>
-#include <errno.h>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <openssl/crypto.h>
 #include <openssl/ec.h>
@@ -47,23 +41,27 @@ Notes:
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/predicate.hpp>
+#include "crypto/lz4/lz4.c"
 
+#include "crypto/xxhash/xxhash.h"
+#include "crypto/xxhash/xxhash.c"
 
+#include <time.h>
+#include <map>
+#include <stdexcept>
+#include <sstream>
+#include <errno.h>
+
+#include <stdint.h>
+
+#include "smessage.h"
 #include "base58.h"
-#include "db.h"
+#include "wallet/db.h"
 #include "init.h" // pwalletMain
 #include "txdb.h"
 #include "sync.h"
 #include "ecwrapper.h"
 #include "txdb-leveldb.h"
-
-#include "lz4/lz4.c"
-
-#include "xxhash/xxhash.h"
-#include "xxhash/xxhash.c"
-
 
 boost::thread_group threadGroupSmsg;
 

@@ -5,11 +5,11 @@
 #ifndef DARKSILK_QT_PEERTABLEMODEL_H
 #define DARKSILK_QT_PEERTABLEMODEL_H
 
-#include "main.h"
-#include "net.h"
-
 #include <QAbstractTableModel>
 #include <QStringList>
+
+#include "main.h"
+#include "net.h"
 
 class ClientModel;
 class PeerTablePriv;

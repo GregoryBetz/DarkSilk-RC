@@ -1,12 +1,14 @@
-# **DarkSilk (DRKSLK) Release Candidate for Version 1.0.0.0**
+# **DarkSilk (DRKSLK) Release Candidate**
 
-(FOR TESTING PURPOSES ONLY)
+(Alpha Level)
+
+[![Code Climate](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate/badges/gpa.svg)](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate) [![Test Coverage](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate/badges/coverage.svg)](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate/coverage) [![Issue Count](https://codeclimate.com/github//SCDeveloper/DarkSilk-Release-Candidate/badges/issue_count.svg)](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate)
 
 DarkSilk Integration/Staging Tree
 ================================
-![DRKSLK logo](https://raw.githubusercontent.com/SCDeveloper/DarkSilk-Release-Candidate/master/src/qt/res/icons/header.png)
+![DRKSLK logo](https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfa1/v/t1.0-9/12662013_621650008001168_4546399705491232237_n.png?oh=38604d9a10c0823ac6d7d51b9c2878c9&oe=573958C0)
 
-**Copyright (c) 2015-2016 Silk Network Developers**
+**Copyright (c) 2015-2016 Silk Network**
 
 What is DarkSilk?
 ----------------
@@ -20,18 +22,20 @@ What is DarkSilk?
 * PoS Algorithm: Blake2B
 * PoS Target Spacing: 64 Seconds
 * PoS Difficulty Retarget: 10 Blocks 
-* PoS Reward: 0.1 DRKSLK Static PoS Reward
+* PoS Reward: 0.01 DRKSLK Static PoS Reward
 * PoS Stake Split Combined Threshold: 500 DRKSLK
 * Maturity: 100 Blocks (~100 minutes)
 * Minimum Confirmations for Stake: 2830 Blocks (~1 day)
 * PoS Min: 1 Hour
 * PoS Max: Unlimited
+* PoW/PoS Blocks: ~2790 per day
 * Stormnode Collateral Amount: 10000 DRKSLK
 * Stormnode Min Confirmation: 10 Blocks
 * Stormnode Reward: 0.25 DRKSLK Static Reward
 * Budget Reward: 10,000 DRKSLK Static Reward Every 41,091 blocks (~30 days)
 * Budget Proposal Fee: 100 DRKSLK, 20 confirmations (~20 minutes)
 * Total Coins: 90,000,000 DRKSLK (~105 years)
+* Min TX Fee: 0.00001 DRKSLK
 * Block Size: 20MB (20X Bitcoin Core)
 
 
@@ -41,7 +45,7 @@ DarkSilk utilises Stormnodes, Sandstorm and InstantX to provide anonymous and ne
 
 DarkSilk implements Gavin Andresens signature cache optimisation from Bitcoin for significantly faster transaction validation.
 
-DarkSilk uses ShadowChat from Shadow for encrypted, anonymous and secure messaging via the DarkSilk wallet network.
+DarkSilk uses ShadowChat from Shadowcash based upon Bitmessage for encrypted, anonymous and secure messaging via the DarkSilk wallet network.
 
 Darksilk includes a completely decentralised marketplace, providing anonymity and escrow services for safe and fast trades.
 
@@ -54,8 +58,6 @@ DarkSilk includes an Address Index feature, based on the address index API (sear
 Ported Masternodes from Dash, rebranded as Stormnodes and modified to use stealth addresses.
 Darksend ported and rebranded as Sandstorm.
 Utilisation of InstantX for instant transaction confirmation.
-Multiple Stormnodes can be ran from the same IP address on varied ports.
-
 
 **MainNet Parameters**
 P2P Port/Stormnodes = 31000
@@ -74,13 +76,13 @@ Debian/Ubuntu Linux Daemon Build Instructions
 
 install dependencies:
 
-	$ sudo apt-get update && sudo apt-get upgrade
-    $ sudo apt-get install git build-essential libssl-dev libdb5.3++-dev libminiupnpc-dev dh-autoreconf zip unzip libboost-all-dev make
+    $ sudo apt-get update && sudo apt-get upgrade
+    $ sudo apt-get install git build-essential libssl-dev libdb5.3++-dev libminiupnpc-dev dh-autoreconf zip unzip libboost-all-dev make libgmp3-dev libcrypto++-dev
 
 build darksilkd from git:
 
     $ git clone https://github.com/SilkNetwork/DarkSilk.git darksilk
-    $ cd darksilk/src/secp256k1 && ./autogen.sh && ./configure --enable-module-recovery && make && cd .. && sudo make -f makefile.unix USE_UPNP=0
+    $ cd darksilk/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && make && cd .. && sudo make -f makefile.unix USE_UPNP=0
    
 install and run darksilkd daemon:
 
@@ -89,11 +91,11 @@ install and run darksilkd daemon:
 
 here are a few commands, google for more.
 
-	$ ./darksilkd getinfo
-	$ ./darksilkd getpeerinfo
+    $ ./darksilkd getinfo
+    $ ./darksilkd getpeerinfo
     $ ./darksilkd getmininginfo
-	$ ./darksilkd getstakinginfo
-	$ ./darksilkd getnewaddresss
+    $ ./darksilkd getstakinginfo
+    $ ./darksilkd getnewaddresss
 	
 
 Debian/Ubuntu Linux Qt5 Wallet Build Instructions
@@ -102,9 +104,7 @@ Debian/Ubuntu Linux Qt5 Wallet Build Instructions
 update and install dependencies:
 
     $ sudo apt-get update && sudo apt-get upgrade
-    $ sudo apt-get install make libqt5webkit5-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools qtcreator zip unzip dh-autoreconf 
-      libboost-thread-dev libssl-dev libdb++-dev libstdc++6 libminiupnpc-dev libevent-dev libcurl4-openssl-dev git libpng-dev qrencode libqrencode-dev 
-      install build-essential libboost-dev libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-program-options-dev 
+    $ sudo apt-get install make libqt5webkit5-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools qtcreator zip unzip dh-autoreconf libboost-thread-dev libssl-dev libdb++-dev libstdc++6 libminiupnpc-dev libevent-dev libcurl4-openssl-dev git libpng-dev qrencode libqrencode-dev build-essential libboost-dev libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-program-options-dev libgmp3-dev
 
 build darksilk-qt from git:
 
@@ -113,7 +113,7 @@ build darksilk-qt from git:
  
 running the darksilk Qt wallet:
 
-	$ sudo ./DarkSilk
+    $ sudo ./DarkSilk
     
 This will compile and build the Qt Wallet which takes a little while, please be patient.  When finished you will have a file called DarkSilk - Simply Double Click
 
@@ -121,39 +121,35 @@ This will compile and build the Qt Wallet which takes a little while, please be 
 Example stormnode.conf Configuration
 ===================================================
 
-rpcallowip=127.0.0.1
-rpcuser=MAKEUPYOUROWNUSERNAME
-rpcpassword=MAKEUPYOUROWNPASSWORD
-rpcport=31500
-server=1
-daemon=1
-listen=1
-staking=0
-port=31000
-stormnodeaddr=YOUR_IP:31000
-stormnode=1
-stormnodeprivkey=KEY GENERATED BY COMMAND
-snconflock=1 // Stormnodes can be locked via the configuration file 
+	rpcallowip=127.0.0.1
+	rpcuser=MAKEUPYOUROWNUSERNAME
+	rpcpassword=MAKEUPYOUROWNPASSWORD
+	rpcport=31500
+	server=1
+	daemon=1
+	listen=1
+	staking=0
+	port=31000
+	stormnodeaddr=YOUR_IP:31000
+	stormnode=1
+	stormnodeprivkey=KEY GENERATED BY COMMAND
+	snconflock=1 // Stormnodes can be locked via the configuration file 
 
+> Set the stormnodeprivkey (KEY GENERATED BY COMMAND) to the result of running:
 
-Set the stormnodeprivkey to the result of running:
+	stormnode genkey // From the RPC console in the local wallet.
 
-stormnode genkey
-//From the RPC console in the local wallet.
+> If you are running your stormnode as a hidden service, replace YOUR_IP with your onion hostname (typically found in /var/lib/tor/YOURHIDDENSERVICENAME/hostname).
 
-//If you are running your stormnode as a hidden service, replace YOUR_IP with your onion hostname (typically found in /var/lib/tor/YOURHIDDENSERVICENAME/hostname).
+> Port 31000 must be open.
 
-Port 31000 must be open.
+> If you are using the hot/cold system where you are remotely activating your stormnode from your local wallet, you will also put these entries in your local (cold) wallet .conf:
 
-//If you are using the hot/cold system where you are remotely activating your stormnode from your local wallet, you will also put these entries in your local (cold) wallet .conf:
+	stormnodeaddr=YOUR_IP:31000
+	stormnode=1
+	stormnodeprivkey=KEY GENERATED BY COMMAND
 
-stormnodeaddr=YOUR_IP:31000
-stormnode=1
-stormnodeprivkey=KEY GENERATED BY COMMAND
+> Then, start the daemon on your remote stormnode, start your local wallet, and then you can start your stormnode from the RPC console:
 
-//Then, start the daemon on your remote stormnode, start your local wallet, and then you can start your stormnode from the RPC console:
+	stormnode start
 
-stormnode start
-
-
-//end of guide

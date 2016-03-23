@@ -10,16 +10,10 @@
 #include <assert.h>
 #include <cstring>
 #include <stdexcept>
-#include <stdint.h>
 #include <string>
 #include <vector>
 
-extern const signed char p_util_hexdigit[256]; // defined in util.cpp
-
-inline signed char HexDigit(char c)
-{
-    return p_util_hexdigit[(unsigned char)c];
-}
+#include <stdint.h>
 
 class uint_error : public std::runtime_error {
 public:

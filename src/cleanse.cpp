@@ -3,9 +3,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "cleanse.h"
-
 #include <openssl/crypto.h>
+
+#include "cleanse.h"
 
 void memory_cleanse(void *ptr, size_t len)
 {

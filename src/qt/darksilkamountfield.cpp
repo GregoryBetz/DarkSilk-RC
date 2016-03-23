@@ -1,14 +1,13 @@
-#include "darksilkamountfield.h"
-
-#include "qvaluecombobox.h"
-#include "darksilkunits.h"
-#include "guiconstants.h"
-
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QDoubleSpinBox>
 #include <QApplication>
 #include <qmath.h> // for qPow()
+
+#include "darksilkamountfield.h"
+#include "qvaluecombobox.h"
+#include "darksilkunits.h"
+#include "guiconstants.h"
 
 DarkSilkAmountField::DarkSilkAmountField(QWidget *parent):
         QWidget(parent), amount(0), currentUnit(-1)
@@ -113,7 +112,7 @@ QWidget *DarkSilkAmountField::setupTabChain(QWidget *prev)
 
 CAmount DarkSilkAmountField::value(bool *valid_out) const
 {
-    qint64 val_out = 0;
+    CAmount val_out = 0;
     bool valid = DarkSilkUnits::parse(currentUnit, text(), &val_out);
     if(valid_out)
     {

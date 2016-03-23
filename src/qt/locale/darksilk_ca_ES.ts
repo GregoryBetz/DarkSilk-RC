@@ -14,10 +14,10 @@
     <message>
         <location line="+41"/>
         <source>Copyright © 2009-2016 The Bitcoin Developers
-Copyright (c) 2015-2016 The Silk Network Developers</source>
+Copyright (c) 2015-2016 Silk Network</source>
         <translation>Copyright © 2009-2016 The Bitcoin Developers
-Copyright (c) 2015-2016 The Silk Network Developers
-Copyright (c) 2015-2016 The Silk Network Developers</translation>
+Copyright (c) 2015-2016 Silk Network
+Copyright (c) 2015-2016 Silk Network</translation>
     </message>
     <message>
         <location line="+15"/>

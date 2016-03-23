@@ -1,6 +1,9 @@
 #ifndef ADDEDITSTORMNODE_H
 #define ADDEDITSTORMNODE_H
 
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+
 #include <QDialog>
 
 namespace Ui {

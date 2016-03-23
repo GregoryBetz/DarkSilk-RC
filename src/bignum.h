@@ -1,15 +1,11 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef DARKSILK_BIGNUM_H
 #define DARKSILK_BIGNUM_H
-
-#include "serialize.h"
-#include "uint256.h"
-#include "version.h"
 
 #include <openssl/bn.h>
 
@@ -17,6 +13,10 @@
 #include <vector>
 
 #include <stdint.h>
+
+#include "serialize.h"
+#include "uint256.h"
+#include "utilstrencodings.h"
 
 /** Errors thrown by the bignum class */
 class bignum_error : public std::runtime_error

@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 The Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef DARKSILK_NETBASE_H
@@ -8,11 +8,14 @@
 #include <string>
 #include <vector>
 
-#include "serialize.h"
 #include "compat.h"
+#include "serialize.h"
 
 extern int nConnectTimeout;
 extern bool fNameLookup;
+
+/** -timeout default */
+static const int DEFAULT_CONNECT_TIMEOUT = 5000;
 
 #ifdef WIN32
 // In MSVC, this is defined as a macro, undefine it to prevent a compile and link error
@@ -96,16 +99,55 @@ class CNetAddr
         friend bool operator!=(const CNetAddr& a, const CNetAddr& b);
         friend bool operator<(const CNetAddr& a, const CNetAddr& b);
 
-        IMPLEMENT_SERIALIZE
-            (
-             READWRITE(FLATDATA(ip));
+        ADD_SERIALIZE_METHODS;
+
+        template <typename Stream, typename Operation>
+        inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+            READWRITE(FLATDATA(ip));
 #ifdef USE_NATIVE_I2P
-             if (!(nType & SER_IPADDRONLY))
-             {
-                READWRITE(FLATDATA(i2pDest));
-             }
+            if (!(nType & SER_IPADDRONLY))
+            {
+               READWRITE(FLATDATA(i2pDest));
+            }
 #endif
-            )
+        }
+    friend class CSubNet;
+};
+
+class CSubNet
+{
+    protected:
+        /// Network (base) address
+        CNetAddr network;
+        /// Netmask, in network byte order
+        uint8_t netmask[16];
+        /// Is this value valid? (only used to signal parse errors)
+        bool valid;
+
+    public:
+        CSubNet();
+        explicit CSubNet(const std::string &strSubnet, bool fAllowLookup = false);
+
+        //constructor for single ip subnet (<ipv4>/32 or <ipv6>/128)
+        explicit CSubNet(const CNetAddr &addr);
+
+        bool Match(const CNetAddr &addr) const;
+
+        std::string ToString() const;
+        bool IsValid() const;
+
+        friend bool operator==(const CSubNet& a, const CSubNet& b);
+        friend bool operator!=(const CSubNet& a, const CSubNet& b);
+        friend bool operator<(const CSubNet& a, const CSubNet& b);
+
+        ADD_SERIALIZE_METHODS;
+
+        template <typename Stream, typename Operation>
+        inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+            READWRITE(network);
+            READWRITE(FLATDATA(netmask));
+            READWRITE(FLATDATA(valid));
+        }
 };
 
 /** A combination of a network address (CNetAddr) and a (TCP) port */
@@ -139,21 +181,23 @@ class CService : public CNetAddr
         CService(const struct in6_addr& ipv6Addr, unsigned short port);
         CService(const struct sockaddr_in6& addr);
 
-        IMPLEMENT_SERIALIZE
-            (
-             CService* pthis = const_cast<CService*>(this);
-             READWRITE(FLATDATA(ip));
+        ADD_SERIALIZE_METHODS;
+
+        template <typename Stream, typename Operation>
+        inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+            CService* pthis = const_cast<CService*>(this);
+            READWRITE(FLATDATA(ip));
 #ifdef USE_NATIVE_I2P
-             if (!(nType & SER_IPADDRONLY))
-             {
-                 READWRITE(FLATDATA(i2pDest));
-             }
+            if (!(nType & SER_IPADDRONLY))
+            {
+                READWRITE(FLATDATA(i2pDest));
+            }
 #endif
-             unsigned short portN = htons(port);
-             READWRITE(portN);
-             if (fRead)
-                 pthis->port = ntohs(portN);
-            )
+            unsigned short portN = htons(port);
+            READWRITE(portN);
+            if (ser_action.ForRead())
+                pthis->port = ntohs(portN);
+        }
 };
 
 typedef CService proxyType;
@@ -172,8 +216,9 @@ bool Lookup(const char *pszName, std::vector<CService>& vAddr, int portDefault =
 bool LookupNumeric(const char *pszName, CService& addr, int portDefault = 0);
 bool ConnectSocket(const CService &addr, SOCKET& hSocketRet, int nTimeout, bool *outProxyConnectionFailed = 0);
 bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest, int portDefault, int nTimeout, bool *outProxyConnectionFailed = 0);
-
+/** Close socket and set hSocket to INVALID_SOCKET */
+bool CloseSocket(SOCKET& hSocket);
 #ifdef USE_NATIVE_I2P
 bool SetSocketOptions(SOCKET& hSocket);
 #endif
-#endif
+#endif // DARKSILK_NETBASE_H

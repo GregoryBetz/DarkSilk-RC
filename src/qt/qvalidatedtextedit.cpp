@@ -1,8 +1,8 @@
-#include "qvalidatedtextedit.h"
+#include <QMessageBox>
 
+#include "qvalidatedtextedit.h"
 #include "guiconstants.h"
 
-#include <QMessageBox>
 QValidatedTextEdit::QValidatedTextEdit(QWidget *parent) :
     QPlainTextEdit(parent), valid(true)
 {}

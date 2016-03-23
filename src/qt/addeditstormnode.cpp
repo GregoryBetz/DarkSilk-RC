@@ -1,15 +1,20 @@
+
+#include <QMessageBox>
+
 #include "addeditstormnode.h"
 #include "ui_addeditstormnode.h"
-
-#include "walletdb.h"
-#include "wallet.h"
+#include "anon/stormnode/stormnodeconfig.h"
+#include "stormnodemanager.h"
+#include "ui_stormnodemanager.h"
+#include "wallet/walletdb.h"
+#include "wallet/wallet.h"
 #include "ui_interface.h"
 #include "util.h"
 #include "key.h"
-#include "script.h"
+#include "script/script.h"
 #include "init.h"
 #include "base58.h"
-#include <QMessageBox>
+
 
 AddEditStormNode::AddEditStormNode(QWidget *parent) :
     QDialog(parent),
@@ -36,61 +41,56 @@ void AddEditStormNode::on_okButton_clicked()
     }
     else if(ui->addressLineEdit->text() == "")
     {
-	QMessageBox msg;
-        msg.setText("Please enter an address.");
-	msg.exec();
-	return;
+          QMessageBox msg;
+        msg.setText("Please enter an ip address and port. (123.45.67.89:31000)");
+        msg.exec();
+        return;
+    }
+    else if(ui->privkeyLineEdit->text() == "")
+    {
+        QMessageBox msg;
+        msg.setText("Please enter a Stormnode private key. This can be found using the \"Stormnode genkey\" command in the console.");
+        msg.exec();
+        return;
+    }
+    else if(ui->txhashLineEdit->text() == "")
+    {
+        QMessageBox msg;
+        msg.setText("Please enter the transaction hash for the transaction that has 10000 coins");
+        msg.exec();
+        return;
+    }
+    else if(ui->outputindexLineEdit->text() == "")
+    {
+        QMessageBox msg;
+        msg.setText("Please enter a transaction output index. This can be found using the \"Stormnode outputs\" command in the console.");
+        msg.exec();
+        return;
     }
     else
     {
-	CStormNodeConfig c;
-        c.sAlias = ui->aliasLineEdit->text().toStdString();
-	c.sAddress = ui->addressLineEdit->text().toStdString();
-        CKey secret;
-        secret.MakeNewKey(false);
-        c.sStormnodePrivKey = CDarkSilkSecret(secret).ToString();
-	
-        CWalletDB walletdb(pwalletMain->strWalletFile);
-        CAccount account;
-        walletdb.ReadAccount(c.sAlias, account);
-        bool bKeyUsed = false;
-	bool bForceNew = false;
+        std::string sAlias = ui->aliasLineEdit->text().toStdString();
+        std::string sAddress = ui->addressLineEdit->text().toStdString();
+        std::string sStormnodePrivKey = ui->privkeyLineEdit->text().toStdString();
+        std::string sTxHash = ui->txhashLineEdit->text().toStdString();
+        std::string sOutputIndex = ui->outputindexLineEdit->text().toStdString();
+        std::string sDonationAddress = "";
+        std::string sDonationPercentage = "";
 
-        // Check if the current key has been used
-        if (account.vchPubKey.IsValid())
+        boost::filesystem::path pathConfigFile = GetDataDir() / "stormnode.conf";
+        boost::filesystem::ofstream stream (pathConfigFile.string(), ios::out | ios::app);
+        if (stream.is_open())
         {
-            CScript scriptPubKey;
-            scriptPubKey.SetDestination(account.vchPubKey.GetID());
-            for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin();
-                 it != pwalletMain->mapWallet.end() && account.vchPubKey.IsValid();
-                 ++it)
-            {
-                const CWalletTx& wtx = (*it).second;
-                BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-                    if (txout.scriptPubKey == scriptPubKey)
-                        bKeyUsed = true;
+            stream << sAlias << " " << sAddress << " " << sStormnodePrivKey << " " << sTxHash << " " << sOutputIndex;
+            if (sDonationAddress != "" && sDonationPercentage != ""){
+                stream << " " << sDonationAddress << " " << sDonationPercentage << std::endl;
+            } else {
+                stream << std::endl;
             }
+            stream.close();
         }
 
-        // Generate a new key
-        if (!account.vchPubKey.IsValid() || bForceNew || bKeyUsed)
-        {
-            if (!pwalletMain->GetKeyFromPool(account.vchPubKey))
-            {
-		QMessageBox msg;
-                msg.setText("Keypool ran out, please call keypoolrefill first.");
-		msg.exec();
-		return;
-	    }
-            pwalletMain->SetAddressBookName(account.vchPubKey.GetID(), c.sAlias);
-            walletdb.WriteAccount(c.sAlias, account);
-        }
-
-        c.sCollateralAddress = CDarkSilkAddress(account.vchPubKey.GetID()).ToString();
-
-        pwalletMain->mapMyStormNodes.insert(make_pair(c.sAddress, c));
-	walletdb.WriteStormNodeConfig(c.sAddress, c);
-        uiInterface.NotifyStormNodeChanged(c);
+        stormnodeConfig.add(sAlias, sAddress, sStormnodePrivKey, sTxHash, sOutputIndex, sDonationAddress, sDonationPercentage);
 
         accept();
     }

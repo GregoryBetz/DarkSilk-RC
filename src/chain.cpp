@@ -3,15 +3,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "chain.h"
-#include "wallet.h"
-#include "checkpoints.h"
-#include "spork.h"
-#include "alias.h"
-#include "offer.h"
-#include "cert.h"
-
 #include <boost/algorithm/string/replace.hpp>
+
+#include "chain.h"
+#include "wallet/wallet.h"
+#include "checkpoints.h"
+#include "anon/stormnode/spork.h"
+#include "kernel.h"
+#include "txdb-leveldb.h"
 
 #ifdef ENABLE_WALLET
 
@@ -19,6 +18,7 @@ extern std::map<COutPoint, uint256> mapLockedInputs;
 CBlockIndex* pblockindexFBBHLast;
 
 static unsigned int nCurrentBlockFile = 1;
+
 
 CBlockIndex* FindBlockByHeight(int nHeight)
 {
@@ -38,7 +38,7 @@ CBlockIndex* FindBlockByHeight(int nHeight)
 }
 
 // darksilk: attempt to generate suitable proof-of-stake
-bool CBlock::SignBlock(CWallet& wallet, int64_t nFees)
+bool CBlock::SignBlock(CWallet& wallet, CAmount nFees)
 {
     // if we are trying to sign
     //    something except proof-of-stake block template
@@ -188,148 +188,13 @@ bool CBlock::AcceptBlock()
     return true;
 }
 
-bool CBlock::DisconnectAlias(CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs) {
-    string opName = aliasFromOp(op);
-
-    CAliasIndex theAlias(tx);
-    if (theAlias.IsNull())
-        return error("CheckAliasInputs() : null alias object");
-
-    TRY_LOCK(cs_main, cs_maintry);
-    // make sure a DB record exists for this alias
-    vector<CAliasIndex> vtxPos;
-    extern CAliasDB *paliasdb;    
-    if (!paliasdb->ReadAlias(vvchArgs[0], vtxPos))
-        return error("DisconnectBlock() : failed to read from alias DB for %s %s\n",
-                opName.c_str(), stringFromVch(vvchArgs[0]).c_str());
-
-    // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not
-    // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
-    if (vtxPos.size()) {
-        if (vtxPos.back().txHash == tx.GetHash())
-            vtxPos.pop_back();
-        // TODO validate that the first pos is the current tx pos
-    }
-    
-    if (!paliasdb->WriteAlias(vvchArgs[0], vtxPos))
-        return error("DisconnectBlock() : failed to write to alias DB");
-    if (fDebug)
-        printf("DISCONNECTED ALIAS TXN: alias=%s op=%s hash=%s  height=%d\n",
-        stringFromVch(vvchArgs[0]).c_str(),
-        aliasFromOp(op).c_str(),
-        tx.GetHash().ToString().c_str(),
-        pindex->nHeight);
-
-    return true;
-}
-
-bool CBlock::DisconnectOffer(CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs) {
-    string opName = offerFromOp(op);
-    
-    COffer theOffer(tx);
-    if (theOffer.IsNull())
-        return error("CheckOfferInputs() : null offer object");
-
-    TRY_LOCK(cs_main, cs_maintry);
-    // make sure a DB record exists for this offer
-    vector<COffer> vtxPos;
-    extern COfferDB *pofferdb;
-    if (!pofferdb->ReadOffer(vvchArgs[0], vtxPos))
-        return error("DisconnectBlock() : failed to read from offer DB for %s %s\n",
-                opName.c_str(), stringFromVch(vvchArgs[0]).c_str());
-
-    // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not
-    // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
-    if (vtxPos.size()) {
-        if (vtxPos.back().txHash == tx.GetHash())
-            vtxPos.pop_back();
-        // TODO validate that the first pos is the current tx pos
-    }
-
-    // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not
-    // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
-    if (vtxPos.size()) {
-        if (vtxPos.back().txHash == tx.GetHash())
-            vtxPos.pop_back();
-    }
-
-    // write new offer state to db
-    if (!pofferdb->WriteOffer(vvchArgs[0], vtxPos))
-        return error("DisconnectBlock() : failed to write to offer DB");
-    
-    if (fDebug)
-        printf("DISCONNECTED offer TXN: offer=%s op=%s hash=%s  height=%d\n",
-            stringFromVch(vvchArgs[0]).c_str(),
-            aliasFromOp(op).c_str(),
-            tx.GetHash().ToString().c_str(),
-            pindex->nHeight);
-
-    return true;
-}
-
-bool CBlock::DisconnectCertificate(CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs) {
-    string opName = certFromOp(op);
-    
-    CCert theCert(tx);
-    if (theCert.IsNull())
-        return error("CheckOfferInputs() : null cert object");
-
-
-    TRY_LOCK(cs_main, cs_maintry);
-    // make sure a DB record exists for this cert
-    vector<CCert> vtxPos;
-    extern CCertDB *pcertdb;
-    if (!pcertdb->ReadCert(vvchArgs[0], vtxPos))
-        return error("DisconnectBlock() : failed to read from certificate DB for %s %s\n",
-                opName.c_str(), stringFromVch(vvchArgs[0]).c_str());
-
-    // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not
-    // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
-    if (vtxPos.size()) {
-        if (vtxPos.back().txHash == tx.GetHash())
-            vtxPos.pop_back();
-        // TODO validate that the first pos is the current tx pos
-    }
-
-    // write new offer state to db
-    if (!pcertdb->WriteCert(vvchArgs[0], vtxPos))
-        return error("DisconnectBlock() : failed to write to offer DB");
-    if (fDebug)
-        printf("DISCONNECTED CERT TXN: title=%s hash=%s height=%d\n",
-           stringFromVch(vvchArgs[0]).c_str(),
-            tx.GetHash().ToString().c_str(),
-            pindex->nHeight);
-
-    return true;
-}
-
 bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
     // Disconnect in reverse order
-    CTransaction tx;
     CTransactionPoS txPoS;
     for (int i = vtx.size()-1; i >= 0; i--)
         if (!txPoS.DisconnectInputs(vtx[i],txdb))
             return false;
-
-        if (tx.nVersion == DRKSLK_TX_VERSION) 
-        {
-            vector<vector<unsigned char> > vvchArgs;
-            int op;
-            int nOut;
-            if (DecodeAliasTx(tx, op, nOut, vvchArgs, -1))
-            {
-                DisconnectAlias(pindex, tx, op, vvchArgs);  
-            }
-            else if (DecodeOfferTx(tx, op, nOut, vvchArgs, -1))
-            {
-                DisconnectOffer(pindex, tx, op, vvchArgs); 
-            }
-            else if (DecodeCertTx(tx, op, nOut, vvchArgs, -1))
-            {
-                DisconnectCertificate(pindex, tx, op, vvchArgs);
-            }
-        }
 
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.
@@ -399,43 +264,43 @@ void CBlock::RebuildAddressIndex(CTxDB& txdb)
 
         MapPrevTx::const_iterator mi;
         for(MapPrevTx::const_iterator mi = mapInputs.begin(); mi != mapInputs.end(); ++mi)
-        {
-            BOOST_FOREACH(const CTxOut &atxout, (*mi).second.second.vout)
             {
-                std::vector<uint160> addrIds;
-                if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
+                BOOST_FOREACH(const CTxOut &atxout, (*mi).second.second.vout)
                 {
-                                BOOST_FOREACH(uint160 addrId, addrIds)
-                        {
-                        if(!txdb.WriteAddrIndex(addrId, hashTx))
-                        LogPrintf("RebuildAddressIndex(): txins WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
-                                }
+                    std::vector<uint160> addrIds;
+                    if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
+                    {
+                                    BOOST_FOREACH(uint160 addrId, addrIds)
+                            {
+                            if(!txdb.WriteAddrIndex(addrId, hashTx))
+                            LogPrintf("RebuildAddressIndex(): txins WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
+                                    }
+                    }
                 }
             }
         }
-
+        // outputs
+        BOOST_FOREACH(const CTxOut &atxout, tx.vout) {
+            std::vector<uint160> addrIds;
+                if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
+            {
+            BOOST_FOREACH(uint160 addrId, addrIds)
+            {
+                if(!txdb.WriteAddrIndex(addrId, hashTx))
+                    LogPrintf("RebuildAddressIndex(): txouts WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
+                    }
+            }
         }
-    // outputs
-    BOOST_FOREACH(const CTxOut &atxout, tx.vout) {
-        std::vector<uint160> addrIds;
-            if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
-        {
-        BOOST_FOREACH(uint160 addrId, addrIds)
-        {
-            if(!txdb.WriteAddrIndex(addrId, hashTx))
-                LogPrintf("RebuildAddressIndex(): txouts WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
-                }
-        }
-    }
     }
 }
 
 static int64_t nTimeConnect = 0;
 
 bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
-{
+{   
+    CValidationState state;
     // Check it again in case a previous version let a bad block in, but skip BlockSig checking
-    if (!CheckBlock(!fJustCheck, !fJustCheck, false))
+    if (!CheckBlock(state, !fJustCheck, !fJustCheck, false))
         return false;
 
     unsigned int flags = SCRIPT_VERIFY_NOCACHE |
@@ -455,10 +320,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, CLIENT_VERSION) - (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
 
     map<uint256, CTxIndex> mapQueuedChanges;
-    int64_t nFees = 0;
-    int64_t nValueIn = 0;
-    int64_t nValueOut = 0;
-    int64_t nStakeReward = 0;
+    CAmount nFees = 0;
+    CAmount nValueIn = 0;
+    CAmount nValueOut = 0;
+    CAmount nStakeReward = 0;
     unsigned int nSigOps = 0;
     int nTxCacheHits = 0;
     int nInputs = 0;
@@ -495,8 +360,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             if (nSigOps > MAX_BLOCK_SIGOPS)
                 return DoS(100, error("ConnectBlock() : too many sigops"));
 
-            int64_t nTxValueIn = txPoS.GetValueIn(tx, mapInputs);
-            int64_t nTxValueOut = txPoS.GetValueOut(tx);
+            CAmount nTxValueIn = txPoS.GetValueIn(tx, mapInputs);
+            CAmount nTxValueOut = txPoS.GetValueOut(tx);
             nValueIn += nTxValueIn;
             nValueOut += nTxValueOut;
             if (!tx.IsCoinStake())
@@ -523,13 +388,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     int64_t nTime1 = GetTimeMicros(); nTimeConnect += nTime1 - nTimeStart;
     if(fDebug)
     {
-    LogPrintf("bench      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs]\n", (unsigned)vtx.size(), 0.001 * (nTime1 - nTimeStart), 0.001 * (nTime1 - nTimeStart) / vtx.size(), nInputs <= 1 ? 0 : 0.001 * (nTime1 - nTimeStart) / (nInputs-1), nTimeConnect * 0.000001);
-    LogPrintf("bench      - %u transaction validations cached\n", nTxCacheHits);
+        LogPrintf("bench      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs]\n", (unsigned)vtx.size(), 0.001 * (nTime1 - nTimeStart), 0.001 * (nTime1 - nTimeStart) / vtx.size(), nInputs <= 1 ? 0 : 0.001 * (nTime1 - nTimeStart) / (nInputs-1), nTimeConnect * 0.000001);
+        LogPrintf("bench      - %u transaction validations cached\n", nTxCacheHits);
     }
 
     if (IsProofOfWork())
     {
-        int64_t nReward = GetProofOfWorkReward(nFees);
+        CAmount nReward = GetProofOfWorkReward(nFees);
         // Check coinbase reward
         CTransactionPoS txPoS;
         if (txPoS.GetValueOut(vtx[0]) > nReward)
@@ -539,7 +404,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     }
     if (IsProofOfStake())
     {
-        int64_t nCalculatedStakeReward = STATIC_POS_REWARD + nFees;
+        CAmount nCalculatedStakeReward = STATIC_POS_REWARD + nFees;
 
         if (nStakeReward > nCalculatedStakeReward)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
@@ -561,52 +426,50 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             return error("ConnectBlock() : UpdateTxIndex failed");
     }
 
-
     // Write Address Index
     BOOST_FOREACH(CTransaction& tx, vtx)
     {
         uint256 hashTx = tx.GetHash();
-    // inputs
-    if(!tx.IsCoinBase())
-    {
-            MapPrevTx mapInputs;
-        map<uint256, CTxIndex> mapQueuedChangesT;
-        bool fInvalid;
-        CTransactionPoS txPoS;
-        if (!txPoS.FetchInputs(tx, txdb, mapQueuedChangesT, true, false, mapInputs, fInvalid))
-            return false;
-
-        MapPrevTx::const_iterator mi;
-        for(MapPrevTx::const_iterator mi = mapInputs.begin(); mi != mapInputs.end(); ++mi)
+        // inputs
+        if(!tx.IsCoinBase())
         {
-            BOOST_FOREACH(const CTxOut &atxout, (*mi).second.second.vout)
+            MapPrevTx mapInputs;
+            map<uint256, CTxIndex> mapQueuedChangesT;
+            bool fInvalid;
+            CTransactionPoS txPoS;
+            if (!txPoS.FetchInputs(tx, txdb, mapQueuedChangesT, true, false, mapInputs, fInvalid))
+                return false;
+
+            MapPrevTx::const_iterator mi;
+            for(MapPrevTx::const_iterator mi = mapInputs.begin(); mi != mapInputs.end(); ++mi)
             {
+                BOOST_FOREACH(const CTxOut &atxout, (*mi).second.second.vout)
+                {
+                std::vector<uint160> addrIds;
+                if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
+                {
+                                BOOST_FOREACH(uint160 addrId, addrIds)
+                        {
+                        if(!txdb.WriteAddrIndex(addrId, hashTx))
+                        LogPrintf("ConnectBlock(): txins WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
+                                }
+                }
+                }
+            }
+        }
+
+        // outputs
+        BOOST_FOREACH(const CTxOut &atxout, tx.vout) {
             std::vector<uint160> addrIds;
             if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
             {
-                            BOOST_FOREACH(uint160 addrId, addrIds)
-                    {
+                BOOST_FOREACH(uint160 addrId, addrIds)
+                {
                     if(!txdb.WriteAddrIndex(addrId, hashTx))
-                    LogPrintf("ConnectBlock(): txins WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
-                            }
-            }
-            }
-        }
-
-        }
-
-    // outputs
-    BOOST_FOREACH(const CTxOut &atxout, tx.vout) {
-        std::vector<uint160> addrIds;
-            if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
-        {
-        BOOST_FOREACH(uint160 addrId, addrIds)
-        {
-            if(!txdb.WriteAddrIndex(addrId, hashTx))
-                LogPrintf("ConnectBlock(): txouts WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
+                        LogPrintf("ConnectBlock(): txouts WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
                 }
+            }
         }
-    }
     }
 
     // Update block index on disk without changing it in memory.
@@ -699,6 +562,7 @@ bool Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     }
 
     // Connect longer branch
+    CValidationState state;
     vector<CTransaction> vDelete;
     for (unsigned int i = 0; i < vConnect.size(); i++)
     {
@@ -735,7 +599,7 @@ bool Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
 
     // Resurrect memory transactions that were in the disconnected branch
     BOOST_FOREACH(CTransaction& tx, vResurrect)
-        AcceptToMemoryPool(mempool, tx, false, NULL);
+        AcceptToMemoryPool(mempool, state, tx, false, NULL);
 
     // Delete redundant memory transactions that are in the connected branch
     BOOST_FOREACH(CTransaction& tx, vDelete) {
@@ -811,7 +675,7 @@ bool IsInitialBlockDownload()
             pindexBest->GetBlockTime() < GetTime() - 8 * 60 * 60);
 }
 
-bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) const
+bool CBlock::CheckBlock(CValidationState& state, bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig)
 {
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
@@ -889,8 +753,8 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
     }
 
     // Check transactions
-    BOOST_FOREACH(const CTransaction& tx, vtx){
-        if (!tx.CheckTransaction())
+    BOOST_FOREACH(CTransaction& tx, vtx){
+        if (!tx.CheckTransaction(state))
             return DoS(tx.nDoS, error("CheckBlock() : CheckTransaction failed"));
 
         // ppcoin: check transaction timestamp
@@ -989,7 +853,7 @@ bool CBlock::WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
     return true;
 }
 
-bool CBlock::ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true)
+bool CBlock::ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions)
 {
     SetNull();
 

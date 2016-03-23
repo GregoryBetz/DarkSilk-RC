@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2016 The Bitcoin Developers
-// Copyright (c) 2015-2016 Silk Network Developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,15 +14,14 @@
 #ifndef DARKSILK_BASE58_H
 #define DARKSILK_BASE58_H
 
-#include "chainparams.h"
-#include "pubkey.h"
-#include "script.h"
-#include "bignum.h"
-#include "allocators.h"
-#include "util.h"
-
 #include <string>
 #include <vector>
+
+#include "chainparams.h"
+#include "pubkey.h"
+#include "key.h"
+#include "script/script.h"
+#include "allocators.h"
 
 /**
  * Encode a byte sequence as a base58-encoded string.

@@ -2,11 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "sync.h"
-
-#include "util.h"
-
 #include <boost/foreach.hpp>
+#include <boost/thread.hpp>
+
+#include <stdio.h>
+
+#include "sync.h"
+#include "util.h"
+#include "utilstrencodings.h"
 
 #ifdef DEBUG_LOCKCONTENTION
 void PrintLockContention(const char* pszName, const char* pszFile, int nLine)

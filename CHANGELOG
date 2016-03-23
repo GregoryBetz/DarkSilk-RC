@@ -28,7 +28,6 @@ Fixed issue where using setaccount with a foreign address causes the address to 
 Fix priority calculation in CreateTransaction
 darksilk.conf added to /src
 GUI Styling changes
-Statistics Page Added and Icons Updated
 Clickable Padlock to Unlock Wallet and Unlock for Staking Only
 Fixed GUI bugs
 Assertion Error Fix for MacOSX
