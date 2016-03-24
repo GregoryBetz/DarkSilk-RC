@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2016 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin developers
+// Copyright (c) 2015-2016 Silk Network
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,6 +17,8 @@ typedef int64_t CAmount;
 
 static const CAmount COIN = 100000000;
 static const CAmount CENT = 1000000;
+
+extern const std::string CURRENCY_UNIT;
 
 /// No amount larger than this (in DRKSLK) is valid
 static const CAmount MAX_MONEY = 90000000 * COIN;
