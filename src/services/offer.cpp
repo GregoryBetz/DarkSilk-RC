@@ -1053,7 +1053,7 @@ bool CheckOfferInputs(const CTransaction &tx, int op, int nOut, const vector<vec
 }
 
 UniValue offernew(const UniValue& params, bool fHelp) {
-	if (fHelp || params.size() < 7 || params.size() > 10)
+	if (fHelp || params.size() < 7 || params.size() > 11)
 		throw runtime_error(
 		"offernew <accountpeg> <account> <category> <title> <quantity> <price> <description> <currency> [cert. guid] [exclusive resell=1] [accept btc only=0]\n"
 						"<accountpeg> Account peg you want to use; leave blank to use DRKSLK_RATES.\n"
