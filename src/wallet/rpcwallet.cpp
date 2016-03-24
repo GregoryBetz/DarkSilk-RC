@@ -23,6 +23,17 @@ static CCriticalSection cs_nWalletUnlockTime;
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, json_spirit::Object& entry);
 
+extern bool DecodeAccountTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeOfferTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeCertTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeMessageTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool DecodeEscrowTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern bool CheckAccountInputs(const CTransaction &tx, int op, int nOut, const vector<vector<unsigned char> > &vvchArgs, const CCoinsViewCache &inputs, bool fJustCheck, int nHeight, const CBlock *block = NULL);
+extern bool CheckOfferInputs(const CTransaction &tx, int op, int nOut, const vector<vector<unsigned char> > &vvchArgs, const CCoinsViewCache &inputs, bool fJustCheck, int nHeight, const CBlock *block = NULL);
+extern bool CheckCertInputs(const CTransaction &tx, int op, int nOut, const vector<vector<unsigned char> > &vvchArgs, const CCoinsViewCache &inputs, bool fJustCheck, int nHeight, const CBlock *block = NULL);
+extern bool CheckMessageInputs(const CTransaction &tx, int op, int nOut, const vector<vector<unsigned char> > &vvchArgs, const CCoinsViewCache &inputs, bool fJustCheck, int nHeight, const CBlock *block = NULL);
+extern bool CheckEscrowInputs(const CTransaction &tx, int op, int nOut, const vector<vector<unsigned char> > &vvchArgs, const CCoinsViewCache &inputs, bool fJustCheck, int nHeight, const CBlock *block = NULL);
+
 static void accountingDeprecationCheck()
 {
     if (!GetBoolArg("-enableaccounts", false))
@@ -421,6 +432,64 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
             ret.push_back(address.ToString());
     }
     return ret;
+}
+
+// Create Marketplace/Service transaactions
+void SendMoneyDarkSilk(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxOfferIn=NULL,  const CWalletTx* wtxCertIn=NULL, const CWalletTx* wtxAliasIn=NULL, const CWalletTx* wtxEscrowIn=NULL, bool darksilkTx=true)
+{
+    CAmount curBalance = pwalletMain->GetBalance();
+
+    // Check amount
+    if (nValue <= 0)
+        throw runtime_error("Invalid amount");
+
+    if (nValue > curBalance)
+        throw runtime_error("Insufficient funds");
+
+    // Create and send the transaction
+    CReserveKey reservekey(pwalletMain);
+    CAmount nFeeRequired;
+    std::string strError;
+    int nChangePosRet = -1;
+    if (!pwalletMain->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, wtxOfferIn, wtxCertIn, wtxAccountIn, wtxEscrowIn, darksilkTx)) {
+        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > pwalletMain->GetBalance())
+            strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
+        throw runtime_error(strError);
+    }
+    // run a check on the inputs without putting them into the db, just to ensure it will go into the mempool without issues and cause wallet annoyance
+    vector<vector<unsigned char> > vvch;
+    int op, nOut;
+    bool fJustCheck = true;
+    CCoinsViewCache inputs(pcoinsTip);
+    if(DecodeAccountTx(wtxNew, op, nOut, vvch))
+    {
+        if(!CheckAccountInputs(wtxNew, op, nOut, vvch, inputs, fJustCheck, chainActive.Tip()->nHeight))
+             throw runtime_error("Error: The transaction was rejected! Account Inputs were invalid!");
+    }
+    if(DecodeCertTx(wtxNew, op, nOut, vvch))
+    {
+        if(!CheckCertInputs(wtxNew,  op, nOut, vvch, inputs, fJustCheck, chainActive.Tip()->nHeight))
+            throw runtime_error("Error: The transaction was rejected! Certificate Inputs were invalid!");
+    }
+    if(DecodeEscrowTx(wtxNew, op, nOut, vvch))
+    {
+        if(!CheckEscrowInputs(wtxNew,  op, nOut, vvch, inputs, fJustCheck, chainActive.Tip()->nHeight))
+            throw runtime_error("Error: The transaction was rejected! Escrow Inputs were invalid!");
+    }
+    if(DecodeOfferTx(wtxNew, op, nOut, vvch))       
+    {
+        if(!CheckOfferInputs(wtxNew,  op, nOut, vvch, inputs, fJustCheck, chainActive.Tip()->nHeight))
+            throw runtime_error("Error: The transaction was rejected! Offer Inputs were invalid!");
+    }
+    if(DecodeMessageTx(wtxNew, op, nOut, vvch))
+    {
+        if(!CheckMessageInputs(wtxNew,  op, nOut, vvch, inputs, fJustCheck, chainActive.Tip()->nHeight))
+            throw runtime_error("Error: The transaction was rejected! Message Inputs were invalid!");
+    }
+    
+
+    if (!pwalletMain->CommitTransaction(wtxNew, reservekey))
+        throw runtime_error("Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
 }
 
 void SendMoney(const CTxDestination &address, CAmount nValue, CWalletTx& wtxNew, bool fUseIX=false, bool fUseSS=false)
