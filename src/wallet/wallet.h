@@ -129,6 +129,8 @@ public:
     ///      strWalletFile (immutable after instantiation)
     mutable CCriticalSection cs_wallet;
 
+    bool SelectCoinsForServices(const CAmount& nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl) const;
+
     bool SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<CTxIn>& setCoinsRet, CAmount& nValueRet, int nSandstormRoundsMin, int nSandstormRoundsMax) const;
     bool SelectCoinsByDenominations(int nDenom, CAmount nValueMin, CAmount nValueMax, std::vector<CTxIn>& vCoinsRet, std::vector<COutput>& vCoinsRet2, CAmount& nValueRet, int nSandstormRoundsMin, int nSandstormRoundsMax);
     bool SelectCoinsDarkDenominated(CAmount nTargetValue, std::vector<CTxIn>& setCoinsRet, CAmount& nValueRet) const;
@@ -295,6 +297,10 @@ public:
                            CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS, bool useIX=false, CAmount nFeePay=0);
 
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, std::string strCommand="tx");
+
+    // Add data and input tx for darksilk marketplace/service calls
+    bool CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosRet,
+                           std::string& strFailReason, const CCoinControl *coinControl = NULL, bool sign = true, const CWalletTx* wtxIn=NULL, const CWalletTx* wtxIn1=NULL, const CWalletTx* wtxIn2=NULL, const CWalletTx* wtxIn3=NULL, bool drkslkTx = false);
 
     uint64_t GetStakeWeight() const;
     uint64_t GetStakeWeight2() const;
