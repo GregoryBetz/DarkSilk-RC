@@ -237,25 +237,25 @@ bool ExistsInMempool(const std::vector<unsigned char> &vchToFind, opcodetype typ
 
 }
 
-CAmount convertCurrencyCodeToDarkSilk(const vector<unsigned char> &vchCurrencyCode, const float &nPrice, const unsigned int &nHeight, int &precision)
+CAmount convertCurrencyCodeToDarkSilk(const vector<unsigned char> &vchAccountPeg, const vector<unsigned char> &vchCurrencyCode, const float &nPrice, const unsigned int &nHeight, int &precision)
 {
-	CAmount sysPrice = 0;
+	CAmount drkslkPrice = 0;
 	CAmount nRate;
 	vector<string> rateList;
-	if(getCurrencyToDRKSLKFromAccount(vchCurrencyCode, nRate, nHeight, rateList, precision) == "")
+	if(getCurrencyToDRKSLKFromAccount(vchAccountPeg, vchCurrencyCode, nRate, nHeight, rateList, precision) == "")
 	{
 		float price = nPrice*(float)nRate;
-		sysPrice = CAmount(price);
+		drkslkPrice = CAmount(price);
 	}
-	return sysPrice;
+	return drkslkPrice;
 }
-string getCurrencyToDRKSLKFromAccount(const vector<unsigned char> &vchCurrency, CAmount &nFee, const unsigned int &nHeightToFind, vector<string>& rateList, int &precision)
+string getCurrencyToDRKSLKFromAccount(const vector<unsigned char> &vchAccountPeg, const vector<unsigned char> &vchCurrency, CAmount &nFee, const unsigned int &nHeightToFind, vector<string>& rateList, int &precision)
 {
 	vector<unsigned char> vchName = vchFromString("DRKSLK_RATES");
 	string currencyCodeToFind = stringFromVch(vchCurrency);
 	// check for account existence in DB
 	vector<CAccountIndex> vtxPos;
-	if (!paccountdb->ReadAccount(vchName, vtxPos) || vtxPos.empty())
+	if (!paccountdb->ReadAccount(vchAccountPeg, vtxPos) || vtxPos.empty())
 	{
 		if(fDebug)
 			LogPrintf("getCurrencyToDRKSLKFromAccount() Could not find DRKSLK_RATES account\n");

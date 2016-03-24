@@ -143,14 +143,13 @@ bool GetAccountOfTx(const CTransaction& tx, std::vector<unsigned char>& name);
 bool DecodeAccountTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch);
 bool DecodeAndParseAccountTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch);
 bool DecodeAndParseDarkSilkTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch);
-bool DecodeAccountScript(const CScript& script, int& op,
-		std::vector<std::vector<unsigned char> > &vvch);
+bool DecodeAccountScript(const CScript& script, int& op, std::vector<std::vector<unsigned char> > &vvch);
 void GetAddressFromAccount(const std::string& strAccount, std::string& strAddress);
 void GetAccountFromAddress(const std::string& strAddress, std::string& strAccount);
-CAmount convertCurrencyCodeToDarkSilk(const std::vector<unsigned char> &vchCurrencyCode, const float &nPrice, const unsigned int &nHeight, int &precision);
+CAmount convertCurrencyCodeToDarkSilk(const std::vector<unsigned char> &vchAccountPeg, const std::vector<unsigned char> &vchCurrencyCode, const float &nPrice, const unsigned int &nHeight, int &precision);
 bool ExistsInMempool(const std::vector<unsigned char> &vchToFind, opcodetype type);
 unsigned int QtyOfPendingAcceptsInMempool(const std::vector<unsigned char>& vchToFind);
-std::string getCurrencyToDRKSLKFromAccount(const std::vector<unsigned char> &vchCurrency, CAmount &nFee, const unsigned int &nHeightToFind, std::vector<std::string>& rateList, int &precision);
+std::string getCurrencyToDRKSLKFromAccount(const std::vector<unsigned char> &vchAccountPeg, const std::vector<unsigned char> &vchCurrency, CAmount &nFee, const unsigned int &nHeightToFind, std::vector<std::string>& rateList, int &precision);
 std::string accountFromOp(int op);
 bool IsAccountOp(int op);
 int GetAccountExpirationDepth();
