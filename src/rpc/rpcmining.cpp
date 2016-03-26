@@ -72,7 +72,7 @@ Value getstakesubsidy(const Array& params, bool fHelp)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
 
-    return (uint64_t)STATIC_POS_REWARD;
+    return (uint64_t)Params().StakingReward();
 }
 
 Value getmininginfo(const Array& params, bool fHelp)
@@ -124,7 +124,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     uint64_t nNetworkWeight = GetPoSKernelPS();
     bool staking = nLastCoinStakeSearchInterval && nWeight;
-    uint64_t nExpectedTime = staking ? (POS_TARGET_SPACING * nNetworkWeight / nWeight) : 0;
+    uint64_t nExpectedTime = staking ? (Params().ProofOfStakeSpacing() * nNetworkWeight / nWeight) : 0;
 
     Object obj;
 

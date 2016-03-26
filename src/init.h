@@ -33,6 +33,7 @@ extern bool fOnlyTor;
 enum HelpMessageMode
 {
     HMM_DARKSILK,
+    HMM_DARKSILKD,
     HMM_DARKSILK_QT,
     HMM_DARKSILK_CLI
 };

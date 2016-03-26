@@ -11,6 +11,9 @@
 
 #include "bignum.h"
 #include "uint256.h"
+#include "amount.h"
+
+#include "consensus/params.h"
 
 using namespace std;
 
@@ -60,7 +63,8 @@ public:
 
         MAX_BASE58_TYPES
     };
-
+	
+	const Consensus::Params& GetConsensus() const { return consensus; }
     const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
     const MessageStartChars& MessageStart() const { return pchMessageStart; }
     const vector<unsigned char>& AlertKey() const { return vAlertPubKey; }
@@ -81,10 +85,28 @@ public:
     int64_t StartStormnodePayments() const { return nStartStormnodePayments; }
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     std::string SandstormPoolDummyAddress() const { return strSandstormPoolDummyAddress; }
-
+    int ProofOfWorkSpacing() const { return nPoWTargetSpacing; }
+    int ProofOfStakeSpacing() const { return nPoSTargetSpacing; }
+    CAmount StakingReward() const { return nStakingReward; }
+	double MinimumFee() const { return nMinFee; }
+	CAmount StormnodeCollateral() const { return nStormnodeCollateral; }
+	CAmount SandstormCollateral() const { return nSandstormCollateral; }
+	int StormnodePaymentStart() const { return nStormnodePaymentStart; }
+	CAmount SandstormPoolMax() const { return nSandstormPoolMax; }
+	
 protected:
     CChainParams() {};
 
+	Consensus::Params consensus;
+
+	int nPoWTargetSpacing;
+	int nPoSTargetSpacing;
+	CAmount nStakingReward;
+	double nMinFee;
+	CAmount nStormnodeCollateral;
+	int nStormnodePaymentStart;
+	CAmount nSandstormCollateral;
+	int nSandstormPoolMax;
     uint256 hashGenesisBlock;
     MessageStartChars pchMessageStart;
     // Raw pub key bytes for the broadcast alert signing key.

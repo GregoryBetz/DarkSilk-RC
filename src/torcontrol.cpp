@@ -561,7 +561,7 @@ static void TorControlThread()
     event_base_free(base);
 }
 
-void StartTorControl(boost::thread_group& threadGroup, CScheduler& scheduler)
+void StartTorControl(boost::thread_group& threadGroup)
 {
     threadGroup.create_thread(boost::bind(&TraceThread<void (*)()>, "torcontrol", &TorControlThread));
 }

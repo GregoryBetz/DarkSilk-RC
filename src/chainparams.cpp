@@ -17,6 +17,31 @@
 
 using namespace boost::assign;
 
+bool newChain = false;
+
+void CreateGenesis(CBlock genesis){
+    // This will figure out a valid hash and Nonce if you're creating a different genesis block:
+    uint256 hashTarget = CBigNum().SetCompact(Params().ProofOfWorkLimit().GetCompact()).getuint256();
+    printf("Target: %s\n", hashTarget.GetHex().c_str());
+    uint256 newhash = genesis.GetHash();
+    uint256 besthash;
+    memset(&besthash,0xFF,32);
+    while (newhash > hashTarget) {
+    	++genesis.nNonce;
+        if (genesis.nNonce == 0){
+            printf("NONCE WRAPPED, incrementing time");
+            ++genesis.nTime;
+        }
+	newhash = genesis.GetHash();
+	if(newhash < besthash){
+	    besthash=newhash;
+	    printf("New best: %s\n", newhash.GetHex().c_str());
+	}
+    }
+    LogPrintf("Found Genesis, Nonce: %ld, Hash: %s\n", genesis.nNonce, genesis.GetHash().GetHex().c_str());
+    exit(0);
+}
+
 struct SeedSpec6 {
     uint8_t addr[16];
     uint16_t port;
@@ -88,16 +113,12 @@ public:
         genesis.nNonce   = 763220;
 
         hashGenesisBlock = genesis.GetHash(); 
-
-        //// debug print
-        /*
-        printf("Gensis Hash: %s\n", genesis.GetHash().ToString().c_str());
-        printf("Gensis Hash Merkle: %s\n", genesis.hashMerkleRoot.ToString().c_str());
-        printf("Gensis nTime: %u\n", genesis.nTime);
-        printf("Gensis nBits: %08x\n", genesis.nBits);
-        printf("Gensis Nonce: %u\n\n\n", genesis.nNonce);
-        */
-
+		
+		nPoWTargetSpacing = 60;
+		nPoSTargetSpacing = 64;
+		
+		if (newChain == true) {CreateGenesis(genesis);}
+		
         assert(hashGenesisBlock == uint256("0xdcc5e22e275eff273799a4c06493f8364316d032813c22845602f05ff13d7ec7"));
         assert(genesis.hashMerkleRoot == uint256("0xfed7550a453e532c460fac58d438740235c380f9908cae2d602b705ca2c2f0a6"));
 
@@ -116,8 +137,16 @@ public:
         nPoolMaxTransactions = 3;
         strSandstormPoolDummyAddress = "DDCxTmWLPytjnEAMd3TCGaryJStEx5caSm"; //private key = MpBeYuuA7c47bqa6ubmBnP8P7hkpmJTSUgwejC8AehSPwsXmkZHD
         strStormnodePaymentsPubKey = "";
+        
         nFirstPOSBlock = 101;
-        nStartStormnodePayments = 1446335999; //Wed, 31 Oct 2015 23:59:59 GMT
+        nStakingReward = (0.01*COIN); // 0.01 DRKSLK
+                
+        nMinFee = 0.00001; // DRKSLK
+        nStartStormnodePayments = 1446335999; // Wed, 31 Oct 2015 23:59:59 GMT
+        nStormnodeCollateral = 10000; // DRKSLK
+        nStormnodePaymentStart = 420; // 100 for Testnet
+        nSandstormCollateral = (0.01*COIN);
+        nSandstormPoolMax = (9999.99*COIN);
     }
 
     virtual const CBlock& GenesisBlock() const { return genesis; }
@@ -152,7 +181,12 @@ public:
         nDefaultPort = 31750;
         nRPCPort = 31800;
         strDataDir = "testnet";
-
+        
+		nPoWTargetSpacing = 60;
+		nPoSTargetSpacing = 64;
+		
+		if (newChain == true) {CreateGenesis(genesis);}
+		
         // Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1438578972;
         genesis.nBits  = 0; 
@@ -177,8 +211,16 @@ public:
         nPoolMaxTransactions = 3;
         strStormnodePaymentsPubKey = "";
         strSandstormPoolDummyAddress = "DDCxTmWLPytjnEAMd3TCGaryJStEx5caSm"; //private key = MpBeYuuA7c47bqa6ubmBnP8P7hkpmJTSUgwejC8AehSPwsXmkZHD
+       
         nFirstPOSBlock = 101;
-        nStartStormnodePayments = 1446335999; //Wed, 31 Oct 2015 23:59:59 GMT
+        nStakingReward = (0.01*COIN); // 0.01 DRKSLK
+                
+        nMinFee = 0.00001; // DRKSLK
+        nStartStormnodePayments = 1446335999; // Wed, 31 Oct 2015 23:59:59 GMT
+        nStormnodeCollateral = 10000; // DRKSLK
+        nStormnodePaymentStart = 100; // Block
+        nSandstormCollateral = (0.01*COIN);
+        nSandstormPoolMax = (9999.99*COIN);
     }
 
     virtual Network NetworkID() const { return CChainParams::TESTNET; }

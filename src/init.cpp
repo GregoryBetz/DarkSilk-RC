@@ -296,8 +296,6 @@ bool static Bind(const CService &addr, unsigned int flags) {
 // Core-specific options shared between UI and daemon
 std::string HelpMessage(HelpMessageMode hmm)
 {
-if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
-    {
     string strUsage = _("Options:") + "\n";
     strUsage += "  -?                     " + _("This help message") + "\n";
     strUsage += "  -conf=<file>           " + _("Specify configuration file (default: darksilk.conf)") + "\n";
@@ -343,6 +341,8 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
 #if !defined(WIN32)
     strUsage += "  -daemon                " + _("Run in the background as a daemon and accept commands") + "\n";
 #endif
+if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
+    {
 
     strUsage += "\n" + _("Debugging/Testing options:") + "\n";
     if (GetBoolArg("-help-debug", false))
@@ -405,7 +405,7 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
     strUsage += "  -sandstormrounds=<n>          " + strprintf(_("Use N separate stormnodes to anonymize funds  (2-50, default: %u)"), nSandstormRounds) + "\n";
     strUsage += "  -anonymizedarksilkamount=<n> " + strprintf(_("Keep N DarkSilk anonymized (default: %u)"), nAnonymizeDarkSilkAmount) + "\n";
     strUsage += "  -liquidityprovider=<n>       " + strprintf(_("Provide liquidity to Sandstorm by infrequently mixing coins on a continual basis (0-100, default: %u, 1=very frequent, high fees, 100=very infrequent, low fees)"), nLiquidityProvider) + "\n";
- 
+}
     strUsage += "\n" + _("InstantX options:") + "\n";
     strUsage += "  -enableinstantx=<n>    " + strprintf(_("Enable instantx, show confirmations for locked transactions (0-1, default: %u)"), fEnableInstantX) + "\n";
     strUsage += "  -instantxdepth=<n>     " + strprintf(_("Show N confirmations for a successfully locked transaction (0-9999, default: %u)"), nInstantXDepth) + "\n"; 
@@ -413,7 +413,7 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
         "  -nosmsg                                  " + _("Disable secure messaging.") + "\n" +
         "  -debugsmsg                               " + _("Log extra debug messages.") + "\n" +
         "  -smsgscanchain                           " + _("Scan the block chain for public key addresses on startup.") + "\n";
-}
+
     return strUsage;
 }
 
@@ -1424,7 +1424,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 #endif
 
     if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
-        StartTorControl(threadGroup, scheduler);
+        StartTorControl(threadGroup);
 
     StartNode(threadGroup);
     

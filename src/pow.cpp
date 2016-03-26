@@ -5,10 +5,13 @@
 
 #include "pow.h"
 
+#include "consensus/params.h"
 #include "chainparams.h"
 #include "core.h"
 #include "main.h"
 #include "uint256.h"
+
+CBigNum bnProofOfStakeLimit(~uint256(0) >> 20); //PoS starting difficulty = 0.0002441
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
 {
@@ -50,6 +53,12 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits)
     return true;
 }
 
+
+static CBigNum GetProofOfStakeLimit(int nHeight)
+{
+        return bnProofOfStakeLimit;
+}
+
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
     CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
@@ -64,7 +73,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
     if (pindexPrevPrev->pprev == NULL)
         return bnTargetLimit.GetCompact(); // second block
 
-    int64_t nTargetSpacing = fProofOfStake ? POS_TARGET_SPACING : POW_TARGET_SPACING;
+    int64_t nTargetSpacing = fProofOfStake ? Params().ProofOfStakeSpacing() : Params().ProofOfWorkSpacing();
     int64_t nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
 
     if (nActualSpacing < 0) {

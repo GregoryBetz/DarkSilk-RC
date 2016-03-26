@@ -42,7 +42,6 @@ using namespace boost;
 //
 // Global state
 //
-CBigNum bnProofOfStakeLimit(~uint256(0) >> 20); //PoS starting difficulty = 0.0002441
 
 CCriticalSection cs_setpwalletRegistered;
 set<CWallet*> setpwalletRegistered;
@@ -1678,11 +1677,6 @@ void static PruneOrphanBlocks()
     }
 }
 
-static CBigNum GetProofOfStakeLimit(int nHeight)
-{
-        return bnProofOfStakeLimit;
-}
-
 // miner's coin base reward
 CAmount GetProofOfWorkReward(CAmount nFees)
 {
@@ -1709,7 +1703,7 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
 
 CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees)
 {
-    CAmount nSubsidy = STATIC_POS_REWARD;
+    CAmount nSubsidy = Params().StakingReward();
 
     return nSubsidy + nFees;
 }
