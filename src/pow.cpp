@@ -7,7 +7,6 @@
 
 #include "consensus/params.h"
 #include "chainparams.h"
-#include "core.h"
 #include "main.h"
 #include "uint256.h"
 

@@ -93,7 +93,7 @@ public:
 	CAmount SandstormCollateral() const { return nSandstormCollateral; }
 	int StormnodePaymentStart() const { return nStormnodePaymentStart; }
 	CAmount SandstormPoolMax() const { return nSandstormPoolMax; }
-	int MiningAmount() const { return nMiningReward; }
+	int MiningReward() const { return nMiningReward; }
 
 protected:
     CChainParams() {};

@@ -1687,8 +1687,8 @@ CAmount GetProofOfWorkReward(CAmount nFees)
     }
     else
     {
-        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(STATIC_POW_REWARD), STATIC_POW_REWARD);
-        return STATIC_POW_REWARD + nFees;
+        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(Params().MiningReward()), Params().MiningReward());
+        return Params().MiningReward() + nFees;
     }
 }
 
@@ -1700,11 +1700,13 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees)
+CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork)
 {
+	CAmount nSubsidy;
+
 	if (fProofOfWork) {
-    		CAmount nSubsidy = Params().MiningReward();
-	} else CAmount nSubsidy = Params().StakingReward();
+    		 nSubsidy = Params().MiningReward();
+	} else { nSubsidy = Params().StakingReward(); }
 
     return nSubsidy + nFees;
 }
