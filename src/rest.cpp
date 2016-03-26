@@ -85,7 +85,7 @@ static bool rest_block(AcceptedConnection *conn,
 
     CBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hash];
-    if (!ReadBlockFromDisk(block, pblockindex))
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
         throw RESTERR(HTTP_NOT_FOUND, hashStr + " not found");
 
     CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION);
