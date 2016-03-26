@@ -453,41 +453,22 @@ void CBudgetManager::FillBlockPayee(CTransaction& txNew, CAmount nFees)
         ++it;
     }
 
-    CAmount blockValue = GetBlockValue(pindexPrev->nBits, pindexPrev->nHeight, nFees);
+    CAmount blockValue = GetProofOfWorkReward(nFees);
+
+    txNew.vout[0].nValue = blockValue;
 
     if(nHighestCount > 0){
+        txNew.vout.resize(2);
 
+        //these are super blocks, so their value can be much larger than normal
         txNew.vout[1].scriptPubKey = payee;
+        txNew.vout[1].nValue = nAmount;
 
-        //these are super blocks, PoS and budget payments only.  No stormnode payments. (TODO (Amir): add SN payment here)
-        if(txNew.vout.size() == 4) // 2 stake outputs, stake was split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = nAmount;
-            txNew.vout[2].nValue = (blockValue / 2 / CENT) * CENT;
-            txNew.vout[3].nValue = blockValue;
-        }
-        else if(txNew.vout.size() == 3) // only 1 stake output, was not split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = nAmount;
-            txNew.vout[2].nValue = blockValue;
-        }
-        CTxDestination ctxdAddress1;
-        ExtractDestination(payee, ctxdAddress1);
-        CDarkSilkAddress address1(ctxdAddress1);
-        LogPrintf("Budget payment 1 to %s for %lld\n", address1.ToString().c_str(), nAmount);
-    }
-    else
-    {
-        //No budget finalized and approved, so we only pay PoS minters. (add SN payment here)
-        if(txNew.vout.size() == 3) // 2 stake outputs, stake was split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = (blockValue / 2 / CENT) * CENT;
-            txNew.vout[2].nValue = blockValue;
-        }
-        else if(txNew.vout.size() == 2) // only 1 stake output, was not split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = blockValue;
-        }
+        CTxDestination address1;
+        ExtractDestination(payee, address1);
+        CDarkSilkAddress address2(address1);
+
+        LogPrintf("CBudgetManager::FillBlockPayee - Budget payment to %s for %lld\n", address2.ToString(), nAmount);
     }
 }
 

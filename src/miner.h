@@ -8,7 +8,7 @@
 
 #include "wallet/wallet.h"
 
-/* Generate a new block, without valid proof-of-work */
+//! Generate new block using proof-of-work or proof-of-stake
 CBlock* CreateNewBlock(CReserveKey& reservekey, bool fProofOfStake=false, CAmount* pFees = 0);
 
 /** Modify the extranonce in a block */
@@ -25,5 +25,8 @@ bool CheckStake(CBlock* pblock, CWallet& wallet);
 
 /** Base sha256 mining transform */
 void SHA256Transform(void* pstate, void* pinput, const void* pinit);
+
+//! Run the wallet PoW miner threads
+void GeneratePoWCoins(bool fGenerate, CWallet* pwallet, int nThreads);
 
 #endif // DRKSLK_MINER_H
