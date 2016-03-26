@@ -211,12 +211,12 @@ DEPENDPATH += . \
               src/secp256k1/src/java
 
 HEADERS +=  src/qt/darksilkgui.h \
-			src/prevector.h \
+	    src/prevector.h \
     	    src/scheduler.h \
             src/cryptkey.h \
-			src/pow.h \
-	        src/anon/stormnode/activestormnode.h \
-	        src/cryptogram/ies.h \
+            src/pow.h \
+            src/anon/stormnode/activestormnode.h \
+            src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
             src/qt/addresstablemodel.h \
             src/qt/optionsdialog.h \
@@ -228,7 +228,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/aboutdialog.h \
             src/qt/editaddressdialog.h \
             src/qt/darksilkaddressvalidator.h \
-	        src/blindtext.h \
+	    src/blindtext.h \
             src/alert.h \
             src/allocators.h \
             src/addrman.h \
@@ -378,8 +378,8 @@ HEADERS +=  src/qt/darksilkgui.h \
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/blindtext.cpp \
 	    src/torcontrol.cpp \
-			src/rest.cpp \
-			src/scheduler.cpp \
+	    src/rest.cpp \
+	    src/scheduler.cpp \
             src/cryptkey.cpp \
             src/pow.cpp \
             src/anon/stormnode/activestormnode.cpp \
