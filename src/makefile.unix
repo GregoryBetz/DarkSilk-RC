@@ -34,7 +34,8 @@ LIBS += \
    -l db_cxx$(BDB_LIB_SUFFIX) \
    -l ssl \
    -l cryptopp \
-   -l crypto
+   -l crypto \
+   -l event
 
 ifndef USE_UPNP
 	override USE_UPNP = -
@@ -191,6 +192,7 @@ OBJS= \
     obj/blindtext.o \
     obj/rpc/rpcblindtext.o \
     obj/rpc/rpccrypt.o \
+    obj/torcontrol.o \
     obj/cryptogram/cryptogram.o \
     obj/cryptogram/ecies.o \
     obj/compat/glibc_sanity.o \

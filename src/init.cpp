@@ -34,6 +34,7 @@
 #include "anon/stormnode/spork.h"
 #include "smessage.h"
 #include "txdb-leveldb.h"
+#include "torcontrol.h"
 
 #ifdef ENABLE_WALLET
 #include "db.h"
@@ -178,6 +179,7 @@ void PrepareShutdown()
     DumpBudgets();
     DumpStormnodePayments();
     UnregisterNodeSignals(GetNodeSignals());
+    StopTorControl();
 
     if (fFeeEstimatesInitialized)
     {
@@ -1420,6 +1422,9 @@ bool AppInit2(boost::thread_group& threadGroup)
     LogPrintf("mapWallet.size() = %u\n",       pwalletMain ? pwalletMain->mapWallet.size() : 0);
     LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain ? pwalletMain->mapAddressBook.size() : 0);
 #endif
+
+    if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
+        StartTorControl(threadGroup, scheduler);
 
     StartNode(threadGroup);
     

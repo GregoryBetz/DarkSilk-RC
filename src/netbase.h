@@ -221,4 +221,10 @@ bool CloseSocket(SOCKET& hSocket);
 #ifdef USE_NATIVE_I2P
 bool SetSocketOptions(SOCKET& hSocket);
 #endif
+
+/**
+ * Convert milliseconds to a struct timeval for e.g. select.
+ */
+struct timeval MillisToTimeval(int64_t nTimeout);
+
 #endif // DARKSILK_NETBASE_H
