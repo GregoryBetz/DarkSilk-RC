@@ -21,6 +21,7 @@
 #include "init.h"
 #include "kernel.h"
 #include "txdb.h"
+#include "pow.h"
 #include "ui_interface.h"
 #include "util.h"
 #include "utilmoneystr.h"
@@ -1704,46 +1705,6 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     while (pindex && pindex->pprev && (pindex->IsProofOfStake() != fProofOfStake))
         pindex = pindex->pprev;
     return pindex;
-}
-
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
-{
-    CBigNum bnTargetLimit = fProofOfStake ? GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit();
-
-    if (pindexLast == NULL)
-        return bnTargetLimit.GetCompact(); // genesis block
-
-    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
-    if (pindexPrev->pprev == NULL)
-        return bnTargetLimit.GetCompact(); // first block
-    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
-    if (pindexPrevPrev->pprev == NULL)
-        return bnTargetLimit.GetCompact(); // second block
-
-    int64_t nTargetSpacing = fProofOfStake ? POS_TARGET_SPACING : POW_TARGET_SPACING;
-    int64_t nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
-
-    if (nActualSpacing < 0) {
-        nActualSpacing = nTargetSpacing;
-    }
-    else if (fProofOfStake && nActualSpacing > nTargetSpacing * 10) {
-         nActualSpacing = nTargetSpacing * 10;
-    }
-
-    // target change every block
-    // retarget with exponential moving toward target spacing
-    // Includes fix for wrong retargeting difficulty by Mammix2
-    CBigNum bnNew;
-    bnNew.SetCompact(pindexPrev->nBits);
-
-    int64_t nInterval = fProofOfStake ? 10 : 10;
-    bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
-    bnNew /= ((nInterval + 1) * nTargetSpacing);
-
-    if (bnNew <= 0 || bnNew > bnTargetLimit)
-        bnNew = bnTargetLimit;
-
-    return bnNew.GetCompact();
 }
 
 CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees)

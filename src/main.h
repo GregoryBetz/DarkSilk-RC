@@ -15,6 +15,7 @@
 #include "net.h"
 #include "txdb.h"
 #include "txmempool.h"
+#include "pow.h"
 
 class CCoinsViewCache;
 class CTxMemPool;
@@ -160,7 +161,6 @@ bool SendMessages(CNode* pto, bool fSendTrickle);
 void ThreadImport(std::vector<boost::filesystem::path> vImportFiles);
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake);
 CAmount GetProofOfWorkReward(CAmount nFees);
 
 bool IsConfirmedInNPrevBlocks(const CTxIndex& txindex, const CBlockIndex* pindexFrom, int nMaxDepth, int& nActualDepth);

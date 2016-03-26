@@ -211,8 +211,10 @@ DEPENDPATH += . \
               src/secp256k1/src/java
 
 HEADERS +=  src/qt/darksilkgui.h \
+			src/prevector.h \
     	    src/scheduler.h \
             src/cryptkey.h \
+			src/pow.h \
 	        src/anon/stormnode/activestormnode.h \
 	        src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
@@ -374,9 +376,10 @@ HEADERS +=  src/qt/darksilkgui.h \
 
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/blindtext.cpp \
-	src/rest.cpp \
+			src/rest.cpp \
 			src/scheduler.cpp \
             src/cryptkey.cpp \
+            src/pow.cpp \
             src/anon/stormnode/activestormnode.cpp \
             src/qt/transactiontablemodel.cpp \
             src/qt/addresstablemodel.cpp \
