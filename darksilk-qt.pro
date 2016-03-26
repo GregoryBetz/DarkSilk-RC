@@ -212,7 +212,6 @@ DEPENDPATH += . \
 
 HEADERS +=  src/qt/darksilkgui.h \
     	    src/scheduler.h \
-	    src/core_io.h \
             src/cryptkey.h \
 	        src/anon/stormnode/activestormnode.h \
 	        src/cryptogram/ies.h \

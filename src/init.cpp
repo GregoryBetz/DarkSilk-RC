@@ -292,8 +292,10 @@ bool static Bind(const CService &addr, unsigned int flags) {
 }
 
 // Core-specific options shared between UI and daemon
-std::string HelpMessage()
+std::string HelpMessage(HelpMessageMode hmm)
 {
+if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
+    {
     string strUsage = _("Options:") + "\n";
     strUsage += "  -?                     " + _("This help message") + "\n";
     strUsage += "  -conf=<file>           " + _("Specify configuration file (default: darksilk.conf)") + "\n";
@@ -409,7 +411,7 @@ std::string HelpMessage()
         "  -nosmsg                                  " + _("Disable secure messaging.") + "\n" +
         "  -debugsmsg                               " + _("Log extra debug messages.") + "\n" +
         "  -smsgscanchain                           " + _("Scan the block chain for public key addresses on startup.") + "\n";
-
+}
     return strUsage;
 }
 

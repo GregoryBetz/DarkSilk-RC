@@ -29,4 +29,14 @@ std::string LicenseInfo();
 
 extern bool fOnlyTor;
 
+/* The help message mode determines what help message to show */
+enum HelpMessageMode
+{
+    HMM_DARKSILK,
+    HMM_DARKSILK_QT,
+    HMM_DARKSILK_CLI
+};
+
+std::string HelpMessage(HelpMessageMode mode);
+
 #endif
