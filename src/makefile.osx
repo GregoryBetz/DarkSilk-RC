@@ -33,8 +33,10 @@ LIBS += \
  $(DEPSDIR)/lib/libboost_filesystem.a \
  $(DEPSDIR)/lib/libboost_program_options.a \
  $(DEPSDIR)/lib/libboost_thread.a \
+ $(DEPSDIR)/lib/libchrono_thread.a \
  $(DEPSDIR)/lib/libssl.a \
  $(DEPSDIR)/lib/libcrypto.a \
+ -lsnappy \
  -lz
 else
 LIBS += \
@@ -43,9 +45,11 @@ LIBS += \
  -lboost_filesystem \
  -lboost_program_options \
  -lboost_thread \
+ -lboost_chrono \
  -lssl \
  -lcrypto \
  -lz \
+ -lsnappy \
  -levent
 endif
 
@@ -155,7 +159,11 @@ OBJS= \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
     obj/crypto/argon2/blake2/blake2b.o\
-    obj/utilstrencodings.o
+    obj/utilstrencodings.o \
+    obj/rest.o \
+    obj/scheduler.o \
+    obj/torcontrol.o \
+    obj/pow.o
 
 ifdef USE_NATIVE_I2P
         OBJS += obj/i2p/i2p.o

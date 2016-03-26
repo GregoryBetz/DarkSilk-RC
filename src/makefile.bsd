@@ -31,6 +31,8 @@ LIBS += \
    -l db_cxx$(BDB_LIB_SUFFIX) \
    -l ssl \
    -l crypto \
+   -l event \
+   -l snappy \
    -l execinfo
 
 ifndef USE_UPNP
@@ -184,7 +186,11 @@ OBJS= \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
     obj/crypto/argon2/blake2/blake2b.o \
-    obj/utilstrencodings.o
+    obj/utilstrencodings.o \
+    obj/rest.o \
+    obj/scheduler.o \
+    obj/torcontrol.o \
+    obj/pow.o
 
 ifdef USE_NATIVE_I2P
         OBJS += obj/i2p/i2p.o

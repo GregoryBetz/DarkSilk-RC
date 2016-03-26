@@ -114,10 +114,10 @@ public:
 
         hashGenesisBlock = genesis.GetHash(); 
 		
-		nPoWTargetSpacing = 60;
-		nPoSTargetSpacing = 64;
+	nPoWTargetSpacing = 60;
+	nPoSTargetSpacing = 64;
 		
-		if (newChain == true) {CreateGenesis(genesis);}
+	if (newChain == true) {CreateGenesis(genesis);}
 		
         assert(hashGenesisBlock == uint256("0xdcc5e22e275eff273799a4c06493f8364316d032813c22845602f05ff13d7ec7"));
         assert(genesis.hashMerkleRoot == uint256("0xfed7550a453e532c460fac58d438740235c380f9908cae2d602b705ca2c2f0a6"));
@@ -182,11 +182,11 @@ public:
         nRPCPort = 31800;
         strDataDir = "testnet";
         
-		nPoWTargetSpacing = 60;
-		nPoSTargetSpacing = 64;
+	nPoWTargetSpacing = 60;
+	nPoSTargetSpacing = 64;
 		
-		if (newChain == true) {CreateGenesis(genesis);}
-		
+	if (newChain == true) {CreateGenesis(genesis);}
+	
         // Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1438578972;
         genesis.nBits  = 0; 

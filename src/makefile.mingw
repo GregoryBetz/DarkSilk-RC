@@ -27,6 +27,8 @@ LIBS= \
  -l db_cxx \
  -l ssl \
  -l crypto \
+ -l snappy \
+ -l event \
  -l z
 
 DEFS=-D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -DBOOST_SPIRIT_THREADSAFE
@@ -142,7 +144,11 @@ OBJS= \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
     obj/crypto/argon2/blake2/blake2b.o \
-    obj/utilstrencodings.o
+    obj/utilstrencodings.o \
+    obj/rest.o \
+    obj/scheduler.o \
+    obj/torcontrol.o \
+    obj/pow.o
 
 ifdef USE_NATIVE_I2P
         OBJS += obj/i2p/i2p.o
