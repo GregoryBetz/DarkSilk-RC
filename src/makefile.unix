@@ -118,6 +118,7 @@ OBJS= \
     obj/addrman.o \
     obj/base58.o \
     obj/bloom.o \
+	obj/rest.o \
     obj/crypter.o \
 	obj/scheduler.o \
     obj/chain.o \

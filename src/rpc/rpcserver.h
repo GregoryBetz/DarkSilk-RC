@@ -133,6 +133,11 @@ extern std::string HelpExampleCli(std::string methodname, std::string args);
 extern std::string HelpExampleRpc(std::string methodname, std::string args);
 extern void EnsureWalletIsUnlocked();
 
+extern bool HTTPReq_REST(AcceptedConnection *conn,
+                  std::string& strURI,
+                  std::map<std::string, std::string>& mapHeaders,
+                  bool fRun);
+
 //
 // Utilities: convert hex-encoded Values
 // (throws error if not hex).
