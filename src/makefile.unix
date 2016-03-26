@@ -193,6 +193,7 @@ OBJS= \
     obj/rpc/rpcblindtext.o \
     obj/rpc/rpccrypt.o \
     obj/torcontrol.o \
+    obj/pow.o \
     obj/cryptogram/cryptogram.o \
     obj/cryptogram/ecies.o \
     obj/compat/glibc_sanity.o \
