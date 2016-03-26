@@ -70,6 +70,12 @@ private:
     X x;
 };
 
+template<unsigned int N, typename X, typename S, typename D>
+static inline size_t DynamicUsage(const prevector<N, X, S, D>& v)
+{
+    return MallocUsage(v.allocated_memory());
+}
+
 template<typename X>
 static inline size_t DynamicUsage(const std::vector<X>& v)
 {

@@ -19,12 +19,20 @@
 
 #include "uint256.h"
 #include "serialize.h"
+#include "prevector.h"
 
 static const unsigned int OUTPUT_BYTES = 32;
 
 #ifdef WIN32
 #define UINT32_MAX 0xffffffff  /* 4294967295U */
 #endif
+
+/** Compute the 160-bit hash of a vector. */
+template<unsigned int N>
+inline uint160 Hash160(const prevector<N, unsigned char>& vch)
+{
+    return Hash160(vch.begin(), vch.end());
+}
 
 /** A hasher class for DarkSilk's 256-bit hash (double SHA-256). */
 class CHash256 {
