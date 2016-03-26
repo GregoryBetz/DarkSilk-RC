@@ -1687,9 +1687,8 @@ CAmount GetProofOfWorkReward(CAmount nFees)
     }
     else
     {
-        CAmount nSubsidy = 1 * COIN;
-        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(nSubsidy), nSubsidy);
-        return nSubsidy + nFees;
+        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(STATIC_POW_REWARD), STATIC_POW_REWARD);
+        return STATIC_POW_REWARD + nFees;
     }
 }
 
@@ -1703,15 +1702,16 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
 
 CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees)
 {
-    CAmount nSubsidy = Params().StakingReward();
+	if (fProofOfWork) {
+    		CAmount nSubsidy = Params().MiningReward();
+	} else CAmount nSubsidy = Params().StakingReward();
 
     return nSubsidy + nFees;
 }
 
-
 CAmount GetStormnodePayment(int nHeight, CAmount blockValue)
 {
-    CAmount ret = blockValue * 2/4; //50%
+    CAmount ret = blockValue * 1/5; //20%
 
     return ret;
 }

@@ -140,7 +140,7 @@ public:
         
         nFirstPOSBlock = 101;
         nStakingReward = (0.01*COIN); // 0.01 DRKSLK
-                
+	nMiningReward = (1.25*COIN); // 1.25 DRKSLK
         nMinFee = 0.00001; // DRKSLK
         nStartStormnodePayments = 1446335999; // Wed, 31 Oct 2015 23:59:59 GMT
         nStormnodeCollateral = 10000; // DRKSLK
@@ -214,7 +214,7 @@ public:
        
         nFirstPOSBlock = 101;
         nStakingReward = (0.01*COIN); // 0.01 DRKSLK
-                
+        nMiningReward = (1.25*COIN); // 1.25 DRKSLK
         nMinFee = 0.00001; // DRKSLK
         nStartStormnodePayments = 1446335999; // Wed, 31 Oct 2015 23:59:59 GMT
         nStormnodeCollateral = 10000; // DRKSLK

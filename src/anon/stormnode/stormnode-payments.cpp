@@ -270,7 +270,6 @@ bool IsBlockPayeeValid(const CTransaction& txNew, int nBlockHeight)
     return false;
 }
 
-
 void FillBlockPayee(CTransaction& txNew, CAmount nFees) //TODO (Amir): Use CMutableTransaction here
 {
     if(!pindexBest) return;
@@ -307,37 +306,26 @@ void CStormnodePayments::FillBlockPayee(CTransaction& txNew, CAmount nFees)
         if(winningNode){
             payee = GetScriptForDestination(winningNode->pubkey.GetID());
         } else {
-            LogPrintf("CreateNewBlock: Failed to detect stormnode to pay\n");
+            if (fDebug)
+                LogPrintf("CreateNewBlock: Failed to detect stormnode to pay\n");
+
             hasPayment = false;
         }
     }
 
-    if(hasPayment){
+    CAmount blockValue = GetProofOfWorkReward(nFees);
+    CAmount stormnodePayment = GetStormnodePayment(pindexPrev->nHeight+1, blockValue);
 
-        //txNew.vout.resize(2);
+    txNew.vout[0].nValue = blockValue;
+
+    if(hasPayment){
+        txNew.vout.resize(2);
 
         txNew.vout[1].scriptPubKey = payee;
-        //txNew.vout[1].nValue = stormnodePayment;
+        txNew.vout[1].nValue = stormnodePayment;
 
-        //txNew.vout[0].nValue -= stormnodePayment;
+        txNew.vout[0].nValue -= stormnodePayment;
 
-        // Stormnode Payments
-        CAmount blockValue = GetBlockValue(pindexPrev->nBits, pindexPrev->nHeight, nFees);
-        CAmount stormnodePayment = GetStormnodePayment(pindexPrev->nHeight+1, blockValue);
-
-        if(txNew.vout.size() == 4) // 2 stake outputs, stake was split, plus a stormnode payment
-        {
-            txNew.vout[1].nValue = stormnodePayment;
-            blockValue -= stormnodePayment;
-            txNew.vout[2].nValue = (blockValue / 2 / CENT) * CENT;
-            txNew.vout[3].nValue = blockValue - txNew.vout[1].nValue;
-        }
-        else if(txNew.vout.size() == 3) // only 1 stake output, was not split, plus a stormnode payment
-        {
-            txNew.vout[1].nValue = stormnodePayment;
-            blockValue -= stormnodePayment;
-            txNew.vout[2].nValue = blockValue;
-        }
         CTxDestination address1;
         ExtractDestination(payee, address1);
         CDarkSilkAddress address2(address1);

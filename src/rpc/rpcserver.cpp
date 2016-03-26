@@ -277,6 +277,7 @@ static const CRPCCommand vRPCCommands[] =
     { "snfinalbudget",          &snfinalbudget,          true,      true,      false }, 
     { "stormnodelist",          &stormnodelist,          true,      true,      false },
 #ifdef ENABLE_WALLET
+    { "setgenerate",		    &setgenerate,			 true,		 false,	   true },
     { "sandstorm",              &sandstorm,              false,     false,     true },
     { "getmininginfo",          &getmininginfo,          true,      false,     false },
     { "getstakinginfo",         &getstakinginfo,         true,      false,     false },
