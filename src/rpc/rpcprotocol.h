@@ -21,7 +21,7 @@
 #include "json/json_spirit_utils.h"
 #include "json/json_spirit_writer_template.h"
 
-#include "compat.h"
+#include "compat/compat.h"
 
 // HTTP status codes
 enum HTTPStatusCode

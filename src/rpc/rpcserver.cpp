@@ -271,6 +271,7 @@ static const CRPCCommand vRPCCommands[] =
 /* Dark features */
     { "snsync",                 &snsync,                 true,      true,      false },
     { "spork",                  &spork,                  true,      true,      false },
+    { "getpoolinfo",            &getpoolinfo,            true,      true,      false },
     { "stormnode",              &stormnode,              true,      true,      false },
     { "snbudget",               &snbudget,               true,      true,      false },
     { "snbudgetvoteraw",        &snbudgetvoteraw,        true,      true,      false },

@@ -29,6 +29,7 @@
 #include "anon/stormnode/activestormnode.h"
 #include "anon/stormnode/stormnode-budget.h"
 #include "anon/stormnode/stormnode-payments.h"
+// #include "anon/stormnode/stormnode-sync.h" //include after chainactive.Tip is active
 #include "anon/stormnode/stormnodeman.h"
 #include "anon/stormnode/stormnodeconfig.h"
 #include "anon/stormnode/spork.h"
@@ -901,7 +902,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
 
     // see Step 2: parameter interactions for more information about these
-    fListen = !GetBoolArg("-listen", true);
+    fListen = GetBoolArg("-listen", true);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
 
@@ -1391,6 +1392,19 @@ bool AppInit2(boost::thread_group& threadGroup)
     sandStormPool.InitDenominations();
     sandStormPool.InitCollateralAddress();
 
+
+//TODO(AA): Implement once chainactive.tip is active
+/* 
+    // force UpdatedBlockTip to initialize pCurrentBlockIndex for SS, SN payments and budgets
+    // but don't call it directly to prevent triggering of other listeners like zmq etc.
+    // GetMainSignals().UpdatedBlockTip(chainActive.Tip());
+    sandStormPool.UpdatedBlockTip(chainActive.Tip());
+    snpayments.UpdatedBlockTip(chainActive.Tip());
+    budget.UpdatedBlockTip(chainActive.Tip());
+    stormnodeSync.UpdatedBlockTip(chainActive.Tip());
+*/
+
+    // start darksilk-sandstorm thread
     threadGroup.create_thread(boost::bind(&ThreadCheckSandStormPool));
 
 
