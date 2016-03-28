@@ -36,7 +36,6 @@ LIBS += \
    -l ssl \
    -l cryptopp \
    -l crypto \
-   -l snappy \
    -l event
 
 ifndef USE_UPNP
