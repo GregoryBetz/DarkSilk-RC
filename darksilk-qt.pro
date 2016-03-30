@@ -236,7 +236,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/chainparamsseeds.h \
             src/checkpoints.h \
             src/cleanse.h \
-            src/compat.h \
+            src/compat/compat.h \
             src/coincontrol.h \
             src/core_io.h \
             src/sync.h \

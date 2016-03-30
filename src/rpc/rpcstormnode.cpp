@@ -73,9 +73,11 @@ Value getpoolinfo(const Array& params, bool fHelp)
             "Returns an object containing anonymous pool-related information.");
 
     Object obj;
-    obj.push_back(Pair("current_stormnode",        snodeman.GetCurrentStormNode()->addr.ToString()));
-    obj.push_back(Pair("state",        sandStormPool.GetState()));
-    obj.push_back(Pair("entries",      sandStormPool.GetEntriesCount()));
+    if (sandStormPool.pSubmittedToStormnode)
+        obj.push_back(Pair("stormnode",        sandStormPool.pSubmittedToStormnode->addr.ToString()));
+    obj.push_back(Pair("queue",                 (int64_t)vecSandstormQueue.size()));
+    obj.push_back(Pair("state",                 sandStormPool.GetState()));
+    obj.push_back(Pair("entries",               sandStormPool.GetEntriesCount()));
     obj.push_back(Pair("entries_accepted",      sandStormPool.GetCountEntriesAccepted()));
     return obj;
 }
@@ -174,22 +176,23 @@ Value stormnode(const Array& params, bool fHelp)
     }
 
     if (strCommand == "current")
-    {
+    {   
+        int nCount = 0;
         LOCK(cs_main);
         CStormnode* winner = NULL;
         if(pindexBest)
-            winner = snodeman.GetCurrentStormNode(1);
+            winner = snodeman.GetNextStormnodeInQueueForPayment(pindexBest->nHeight - 100, true, nCount);
         if(winner) {
             Object obj;
 
             obj.push_back(Pair("IP:port",       winner->addr.ToString()));
             obj.push_back(Pair("protocol",      (int64_t)winner->protocolVersion));
-            obj.push_back(Pair("vin",           winner->vin.prevout.hash.ToString()));
+            obj.push_back(Pair("vin",           winner->vin.prevout.ToStringShort()));
             obj.push_back(Pair("pubkey",        CDarkSilkAddress(winner->pubkey.GetID()).ToString()));
             obj.push_back(Pair("lastseen",      (winner->lastPing == CStormnodePing()) ? winner->sigTime :
-                                                        (int64_t)winner->lastPing.sigTime));
+                                                        winner->lastPing.sigTime));
             obj.push_back(Pair("activeseconds", (winner->lastPing == CStormnodePing()) ? 0 :
-                                                        (int64_t)(winner->lastPing.sigTime - winner->sigTime)));
+                                                        (winner->lastPing.sigTime - winner->sigTime)));
             return obj;
         }
 
@@ -198,7 +201,7 @@ Value stormnode(const Array& params, bool fHelp)
 
     if (strCommand == "debug")
     {
-        if(activeStormnode.status != ACTIVE_STORMNODE_INITIAL || !stormnodeSync.IsSynced())
+        if(activeStormnode.status != ACTIVE_STORMNODE_INITIAL || !stormnodeSync.IsBlockchainSynced())
             return activeStormnode.GetStatus();
 
         CTxIn vin = CTxIn();
@@ -442,16 +445,27 @@ Value stormnode(const Array& params, bool fHelp)
         }*/
 
         int nLast = 10;
+        std::string strFilter = "";
 
         if (params.size() >= 2){
             nLast = atoi(params[1].get_str());
         }
 
+        if (params.size() == 3){
+            strFilter = params[2].get_str();
+        }
+
+        if (params.size() > 3)
+            throw runtime_error("Correct usage is 'stormnode winners ( \"count\" \"filter\" )'");
+
+
         Object obj;
 
         for(int i = nHeight - nLast; i < nHeight + 20; nHeight++)
         {
-            obj.push_back(Pair(strprintf("%d", i), GetRequiredPaymentsString(i)));
+            std::string strPayment = GetRequiredPaymentsString(i);
+            if(strFilter !="" && strPayment.find(strFilter) == string::npos) continue;
+            obj.push_back(Pair(strprintf("%d", i), strPayment));
         }
 
         return obj;

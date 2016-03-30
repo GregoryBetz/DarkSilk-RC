@@ -23,8 +23,6 @@ class CWallet;
 
 struct CNodeStateStats;
 
-// Minimum Transaction Fee of 0.00001 DRKSLK, Fees smaller than this are considered zero fee (for transaction creation)
-static const double MIN_FEE = 0.00001;
 // Collateral Amount Locked for Stormnodes
 static const CAmount STORMNODE_COLLATERAL = 10000;
 // Main Stormnode Payments Start Block
@@ -37,6 +35,8 @@ static const CAmount SANDSTORM_COLLATERAL = (0.01*COIN);
 static const CAmount SANDSTORM_POOL_MAX = (9999.99*COIN);
 // Static Proof-of-Stake Reward of 0.01 DRKSLK
 static const CAmount STATIC_POS_REWARD = COIN * 0.01;
+// Static Proof-of-Work Reward of 1.0 DRKSLK
+static const CAmount STATIC_POW_REWARD = COIN * 1; //TODO (Amir): Change to 1.25 before release.
 // Number of blocks that can be requested at any given time from a single peer.
 static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
 // Timeout in seconds before considering a block download peer unresponsive.
@@ -175,7 +175,7 @@ void ThreadStakeMiner(CWallet *pwallet);
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool ignoreFees = false);
 bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isSSTX=false);
 
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees);
+CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork = true);
 
 bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint256> &vtxhash);
 

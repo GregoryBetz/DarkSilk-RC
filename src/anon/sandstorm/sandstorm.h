@@ -139,7 +139,7 @@ public:
 
     bool IsExpired()
     {
-        return (GetTime() - addedTime) > SANDSTORM_QUEUE_TIMEOUT;// 120 seconds
+        return (GetTime() - addedTime) > SANDSTORM_QUEUE_TIMEOUT;// 30 seconds
     }
 };
 
@@ -213,7 +213,7 @@ public:
     /// Is this Sandstorm expired?
     bool IsExpired()
     {
-        return (GetTime() - time) > SANDSTORM_QUEUE_TIMEOUT;// 120 seconds
+        return (GetTime() - time) > SANDSTORM_QUEUE_TIMEOUT;// 30 seconds
     }
 
     /// Check if we have a valid Stormnode address

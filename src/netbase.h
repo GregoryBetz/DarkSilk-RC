@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "compat.h"
+#include "compat/compat.h"
 #include "serialize.h"
 
 extern int nConnectTimeout;

@@ -786,6 +786,18 @@ void CSandstormPool::ChargeRandomFees(){
 // Check for various timeouts (queue objects, Sandstorm, etc)
 //
 void CSandstormPool::CheckTimeout(){
+
+    // check Sandstorm queue objects for timeouts
+    int c = 0;
+    vector<CSandstormQueue>::iterator it = vecSandstormQueue.begin();
+    while(it != vecSandstormQueue.end()){
+        if((*it).IsExpired()){
+            LogPrint("sandstorm", "CSandstormPool::CheckTimeout() : Removing expired queue entry - %d\n", c);
+            it = vecSandstormQueue.erase(it);
+        } else ++it;
+        c++;
+    }
+
     if(!fEnableSandstorm && !fStormNode) return;
 
     // catching hanging sessions
@@ -804,17 +816,6 @@ void CSandstormPool::CheckTimeout(){
                 Check();
                 break;
         }
-    }
-
-    // check Sandstorm queue objects for timeouts
-    int c = 0;
-    vector<CSandstormQueue>::iterator it = vecSandstormQueue.begin();
-    while(it != vecSandstormQueue.end()){
-        if((*it).IsExpired()){
-            LogPrint("sandstorm", "CSandstormPool::CheckTimeout() : Removing expired queue entry - %d\n", c);
-            it = vecSandstormQueue.erase(it);
-        } else ++it;
-        c++;
     }
 
     int addLagTime = 0;

@@ -24,6 +24,8 @@
 #include "anon/stealth/stealth.h"
 
 const CAmount MIN_TX_FEE = 10000; // 0.00001 DRKSLK Minimum Transaction Fee
+// Minimum Transaction Fee of 0.00001 DRKSLK, Fees smaller than this are considered zero fee (for transaction creation)
+static const double MIN_FEE = 0.00001;
 /// Fees smaller than this (in satoshi) are considered zero fee (for relaying)
 const CAmount MIN_RELAY_TX_FEE = MIN_TX_FEE;
 //! -keypool default
