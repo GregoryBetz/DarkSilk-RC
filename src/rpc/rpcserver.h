@@ -230,6 +230,7 @@ extern json_spirit::Value getblockhash(const json_spirit::Array& params, bool fH
 extern json_spirit::Value getblock(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getblockbynumber(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getcheckpoint(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value setgenerate(const json_spirit::Array& params, bool fHelp);
 
 extern json_spirit::Value getnewstealthaddress(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value liststealthaddresses(const json_spirit::Array& params, bool fHelp);
@@ -239,6 +240,7 @@ extern json_spirit::Value scanforalltxns      (const json_spirit::Array& params,
 
 extern json_spirit::Value sandstorm(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value spork(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getpoolinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value stormnode(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snbudget(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snbudgetvoteraw(const json_spirit::Array& params, bool fHelp);

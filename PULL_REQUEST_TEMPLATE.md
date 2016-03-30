@@ -1,5 +1,4 @@
 #### What's this pull request do?
-#### Where should the reviewer start?
 #### Did you test this pull request?
 #### Any background context you want to provide?
 #### Screenshots (if appropriate)

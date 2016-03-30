@@ -1,12 +1,12 @@
 #ifndef DARKSILK_BLINDTEXT_H
 #define DARKSILK_BLINDTEXT_H
 
+#include "cryptopp/cryptlib.h"
+#include "cryptopp/aes.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include "cryptopp/cryptlib.h"
-#include "cryptopp/aes.h"
 
 using std::cout;
 using std::cerr;

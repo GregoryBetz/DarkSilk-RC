@@ -3,10 +3,10 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <boost/assign/list_of.hpp>
+
 #include <string>
 #include <sstream>
-
-#include <boost/assign/list_of.hpp>
 
 #include "base58.h"
 #include "rpc/rpcserver.h"
@@ -22,8 +22,8 @@ using namespace boost;
 using namespace boost::assign;
 using namespace json_spirit;
 
-// Externally constructed transactions have a 10 minute window
-const int MaxTxnTimeDrift = 5 * 60;
+// Externally constructed transactions have a 640 second window
+const int MaxTxnTimeDrift = 10 * 64;
 
 string sendtoaddresswithtime(string sAddress, int64_t nAmount, unsigned int nTime) {
 
@@ -104,7 +104,7 @@ Value decryptsend(const Array& params, bool fHelp)
     cout << "Amount is: " << nAmount << endl;
 
     // make sure external transaction is within time window
-    int adjtime = GetAdjustedTime();
+    unsigned int adjtime = GetAdjustedTime();
     if (((nTime < adjtime) && ((adjtime - nTime) > MaxTxnTimeDrift)) ||
         ((nTime > adjtime) && ((nTime - adjtime) > MaxTxnTimeDrift))) {
             return string("<<Bad Timestamp>>");

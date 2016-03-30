@@ -410,8 +410,18 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     //search existing Stormnode list, this is where we update existing Stormnodes with new snb broadcasts
     CStormnode* psn = snodeman.Find(vin);
 
-    // no such stormnode or it's not enabled yet/already, nothing to update
-    if(psn == NULL || (psn != NULL && !psn->IsEnabled())) return true;
+    // no such stormnode, nothing to update
+    if(psn == NULL) return true ;
+    else {
+        // this broadcast older than we have, it's bad. 
+        if(psn->sigTime > sigTime) {
+            LogPrintf("snb - Bad sigTime %d for Stormnode %20s %105s (existing broadcast is at %d)\n",
+                          sigTime, addr.ToString(), vin.ToString(), psn->sigTime);
+            return false;
+        }
+        // masternode is not enabled yet/already, nothing to update
+        if(!psn->IsEnabled()) return true;
+    }
 
     // sn.pubkey = pubkey, IsVinAssociatedWithPubkey is validated once below,
     //   after that they just need to match

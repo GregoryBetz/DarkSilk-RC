@@ -6,7 +6,6 @@
 #ifndef I2PSAM_H
 #define I2PSAM_H
 
-#include <string>
 #include <list>
 #include <memory>
 #include <utility>
@@ -24,6 +23,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>     // for sockaddr_in
 #include <arpa/inet.h>      // for ntohs and htons
+#endif
+
+#ifndef WIN32
+#include <errno.h>
+#include <unistd.h>
 #endif
 
 //#ifndef WIN32

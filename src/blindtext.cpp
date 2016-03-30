@@ -1,3 +1,5 @@
+#include <boost/algorithm/string.hpp>
+
 #include "blindtext.h"
 
 #include "cryptopp/hex.h"
@@ -18,10 +20,6 @@ using CryptoPP::HashFilter;
 
 #include "cryptopp/gcm.h"
 using CryptoPP::GCM;
-
-#include <boost/algorithm/string.hpp>
-
-
 
 // SHA256 Key Derivation
 void SHAKD(std::string twofa, std::string iv_str, byte key[KEY_SIZE]) {

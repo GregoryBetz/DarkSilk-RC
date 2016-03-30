@@ -82,7 +82,7 @@ install dependencies:
 build darksilkd from git:
 
     $ git clone https://github.com/SilkNetwork/DarkSilk.git darksilk
-    $ cd darksilk/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && make && cd .. && sudo make -f makefile.unix USE_UPNP=0
+    $ cd darksilk/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && make && cd .. && sudo make -f makefile.unix USE_UPNP=1
    
 install and run darksilkd daemon:
 

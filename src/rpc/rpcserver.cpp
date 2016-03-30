@@ -271,12 +271,14 @@ static const CRPCCommand vRPCCommands[] =
 /* Dark features */
     { "snsync",                 &snsync,                 true,      true,      false },
     { "spork",                  &spork,                  true,      true,      false },
+    { "getpoolinfo",            &getpoolinfo,            true,      true,      false },
     { "stormnode",              &stormnode,              true,      true,      false },
     { "snbudget",               &snbudget,               true,      true,      false },
     { "snbudgetvoteraw",        &snbudgetvoteraw,        true,      true,      false },
     { "snfinalbudget",          &snfinalbudget,          true,      true,      false }, 
     { "stormnodelist",          &stormnodelist,          true,      true,      false },
 #ifdef ENABLE_WALLET
+    { "setgenerate",		    &setgenerate,			 true,		 false,	   true },
     { "sandstorm",              &sandstorm,              false,     false,     true },
     { "getmininginfo",          &getmininginfo,          true,      false,     false },
     { "getstakinginfo",         &getstakinginfo,         true,      false,     false },
