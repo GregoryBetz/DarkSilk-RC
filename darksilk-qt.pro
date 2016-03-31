@@ -229,8 +229,8 @@ DEPENDPATH += . \
 
 HEADERS +=  src/qt/darksilkgui.h \
             src/cryptkey.h \
-	        src/anon/stormnode/activestormnode.h \
-	        src/cryptogram/ies.h \
+            src/anon/stormnode/activestormnode.h \
+            src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
             src/qt/addresstablemodel.h \
             src/qt/optionsdialog.h \
@@ -242,7 +242,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/aboutdialog.h \
             src/qt/editaddressdialog.h \
             src/qt/darksilkaddressvalidator.h \
-	        src/blindtext.h \
+            src/blindtext.h \
             src/alert.h \
             src/allocators.h \
             src/addrman.h \
@@ -713,4 +713,5 @@ DISTFILES += \
             src/makefile.linux-mingw \
             src/makefile.mingw \
             src/makefile.osx \
-            src/makefile.unix
+            src/makefile.unix \
+            .travis.yml
