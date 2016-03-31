@@ -349,6 +349,71 @@ static const CRPCCommand vRPCCommands[] =
     { "smsginbox",              &smsginbox,              false,     false,     false },
     { "smsgoutbox",             &smsgoutbox,             false,     false,     false },
     { "smsgbuckets",            &smsgbuckets,            false,     false,     false },
+
+    // use the blockchain to build your reputation and establish a trusted identity
+    { "aliasnew",               &aliasnew,               false,     false,     true },
+    { "aliasupdate",            &aliasupdate,            false,     false,     true },
+    { "aliaslist",              &aliaslist,              false,     false,     true },
+    { "aliasaffiliates",        &aliasaffiliates,        false,     false,     true },
+    { "aliasinfo",              &aliasinfo,              false,     false,     true },
+    { "aliashistory",           &aliashistory,           false,     false,     true },
+    { "aliasfilter",            &aliasfilter,            false,     false,     true },
+    { "aliasscan",              &aliasscan,              false,     false,     true },
+    { "generatepublickey",      &generatepublickey,      false,     false,     true },
+
+    // use the blockchain as a distributed marketplace
+    { "offernew",               &offernew,               false,     false,     true },
+    { "offerupdate",            &offerupdate,            false,     false,     true },
+    { "offeraccept",            &offeraccept,            false,     false,     true },
+    { "offerlink",              &offerlink,              false,     false,     true },
+    { "offeraddwhitelist",      &offeraddwhitelist,      false,     false,     true },
+    { "offerremovewhitelist",   &offerremovewhitelist,   false,     false,     true },
+    { "offerclearwhitelist",    &offerclearwhitelist,    false,     false,     true },
+    { "offerwhitelist",         &offerwhitelist,         false,     false,     true },
+    { "offerlist",              &offerlist,              false,     false,     true },
+    { "offeracceptlist",        &offeracceptlist,        false,     false,     true },
+    { "offerinfo",              &offerinfo,              false,     false,     true },
+    { "offerhistory",           &offerhistory,           false,     false,     true },
+    { "offerscan",              &offerscan,              false,     false,     true },
+    { "offerfilter",            &offerfilter,            false,     false,     true },
+
+// SYSCOIN
+#ifdef ENABLE_DEBUGRPC
+    { "offernew_nocheck",       &offernew_nocheck,       false,     false,     true },
+    { "offerlink_nocheck",      &offerlink_nocheck,      false,     false,     true },
+    { "offerupdate_nocheck",    &offerupdate_nocheck,    false,     false,     true },
+    { "offeraccept_nocheck",    &offeraccept_nocheck,    false,     false,     true },
+#endif
+
+  // use the blockchain as a certificate issuance platform
+  { "certnew",                  &certnew,                false,     false,     true },
+  { "certupdate",               &certupdate,             false,     false,     true },
+  { "certtransfer",             &certtransfer,           false,     false,     true },
+  { "certlist",                 &certlist,               false,     false,     true },
+  { "certinfo",                 &certinfo,               false,     false,     true },
+  { "certhistory",              &certhistory,            false,     false,     true },
+  { "certscan",                 &certscan,               false,     false,     true },
+  { "certfilter",               &certfilter,             false,     false,     true },
+
+  // use the blockchain for escrow linked to offers
+  { "escrownew",                &escrownew,              false,     false,     true },
+  { "escrowrelease",            &escrowrelease,          false,     false,     true },
+  { "escrowclaimrelease",       &escrowclaimrelease,     false,     false,     true },
+  { "escrowcomplete",           &escrowcomplete,         false,     false,     true },
+  { "escrowrefund",             &escrowrefund,           false,     false,     true },
+  { "escrowclaimrefund",        &escrowclaimrefund,      false,     false,     true },
+  { "escrowlist",               &escrowlist,             false,     false,     true },
+  { "escrowinfo",               &escrowinfo,             false,     false,     true },
+  { "escrowhistory",            &escrowhistory,          false,     false,     true },
+  { "escrowscan",               &escrowscan,             false,     false,     true },
+  { "escrowfilter",             &escrowfilter,           false,     false,     true },
+
+  // use the blockchain for encrypted messaging
+  { "messagenew",               &messagenew,             false,     false,     true },
+  { "messagelist",              &messagelist,            false,     false,     true },
+  { "messagesentlist",          &messagesentlist,        false,     false,     true },
+  { "messageinfo",              &messageinfo,            false,     false,     true },
+  { "messagehistory",           &messagehistory,         false,     false,     true },
 #endif
 };
 

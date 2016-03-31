@@ -262,4 +262,65 @@ extern json_spirit::Value smsginbox(const json_spirit::Array& params, bool fHelp
 extern json_spirit::Value smsgoutbox(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value smsgbuckets(const json_spirit::Array& params, bool fHelp);
 
+// Services: Identity and Reputation
+extern json_spirit::Value accountnew(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accountupdate(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accountlist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accountaffiliates(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accountinfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accounthistory(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accountfilter(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value accountscan(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value generatepublickey(const json_spirit::Array& params, bool fHelp);
+
+// Services: Marketplace 
+extern json_spirit::Value offernew(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerupdate(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offeraccept(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerlink(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offeraddwhitelist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerremovewhitelist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerclearwhitelist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerwhitelist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerinfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerlist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offeracceptlist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerhistory(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerfilter(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerscan(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offernew_nocheck(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerupdate_nocheck(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offeraccept_nocheck(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value offerlink_nocheck(const json_spirit::Array& params, bool fHelp);
+
+// Services: Certificates
+extern json_spirit::Value certupdate(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certnew(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certtransfer(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certinfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certlist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certhistory(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certfilter(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value certscan(const json_spirit::Array& params, bool fHelp);
+
+// Services: Escrow
+extern json_spirit::Value escrownew(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowrelease(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowcomplete(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowclaimrelease(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowrefund(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowclaimrefund(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowinfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowlist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowhistory(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowfilter(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value escrowscan(const json_spirit::Array& params, bool fHelp);
+
+// Services: Messaging
+extern json_spirit::Value messagenew(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value messageinfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value messagelist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value messagesentlist(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value messagehistory(const json_spirit::Array& params, bool fHelp);
+
 #endif // DARKSILKRPC_SERVER_H
