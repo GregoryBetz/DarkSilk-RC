@@ -59,9 +59,6 @@ OBJS= \
     obj/core_read.o \
     obj/core_write.o \
     obj/gen.o \
-    obj/univalue.o \
-    obj/univalue_read.o \
-    obj/univalue_write.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \
@@ -180,6 +177,11 @@ OBJS += obj/txdb-leveldb.o
 leveldb/libleveldb.a:
 	@echo "Building LevelDB ..." && cd leveldb TARGET_OS=NATIVE_WINDOWS make libleveldb.a libmemenv.a cd ..
 obj/txdb-leveldb.o: leveldb/libleveldb.a
+
+# univalue support
+DEFS += $(addprefix -I,$(CURDIR)/univalue/lib)
+DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
+LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o
 
 $(shell cp -rp $(abspath crypto) obj >/dev/null)
 
