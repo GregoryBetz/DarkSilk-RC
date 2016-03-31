@@ -146,6 +146,23 @@ QMAKE_EXTRA_TARGETS += genleveldb
 # Gross ugly hack that depends on qmake internals, unfortunately there is no other way to do it.
 QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) clean
 
+#Build Univalue
+INCLUDEPATH += src/univalue/include
+LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue.o
+LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_read.o
+LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_write.o
+!win32 {
+    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+    genUnivalue.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"
+} else {
+    #Windows ???
+}
+genUnivalue.target = $$PWD/src/univalue/lib/libunivalue_la-univalue.o
+genUnivalue.depends = FORCE
+PRE_TARGETDEPS += $$PWD/src/univalue/lib/libunivalue_la-univalue.o
+QMAKE_EXTRA_TARGETS += genUnivalue
+QMAKE_CLEAN += $$PWD/src/univalue/lib/libunivalue_la-univalue.o; cd $$PWD/src/univalue ; $(MAKE) clean
+
 # regenerate src/build.h
 !windows|contains(USE_BUILD_INFO, 1) {
     genbuild.depends = FORCE
