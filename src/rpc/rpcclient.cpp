@@ -203,6 +203,19 @@ CRPCConvertTable::CRPCConvertTable()
     }
 }
 
+
+/** Non-RFC4627 JSON parser, accepts internal values (such as numbers, true, false, null)
+ * as well as objects and arrays.
+ */
+json_spirit::Value ParseNonRFCJSONValue(const std::string& strVal)
+{
+    json_spirit::Value jVal;
+    if (!jVal.read(std::string("[") + strVal + std::string("]")) ||
+        !jVal.isArray() || jVal.size() != 1)
+        throw runtime_error(string("Error parsing JSON:") + strVal);
+    return jVal[0];
+}
+
 static CRPCConvertTable rpcCvtTable;
 
 // Convert strings to command-specific RPC representation
