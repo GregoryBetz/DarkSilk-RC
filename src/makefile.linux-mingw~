@@ -1,74 +1,69 @@
-# -*- mode: Makefile; -*-
-# Copyright (c) 2011-2016 Bitcoin Developers
-
+# Copyright (c) 2009-2016 Satoshi Nakamoto
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-# Mac OS X makefile for darksilk
-# Originally by Laszlo Hanyecz (solar@heliacal.net)
+#TARGET_PLATFORM:=i686
+#TARGET_PLATFORM:=x86_64
 
-CXX=g++
-DEPSDIR=/usr/local
+HOSTDEPSDIR:=/usr/$(HOST)
+CC:=$(HOST)-gcc
+CXX:=$(HOST)-g++
+RANLIB=$(HOST)-ranlib
+STRIP=$(HOST)-strip
+
+USE_UPNP:=1
 
 INCLUDEPATHS= \
  -I"$(CURDIR)" \
  -I"$(CURDIR)"/obj \
+ -I"$(HOSTDEPSDIR)/include" \
+ -I"$(HOSTDEPSDIR)" \
  -I"$(DEPSDIR)/include" \
- -I"$(DEPSDIR)/include/berkeley-db4"
+ -I"$(DEPSDIR)"
 
 LIBPATHS= \
+ -L"$(HOSTDEPSDIR)" \
+ -L"$(HOSTDEPSDIR)/lib" \
  -L"$(DEPSDIR)/lib" \
- -L"$(DEPSDIR)/Cellar/berkeley-db4/4.8.30/lib"
+ -L"$(DEPSDIR)"
 
-USE_UPNP:=1
-USE_WALLET:=1
+LIBS= \
+ -l boost_system-mt-s \
+ -l boost_filesystem-mt-s \
+ -l boost_program_options-mt-s \
+ -l boost_thread_win32-mt-s \
+ -l boost_chrono-mt-s \
+ -l db_cxx \
+ -l ssl \
+ -l crypto \
+ -l z
 
-LIBS= -dead_strip
+DEFS=-D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -DBOOST_SPIRIT_THREADSAFE
+DEBUGFLAGS=-g
+CFLAGS=-O3 -msse2 -w -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
+LDFLAGS=-Wl,--dynamicbase -Wl,--nxcompat -static -static-libgcc -static-libstdc++
 
-ifdef STATIC
-# Build STATIC if you are redistributing the darksilkd binary
-LIBS += \
- $(DEPSDIR)/lib/db48/libdb_cxx-4.8.a \
- $(DEPSDIR)/lib/libboost_system.a \
- $(DEPSDIR)/lib/libboost_filesystem.a \
- $(DEPSDIR)/lib/libboost_program_options.a \
- $(DEPSDIR)/lib/libboost_thread.a \
- $(DEPSDIR)/lib/libssl.a \
- $(DEPSDIR)/lib/libcrypto.a \
- -lz
-else
-LIBS += \
- -ldb_cxx-4.8 \
- -lboost_system \
- -lboost_filesystem \
- -lboost_program_options \
- -lboost_thread \
- -lssl \
- -lcrypto \
- -lz \
- -levent
+ifndef USE_UPNP
+	override USE_UPNP = -
+endif
+ifneq (${USE_UPNP}, -)
+	LIBPATHS += -L"$(DEPSDIR)/miniupnpc"
+	LIBS += -l miniupnpc -l iphlpapi
+	DEFS += -DMINIUPNP_STATICLIB -DSTATICLIB -DUSE_UPNP=$(USE_UPNP)
 endif
 
-DEFS=-DMAC_OSX -DMSG_NOSIGNAL=0 -DBOOST_SPIRIT_THREADSAFE
+LIBS += -l mingwthrd -l kernel32 -l user32 -l gdi32 -l comdlg32 -l winspool -l winmm -l shell32 -l comctl32 -l ole32 -l oleaut32 -l uuid -l rpcrt4 -l advapi32 -l ws2_32 -l mswsock -l shlwapi
 
-ifdef RELEASE
-# Compile for maximum compatibility and smallest size.
-# This requires that dependencies are compiled
-# the same way.
-CFLAGS = -mmacosx-version-min=10.5 -arch x86_64 -O2 -msse2
-else
-CFLAGS = -g -msse2
-endif
-
-# ppc doesn't work because we don't support big-endian
-CFLAGS += -Wall -Wextra -Wformat -Wno-ignored-qualifiers -Wformat-security -Wno-unused-parameter \
-    $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
+# TODO: make the mingw builds smarter about dependencies, like the linux/osx builds are
+HEADERS = $(wildcard *.h)
 
 OBJS= \
     obj/alert.o \
     obj/allocators.o \
     obj/bloom.o \
     obj/cleanse.o \
+    obj/core_read.o \
+    obj/core_write.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \
@@ -96,13 +91,11 @@ OBJS= \
     obj/rpc/rpcsmessage.o \
     obj/timedata.o \
     obj/script/script.o \
-    obj/script/script_error.o \
     obj/sync.o \
     obj/txmempool.o \
     obj/util.o \
     obj/utilstrencodings.o \
     obj/utilmoneystr.o \
-    obj/utiltime.o \
     obj/hash.o \
     obj/noui.o \
     obj/kernel.o \
@@ -143,7 +136,6 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
-    obj/rest.o \
     obj/compat/glibc_sanity.o \
     obj/compat/glibcxx_sanity.o \
     obj/crypto/argon2/argon2.o \
@@ -151,7 +143,7 @@ OBJS= \
     obj/crypto/argon2/encoding.o \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
-    obj/crypto/argon2/blake2/blake2b.o\
+    obj/crypto/argon2/blake2/blake2b.o \
     obj/utilstrencodings.o
 
 ifdef USE_NATIVE_I2P
@@ -168,68 +160,39 @@ ifeq (${USE_WALLET}, 1)
     obj/wallet/rpcdump.o \
     obj/wallet/rpcwallet.o \
     obj/wallet/wallet.o \
-    obj/wallet/wallet_ismine.o \
     obj/wallet/walletdb.o
 endif
 
-ifndef USE_UPNP
-	override USE_UPNP = -
-endif
-ifneq (${USE_UPNP}, -)
-	DEFS += -DUSE_UPNP=$(USE_UPNP)
-ifdef STATIC
-	LIBS += $(DEPSDIR)/lib/libminiupnpc.a
-else
-	LIBS += -lminiupnpc
-endif
-endif
+all: darksilkd.exe
 
-all: darksilkd
-
-# build libsecp256k1
-LIBS += $(CURDIR)/secp256k1/src/libsecp256k1_la-secp256k1.o 
+# libsecp256k1 support
+LIBS += $(CURDIR)/secp256k1/src/libsecp256k1_la-secp256k1.o
 DEFS += $(addprefix -I,$(CURDIR)/secp256k1/include)
-
-OBJS +=  obj/script/script.o
-secp256k1/src/libsecp256k1_la-secp256k1.o:
-	@echo "Building Secp256k1 ..."; cd secp256k1; ./autogen.sh ; ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery ; make; cd ..;
-obj/scrypt.o: secp256k1/src/libsecp256k1_la-secp256k1.o
 
 # build leveldb
 LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
-DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
-DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
-DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers/memenv)
+DEFS += -I"$(CURDIR)/leveldb/include"
+DEFS += -I"$(CURDIR)/leveldb/helpers"
+DEFS += -I"$(CURDIR)/leveldb/helpers/memenv"
 OBJS += obj/txdb-leveldb.o
 leveldb/libleveldb.a:
-	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..
+	@echo "Building LevelDB ..." && cd leveldb && CC=$(CC) CXX=$(CXX) TARGET_OS=OS_WINDOWS_CROSSCOMPILE CXXFLAGS="-I$(INCLUDEPATHS)" LDFLAGS="-L$(LIBPATHS)" $(MAKE) libleveldb.a libmemenv.a && $(RANLIB) libleveldb.a && $(RANLIB) libmemenv.a && cd ..
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
-# build univalue
-LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_read.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_write.o
+# univalue support
+DEFS += $(addprefix -I,$(CURDIR)/univalue/lib)
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
+LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o
 
-OBJS += obj/core_read.o \
-        obj/core_write.o
-
-univalue/lib/libunivalue_la-univalue.o:
-	@echo "Building Univalue ..."; cd univalue; ./autogen.sh ; ./configure ; make; cd ..;
-obj/core_read.o: univalue/lib/libunivalue_la-univalue.o
-
-# auto-generated dependencies:
--include obj/*.P
+$(shell cp -rp $(CURDIR)/crypto obj >/dev/null)
 
 obj/build.h: FORCE
 	/bin/sh ../share/genbuild.sh obj/build.h
 version.cpp: obj/build.h
 DEFS += -DHAVE_BUILD_INFO
 
-obj/%.o: %.cpp
-	$(CXX) -c $(CFLAGS) -fpermissive -MMD -MF $(@:%.o=%.d) -o $@ $<
-	@cp $(@:%.o=%.d) $(@:%.o=%.P); \
-	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	      -e '/^$$/ d' -e 's/$$/ :/' < $(@:%.o=%.d) >> $(@:%.o=%.P); \
-	  rm -f $(@:%.o=%.d)
+obj/%.o: %.cpp $(HEADERS)
+	$(CXX) -c $(CFLAGS) -fpermissive -o $@ $<
 
 obj/crypto/argon2/%.o: crypto/argon2/%.c 
 	gcc -c $(xCXXFLAGS) -MMD -o $@ $<
@@ -237,15 +200,18 @@ obj/crypto/argon2/%.o: crypto/argon2/%.c
 obj/crypto/argon2/blake2/%.o: crypto/argon2/blake2/%.c 
 	gcc -c $(xCXXFLAGS) -MMD -o $@ $<
 
+darksilkd.exe: $(OBJS:obj/%=obj/%)
+	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS) -lshlwapi
+	$(STRIP) darksilkd.exe
+
 obj/scrypt-x86.o: scrypt-x86.S
 	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
 obj/scrypt-x86_64.o: scrypt-x86_64.S
 	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
-darksilkd: $(OBJS:obj/%=obj/%)
-	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
-
+obj/scrypt-arm.o: scrypt-arm.S
+	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 clean:
 	-rm -f darksilkd
 	-rm -f obj/*.o
@@ -266,6 +232,5 @@ clean:
 	-rm -f obj/crypto/argon2/blake2/*.d
 	cd leveldb && TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) clean && cd ..
 	cd secp256k1 && TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) clean && cd ..
-
 
 FORCE:

@@ -133,14 +133,11 @@ OBJS= \
     obj/rpc/rpcrawtransaction.o \
     obj/rpc/rpcsmessage.o \
     obj/timedata.o \
-    obj/script/script.o \
-    obj/script/script_error.o \
     obj/sync.o \
     obj/txmempool.o \
     obj/util.o \
     obj/utilstrencodings.o \
     obj/utilmoneystr.o \
-    obj/utiltime.o \
     obj/hash.o \
     obj/noui.o \
     obj/kernel.o \
@@ -181,7 +178,6 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
-    obj/rest.o \
     obj/cryptkey.o \
     obj/blindtext.o \
     obj/rpc/rpcblindtext.o \
@@ -212,13 +208,12 @@ ifeq (${USE_WALLET}, 1)
     obj/wallet/rpcdump.o \
     obj/wallet/rpcwallet.o \
     obj/wallet/wallet.o \
-    obj/wallet/wallet_ismine.o \
     obj/wallet/walletdb.o
 endif
 
 all: darksilkd
 
-# build libsecp256k1
+# libsecp256k1 support
 LIBS += $(CURDIR)/secp256k1/src/libsecp256k1_la-secp256k1.o 
 DEFS += $(addprefix -I,$(CURDIR)/secp256k1/include)
 
@@ -239,7 +234,7 @@ leveldb/libleveldb.a:
 	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..;
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
-# build univalue
+# univalue support
 LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_read.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_write.o
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
 
