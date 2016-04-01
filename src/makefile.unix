@@ -106,8 +106,6 @@ OBJS= \
     obj/alert.o \
     obj/allocators.o \
     obj/cleanse.o \
-    obj/core_read.o \
-    obj/core_write.o \
     obj/gen.o \
     obj/version.o \
     obj/checkpoints.o \
@@ -148,7 +146,6 @@ OBJS= \
     obj/noui.o \
     obj/kernel.o \
     obj/pbkdf2.o \
-    obj/scrypt.o \
     obj/scrypt-arm.o \
     obj/scrypt-x86.o \
     obj/scrypt-x86_64.o \
@@ -225,6 +222,11 @@ all: darksilkd
 LIBS += $(CURDIR)/secp256k1/src/libsecp256k1_la-secp256k1.o 
 DEFS += $(addprefix -I,$(CURDIR)/secp256k1/include)
 
+OBJS += obj/scrypt.o
+secp256k1/src/libsecp256k1_la-secp256k1.o:
+	@echo "Building Secp256k1 ..."; cd secp256k1; ./autogen.sh ; ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery ; make; cd ..;
+obj/scrypt.o: secp256k1/src/libsecp256k1_la-secp256k1.o
+
 # build leveldb	
 LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
@@ -238,9 +240,16 @@ leveldb/libleveldb.a:
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
 # univalue support
-DEFS += $(addprefix -I,$(CURDIR)/univalue/lib)
+LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_read.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_write.o
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
-LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o
+
+OBJS += obj/core_read.o \
+        obj/core_write.o
+
+univalue/lib/libunivalue_la-univalue.o:
+	@echo "Building Univalue ..."; cd univalue; ./autogen.sh ; ./configure ; make; cd ..;
+obj/core_read.o: univalue/lib/libunivalue_la-univalue.o
+
 
 # auto-generated dependencies:
 -include obj/*.P
@@ -277,23 +286,24 @@ darksilkd: $(OBJS:obj/%=obj/%)
 
 clean:
 	-rm -f darksilkd
-	-rm -f obj/*.o
-	-rm -f obj/*.P
-	-rm -f obj/*.d
+	-rm -f obj/*.o && rm -f obj/*.P && rm -f obj/*.d
+	-rm -f obj/*.o && rm -f obj/*.P && rm -f obj/*.d
+	-rm -f obj/*.o && rm -f obj/*.P && rm -f obj/*.d
 	-rm -f obj/build.h
-	-rm -f obj/crypto/*.o
-	-rm -f obj/crypto/*.P
-	-rm -f obj/crypto/*.d
-	-rm -f obj/primitives/*.o
-	-rm -f obj/primitives/*.P
-	-rm -f obj/primitives/*.d
-	-rm -f obj/crypto/argon2/*.o
-	-rm -f obj/crypto/argon2/*.P
-	-rm -f obj/crypto/argon2/*.d
-	-rm -f obj/crypto/argon2/blake2/*.o
-	-rm -f obj/crypto/argon2/blake2/*.P
-	-rm -f obj/crypto/argon2/blake2/*.d
+	-rm -f obj/crypto/P.* && rm -f && obj/crypto/*.o && rm -f && obj/crypto/*.d
+	-rm -f obj/crypto/argon2/*.o && rm -f obj/crypto/argon2/*.P && rm -f obj/crypto/argon2/*.d
+	-rm -f obj/crypto/argon2/blake2/*.*
+	-rm -f obj/anon/instantx/*.*
+	-rm -f obj/anon/sandstorm/*.*
+	-rm -f obj/anon/stealth/*.*
+	-rm -f obj/anon/stormnode/*.*
+	-rm -f obj/compat/*.*
+	-rm -f obj/consensus/*.*
+	-rm -f obj/cryptogram/*.*
+	-rm -f obj/i2p/*.*
+	-rm -f obj/primitives/*.* && rm -f obj/rpc/*.*
+	-rm -f obj/script/*.*
+	-rm -f obj/wallet/*.*
 	cd leveldb && TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) clean && cd ..
-	cd secp256k1 && TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) clean && cd ..
-
+	cd secp256k1 && TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) clean && cd .. && cd univalue && TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) clean && cd ..
 FORCE:
