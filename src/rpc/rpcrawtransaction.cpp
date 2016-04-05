@@ -16,6 +16,7 @@
 #include "net.h"
 #include "keystore.h"
 #include "script/script.h"
+#include "script/script_error.h"
 #include "txdb-leveldb.h"
 
 #ifdef ENABLE_WALLET
