@@ -8,6 +8,7 @@
 #define DARKSILK_SCRIPT_INTERPRETER_H
 
 #include "script_error.h"
+#include "keystore.h"
 #include "primitives/transaction.h"
 
 #include <vector>
@@ -133,9 +134,6 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* error = NULL);
 
 bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, unsigned int flags, int nHashType);
-
-void ExtractAffectedKeys(const CKeyStore &keystore, const CScript& scriptPubKey, std::vector<CKeyID> &vKeys);
-
 
 #endif // DARKSILK_SCRIPT_INTERPRETER_H
 
