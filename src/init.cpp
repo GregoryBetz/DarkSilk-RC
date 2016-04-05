@@ -21,6 +21,7 @@
 #include "key.h"
 #include "pubkey.h"
 #include "rpc/rpcserver.h"
+#include "script/standard.h"
 #include "txdb.h"
 #include "ui_interface.h"
 #include "util.h"

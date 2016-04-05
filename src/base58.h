@@ -21,6 +21,7 @@
 #include "pubkey.h"
 #include "key.h"
 #include "script/script.h"
+#include "script/standard.h"
 #include "allocators.h"
 
 /**

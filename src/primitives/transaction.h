@@ -12,6 +12,8 @@
 #include "uint256.h"
 #include "serialize.h"
 #include "utilmoneystr.h"
+#include "script/interpreter.h"
+#include "script/standard.h"
 #include "script/script.h"
 #include "timedata.h"
 

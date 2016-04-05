@@ -5,6 +5,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "anon/instantx/instantx.h"
+#include "script/standard.h"
 #include "sync.h"
 #include "net.h"
 #include "key.h"

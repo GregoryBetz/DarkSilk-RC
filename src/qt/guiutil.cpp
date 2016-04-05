@@ -17,6 +17,7 @@
 #include "guiutil.h"
 #include "primitives/transaction.h"
 #include "darksilkaddressvalidator.h"
+#include "script/standard.h"
 #include "walletmodel.h"
 #include "darksilkunits.h"
 #include "util.h"

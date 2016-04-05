@@ -3,6 +3,7 @@
 #include <boost/foreach.hpp>
 
 #include "script/script.h"
+#include "script/standard.h"
 #include "key.h"
 
 using namespace std;
