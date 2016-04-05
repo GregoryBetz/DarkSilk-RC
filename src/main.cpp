@@ -32,6 +32,11 @@
 #include "anon/stormnode/stormnode-payments.h"
 #include "anon/stormnode/stormnode-sync.h"
 #include "anon/stormnode/spork.h"
+#include "services/account.h"
+#include "services/offer.h"
+#include "services/cert.h"
+#include "services/escrow.h"
+#include "services/message.h"
 #include "smessage.h"
 #include "txdb-leveldb.h"
 
@@ -892,7 +897,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction 
     if (pfMissingInputs)
         *pfMissingInputs = false;
 
-    if (!tx.CheckTransaction(state))
+    if (!CheckTransaction(tx, state))
         return error("AcceptToMemoryPool : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1256,7 +1261,7 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &t
 {
     AssertLockHeld(cs_main);
 
-    if (!tx.CheckTransaction(state))
+    if (!CheckTransaction(tx, state))
         return error("AcceptableInputs : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction

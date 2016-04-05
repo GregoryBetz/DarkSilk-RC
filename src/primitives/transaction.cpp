@@ -5,6 +5,12 @@
 
 #include "primitives/transaction.h"
 
+#include "services/offer.h"
+#include "services/cert.h"
+#include "services/account.h"
+#include "services/message.h"
+#include "services/escrow.h"
+
 CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), nTime(tx.nTime), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime)
 {
 }
@@ -46,7 +52,7 @@ double CTransaction::ComputePriority(double dPriorityInputs, unsigned int nTxSiz
     return dPriorityInputs / nTxSize;
 }
 
-bool CTransaction::CheckTransaction(CValidationState &state)
+bool CTransaction::CheckTransaction(const CTransaction& tx, CValidationState &state)
 {
     // Basic checks that don't depend on any context
     if (vin.empty())
@@ -94,6 +100,46 @@ bool CTransaction::CheckTransaction(CValidationState &state)
                 return DoS(10, error("CTransaction::CheckTransaction() : prevout is null"));
     }
 
+    // Service/Marketplace Transaction Structure Check
+    if (tx.nVersion != DARKSILK_TX_VERSION)
+        return true;
+
+    vector<vector<unsigned char> > vvch;
+    int op;
+    int nOut;
+    string err = "";
+    bool found = false;
+    if(DecodeOfferTx(tx, op, nOut, vvch)) {
+        found = true;
+        switch (op) {       
+            case OP_OFFER_ACCEPT: 
+                if (vvch[1].size() > MAX_NAME_LENGTH)
+                    err = error("offeraccept tx with accept GUID too big");
+                if (vvch[2].size() > MAX_ENCRYPTED_VALUE_LENGTH)
+                    return error("offeraccept message field too big");
+                break;
+            default:
+                break;
+        
+        }
+    }
+   if(DecodeCertTx(tx, op, nOut, vvch)
+    || DecodeAccountTx(tx, op, nOut, vvch)
+    || DecodeMessageTx(tx, op, nOut, vvch)
+    || DecodeEscrowTx(tx, op, nOut, vvch)) 
+   {
+       found = true;
+   }
+   if(!found)
+   {
+       err = error("Unknown darksilk transaction type!");
+   }
+    if (vvch.size() > 0 && vvch[0].size() > MAX_NAME_LENGTH)
+        err = error("DRKSLK tx with GUID too big");
+    if(err != "")
+    {
+        return state.DoS(10,error(err.c_str()));
+    }
     return true;
 }
 
