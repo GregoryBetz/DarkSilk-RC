@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_ADDRMAN_H
-#define BITCOIN_ADDRMAN_H
+#ifndef DARKSILK_ADDRMAN_H
+#define DARKSILK_ADDRMAN_H
 
 #include <map>
 #include <set>
@@ -13,6 +13,7 @@
 
 #include "netbase.h"
 #include "protocol.h"
+#include "random.h"
 #include "sync.h"
 #include "timedata.h"
 #include "util.h"
@@ -570,4 +571,4 @@ public:
     }
 };
 
-#endif // BITCOIN_ADDRMAN_H
+#endif // DARKSILK_ADDRMAN_H

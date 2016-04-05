@@ -6,6 +6,7 @@
 #define I2P_H
 
 #include "i2p/i2psam.h"
+#include "utilstrencodings.h"
 
 #define I2P_SESSION_NAME_PARAM          "-i2psessionname"
 #define I2P_SESSION_NAME_DEFAULT        "DarkSilk-client"

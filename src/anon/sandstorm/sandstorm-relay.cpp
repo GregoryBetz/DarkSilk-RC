@@ -108,10 +108,11 @@ void CSandStormRelay::RelayThroughNode(int nRank)
 
     if(psn != NULL){
         //printf("RelayThroughNode %s\n", psn->addr.ToString().c_str());
-        CNode* pnode = ConnectNode((CAddress)psn->addr, NULL, true);
+        CNode* pnode = ConnectNode((CAddress)psn->addr, NULL, false);
         if(pnode){
             //printf("Connected\n");
             pnode->PushMessage("ssr", (*this));
+            pnode->Release();
             return;
         }
     } else {

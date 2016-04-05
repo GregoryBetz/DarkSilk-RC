@@ -72,7 +72,7 @@ Value getstakesubsidy(const Array& params, bool fHelp)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
 
-    return (uint64_t)STATIC_POS_REWARD;
+    return (uint64_t)Params().StakingReward();
 }
 
 Value getmininginfo(const Array& params, bool fHelp)
@@ -124,7 +124,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     uint64_t nNetworkWeight = GetPoSKernelPS();
     bool staking = nLastCoinStakeSearchInterval && nWeight;
-    uint64_t nExpectedTime = staking ? (POS_TARGET_SPACING * nNetworkWeight / nWeight) : 0;
+    uint64_t nExpectedTime = staking ? (Params().ProofOfStakeSpacing() * nNetworkWeight / nWeight) : 0;
 
     Object obj;
 
@@ -808,3 +808,29 @@ Value submitblock(const Array& params, bool fHelp)
     return Value::null;
 }
 
+
+Value setgenerate(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 2)
+        throw runtime_error(
+            "setgenerate <generate> [genproclimit]\n"
+            "<generate> is true or false to turn generation on or off.\n"
+            "Generation is limited to [genproclimit] processors, -1 is unlimited.");
+
+    bool fGenerate = true;
+    if (params.size() > 0)
+        fGenerate = params[0].get_bool();
+
+    int nGenProcLimit = 1;
+    if (params.size() > 1)
+    {
+        nGenProcLimit = params[1].get_int();
+        mapArgs["-genproclimit"] = itostr(nGenProcLimit);
+        if (nGenProcLimit == 0)
+            fGenerate = false;
+    }
+    mapArgs["-gen"] = (fGenerate ? "1" : "0");
+
+    GeneratePoWCoins(fGenerate, pwalletMain, nGenProcLimit);
+    return Value::null;
+}

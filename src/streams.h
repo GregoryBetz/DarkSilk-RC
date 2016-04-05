@@ -318,7 +318,7 @@ public:
 /// Will automatically close the file when it goes out of scope if not null.
 /// If you're returning the file pointer, return file.release().
 /// If you need to close the file early, use file.fclose() instead of fclose(file).
-class CAutoFile //TODO(Amir): implement new CAutoFile class
+class CAutoFile
 {
 protected:
     FILE* file;
@@ -358,7 +358,7 @@ public:
     FILE** operator&()          { return &file; }
     FILE* operator=(FILE* pnew) { return file = pnew; }
     bool operator!()            { return (file == NULL); }
-
+    FILE* Get() const           { return file; }
 
     //
     // Stream subset

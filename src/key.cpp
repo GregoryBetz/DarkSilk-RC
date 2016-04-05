@@ -2,13 +2,17 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <map>
+
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
 
 #include "key.h"
+#include "cryptkey.h"
 #include "crypto/common.h"
 #include "crypto/hmac_sha512.h"
 #include "pubkey.h"
+#include "random.h"
 #include "util.h"
 
 // anonymous namespace

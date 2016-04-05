@@ -5,6 +5,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/foreach.hpp>
+#include <boost/thread.hpp>
 
 #include <stdint.h>
 
@@ -18,6 +19,7 @@
 #include "timedata.h"
 #include "ui_interface.h"
 #include "util.h"
+#include "utilstrencodings.h"
 
 using namespace std;
 
@@ -77,11 +79,6 @@ std::string CUnsignedAlert::ToString() const
         nPriority,
         strComment,
         strStatusBar);
-}
-
-void CUnsignedAlert::print() const
-{
-    LogPrintf("%s", ToString());
 }
 
 void CAlert::SetNull()
@@ -260,4 +257,23 @@ bool CAlert::ProcessAlert(bool fThread)
 
     LogPrint("alert", "accepted alert %d, AppliesToMe()=%d\n", nID, AppliesToMe());
     return true;
+}
+
+void CAlert::Notify(const std::string& strMessage, bool fThread)
+{
+    std::string strCmd = GetArg("-alertnotify", "");
+    if (strCmd.empty()) return;
+
+    // Alert text should be plain ascii coming from a trusted source, but to
+    // be safe we first strip anything not in safeChars, then add single quotes around
+    // the whole string before passing it to the shell:
+    std::string singleQuote("'");
+    std::string safeStatus = SanitizeString(strMessage);
+    safeStatus = singleQuote+safeStatus+singleQuote;
+    boost::replace_all(strCmd, "%s", safeStatus);
+
+    if (fThread)
+        boost::thread t(runCommand, strCmd); // thread runs free
+    else
+        runCommand(strCmd);
 }

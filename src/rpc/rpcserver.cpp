@@ -264,16 +264,21 @@ static const CRPCCommand vRPCCommands[] =
     { "validatepubkey",         &validatepubkey,         true,      false,     false },
     { "verifymessage",          &verifymessage,          false,     false,     false },
     { "searchrawtransactions",  &searchrawtransactions,  false,     false,     false },
+    { "encryptdata",  		&encryptdata,  	false,     false,     false },
+    { "decryptdata",  		&decryptdata,  	false,     false,     false },
+    { "decryptsend",            &decryptsend,   false,     false,     false },
 
 /* Dark features */
     { "snsync",                 &snsync,                 true,      true,      false },
     { "spork",                  &spork,                  true,      true,      false },
+    { "getpoolinfo",            &getpoolinfo,            true,      true,      false },
     { "stormnode",              &stormnode,              true,      true,      false },
     { "snbudget",               &snbudget,               true,      true,      false },
     { "snbudgetvoteraw",        &snbudgetvoteraw,        true,      true,      false },
     { "snfinalbudget",          &snfinalbudget,          true,      true,      false }, 
     { "stormnodelist",          &stormnodelist,          true,      true,      false },
 #ifdef ENABLE_WALLET
+    { "setgenerate",		    &setgenerate,			 true,		 false,	   true },
     { "sandstorm",              &sandstorm,              false,     false,     true },
     { "getmininginfo",          &getmininginfo,          true,      false,     false },
     { "getstakinginfo",         &getstakinginfo,         true,      false,     false },
@@ -836,7 +841,11 @@ void ServiceConnection(AcceptedConnection *conn)
         if (strURI != "/") {
             conn->stream() << HTTPReply(HTTP_NOT_FOUND, "", false) << std::flush;
             break;
-        }
+        // Process via HTTP REST API
+        } else if (strURI.substr(0, 6) == "/rest/") {
+            if (!HTTPReq_REST(conn, strURI, mapHeaders, fRun))
+                break;
+	}
 
         // Check authorization
         if (mapHeaders.count("authorization") == 0)

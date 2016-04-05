@@ -3,11 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <fstream>
+#include <iomanip>
 
-#include "rpc/rpcserver.h"
 #include "main.h"
 #include "wallet/db.h"
 #include "init.h"
+#include "wallet/wallet.h"
 #include "anon/stormnode/activestormnode.h"
 #include "anon/stormnode/stormnode-budget.h"
 #include "anon/stormnode/stormnode-payments.h"
@@ -15,6 +16,7 @@
 #include "anon/stormnode/stormnodeconfig.h"
 #include "anon/stormnode/stormnodeman.h"
 #include "anon/sandstorm/sandstorm.h"
+#include "rpc/rpcserver.h"
 
 using namespace json_spirit;
 
@@ -71,9 +73,11 @@ Value getpoolinfo(const Array& params, bool fHelp)
             "Returns an object containing anonymous pool-related information.");
 
     Object obj;
-    obj.push_back(Pair("current_stormnode",        snodeman.GetCurrentStormNode()->addr.ToString()));
-    obj.push_back(Pair("state",        sandStormPool.GetState()));
-    obj.push_back(Pair("entries",      sandStormPool.GetEntriesCount()));
+    if (sandStormPool.pSubmittedToStormnode)
+        obj.push_back(Pair("stormnode",        sandStormPool.pSubmittedToStormnode->addr.ToString()));
+    obj.push_back(Pair("queue",                 (int64_t)vecSandstormQueue.size()));
+    obj.push_back(Pair("state",                 sandStormPool.GetState()));
+    obj.push_back(Pair("entries",               sandStormPool.GetEntriesCount()));
     obj.push_back(Pair("entries_accepted",      sandStormPool.GetCountEntriesAccepted()));
     return obj;
 }
@@ -135,7 +139,9 @@ Value stormnode(const Array& params, bool fHelp)
 
         CService addr = CService(strAddress);
 
-        if(ConnectNode((CAddress)addr, NULL, true)){
+        CNode *pnode = ConnectNode((CAddress)addr, NULL, false);
+        if(pnode){
+            pnode->Release();
             return "successfully connected";
         } else {
             throw runtime_error("error connecting\n");
@@ -151,8 +157,11 @@ Value stormnode(const Array& params, bool fHelp)
         {
             int nCount = 0;
 
-            if(pindexBest)
-                snodeman.GetNextStormnodeInQueueForPayment(pindexBest->nHeight, true, nCount);
+            {
+                LOCK(cs_main);
+                if(pindexBest)
+                    snodeman.GetNextStormnodeInQueueForPayment(pindexBest->nHeight, true, nCount);
+            }
 
             if(params[1] == "ds") return snodeman.CountEnabled(MIN_POOL_PEER_PROTO_VERSION);
             if(params[1] == "enabled") return snodeman.CountEnabled();
@@ -167,19 +176,23 @@ Value stormnode(const Array& params, bool fHelp)
     }
 
     if (strCommand == "current")
-    {
-        CStormnode* winner = snodeman.GetCurrentStormNode(1);
+    {   
+        int nCount = 0;
+        LOCK(cs_main);
+        CStormnode* winner = NULL;
+        if(pindexBest)
+            winner = snodeman.GetNextStormnodeInQueueForPayment(pindexBest->nHeight - 100, true, nCount);
         if(winner) {
             Object obj;
 
             obj.push_back(Pair("IP:port",       winner->addr.ToString()));
             obj.push_back(Pair("protocol",      (int64_t)winner->protocolVersion));
-            obj.push_back(Pair("vin",           winner->vin.prevout.hash.ToString()));
+            obj.push_back(Pair("vin",           winner->vin.prevout.ToStringShort()));
             obj.push_back(Pair("pubkey",        CDarkSilkAddress(winner->pubkey.GetID()).ToString()));
             obj.push_back(Pair("lastseen",      (winner->lastPing == CStormnodePing()) ? winner->sigTime :
-                                                        (int64_t)winner->lastPing.sigTime));
+                                                        winner->lastPing.sigTime));
             obj.push_back(Pair("activeseconds", (winner->lastPing == CStormnodePing()) ? 0 :
-                                                        (int64_t)(winner->lastPing.sigTime - winner->sigTime)));
+                                                        (winner->lastPing.sigTime - winner->sigTime)));
             return obj;
         }
 
@@ -188,7 +201,7 @@ Value stormnode(const Array& params, bool fHelp)
 
     if (strCommand == "debug")
     {
-        if(activeStormnode.status != ACTIVE_STORMNODE_INITIAL || !stormnodeSync.IsSynced())
+        if(activeStormnode.status != ACTIVE_STORMNODE_INITIAL || !stormnodeSync.IsBlockchainSynced())
             return activeStormnode.GetStatus();
 
         CTxIn vin = CTxIn();
@@ -420,18 +433,39 @@ Value stormnode(const Array& params, bool fHelp)
     }
 
     if (strCommand == "winners")
-    {
+    {   
+        //TODO: Implement after Univalue & Chainactive
+        int nHeight;
+        /*{
+            LOCK(cs_main);
+            CBlockIndex* pindex = pindexBest;
+            if(!pindex) return NullUniValue;
+
+            nHeight = pindex->nHeight;
+        }*/
+
         int nLast = 10;
+        std::string strFilter = "";
 
         if (params.size() >= 2){
             nLast = atoi(params[1].get_str());
         }
 
+        if (params.size() == 3){
+            strFilter = params[2].get_str();
+        }
+
+        if (params.size() > 3)
+            throw runtime_error("Correct usage is 'stormnode winners ( \"count\" \"filter\" )'");
+
+
         Object obj;
 
-        for(int nHeight = pindexBest->nHeight-nLast; nHeight < pindexBest->nHeight+20; nHeight++)
+        for(int i = nHeight - nLast; i < nHeight + 20; nHeight++)
         {
-            obj.push_back(Pair(strprintf("%d", nHeight), GetRequiredPaymentsString(nHeight)));
+            std::string strPayment = GetRequiredPaymentsString(i);
+            if(strFilter !="" && strPayment.find(strFilter) == string::npos) continue;
+            obj.push_back(Pair(strprintf("%d", i), strPayment));
         }
 
         return obj;
@@ -442,6 +476,15 @@ Value stormnode(const Array& params, bool fHelp)
     */
     if (strCommand == "calcscore")
     {
+        
+        int nHeight;
+        /*{
+            LOCK(cs_main);
+            CBlockIndex* pindexPrev = pindexBest;
+            if(!pindexPrev) return NullUniValue;
+
+            nHeight = pindexPrev->nHeight;
+        }*/
 
         int nLast = 10;
 
@@ -451,18 +494,18 @@ Value stormnode(const Array& params, bool fHelp)
         Object obj;
 
         std::vector<CStormnode> vStormnodes = snodeman.GetFullStormnodeVector();
-        for(int nHeight = pindexBest->nHeight-nLast; nHeight < pindexBest->nHeight+20; nHeight++){
+        for(int i = nHeight - nLast; i < nHeight + 20; i++){
             uint256 nHigh = 0;
             CStormnode *pBestStormnode = NULL;
             BOOST_FOREACH(CStormnode& sn, vStormnodes) {
-                uint256 n = sn.CalculateScore(1, nHeight-100);
+                uint256 n = sn.CalculateScore(1, i - 100);
                 if(n > nHigh){
                     nHigh = n;
                     pBestStormnode = &sn;
                 }
             }
             if(pBestStormnode)
-                obj.push_back(Pair(strprintf("%d", nHeight), pBestStormnode->vin.prevout.ToStringShort().c_str()));
+                obj.push_back(Pair(strprintf("%d", i), pBestStormnode->vin.prevout.ToStringShort().c_str()));
         }
 
         return obj;

@@ -10,6 +10,7 @@
 
 #include "protocol.h"
 #include "util.h"
+#include "utilstrencodings.h"
 
 static const char* ppszTypeName[] =
 {

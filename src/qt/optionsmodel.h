@@ -35,6 +35,7 @@ public:
         UseBlackTheme,              // bool
         SandstormRounds,            // int
         AnonymizeDarkSilkAmount,    //int
+        Listen,                     // bool
 #ifdef USE_NATIVE_I2P
         I2PUseI2POnly,              // bool
         I2PSAMHost,                 // QString

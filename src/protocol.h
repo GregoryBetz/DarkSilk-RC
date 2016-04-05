@@ -27,38 +27,40 @@
  */
 class CMessageHeader
 {
-    public:
-        CMessageHeader();
-        CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
+public:
+    typedef unsigned char MessageStartChars[MESSAGE_START_SIZE];
 
-        std::string GetCommand() const;
-        bool IsValid() const;
+    CMessageHeader();
+    CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
 
-        ADD_SERIALIZE_METHODS;
+    std::string GetCommand() const;
+    bool IsValid() const;
 
-        template <typename Stream, typename Operation>
-        inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-            READWRITE(FLATDATA(pchMessageStart));
-            READWRITE(FLATDATA(pchCommand));
-            READWRITE(nMessageSize);
-            READWRITE(nChecksum);
-        }
+    ADD_SERIALIZE_METHODS;
 
-    // TODO: make private (improves encapsulation)
-    public:
-        enum {
-            COMMAND_SIZE=12,
-            MESSAGE_SIZE_SIZE=sizeof(int),
-            CHECKSUM_SIZE=sizeof(int),
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(FLATDATA(pchMessageStart));
+        READWRITE(FLATDATA(pchCommand));
+        READWRITE(nMessageSize);
+        READWRITE(nChecksum);
+    }
 
-            MESSAGE_SIZE_OFFSET=MESSAGE_START_SIZE+COMMAND_SIZE,
-            CHECKSUM_OFFSET=MESSAGE_SIZE_OFFSET+MESSAGE_SIZE_SIZE,
-            HEADER_SIZE=MESSAGE_START_SIZE+COMMAND_SIZE+MESSAGE_SIZE_SIZE+CHECKSUM_SIZE
-        };
-        char pchMessageStart[MESSAGE_START_SIZE];
-        char pchCommand[COMMAND_SIZE];
-        unsigned int nMessageSize;
-        unsigned int nChecksum;
+// TODO: make private (improves encapsulation)
+public:
+    enum {
+        COMMAND_SIZE=12,
+        MESSAGE_SIZE_SIZE=sizeof(int),
+        CHECKSUM_SIZE=sizeof(int),
+
+        MESSAGE_SIZE_OFFSET=MESSAGE_START_SIZE+COMMAND_SIZE,
+        CHECKSUM_OFFSET=MESSAGE_SIZE_OFFSET+MESSAGE_SIZE_SIZE,
+        HEADER_SIZE=MESSAGE_START_SIZE+COMMAND_SIZE+MESSAGE_SIZE_SIZE+CHECKSUM_SIZE
+    };
+    char pchMessageStart[MESSAGE_START_SIZE];
+    char pchCommand[COMMAND_SIZE];
+    unsigned int nMessageSize;
+    unsigned int nChecksum;
 };
 
 /** nServices flags */

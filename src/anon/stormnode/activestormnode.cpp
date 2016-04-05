@@ -69,8 +69,6 @@ void CActiveStormnode::ManageStatus()
             service = CService(strStormNodeAddr, true);
         }
 
-        LogPrintf("CActiveStormnode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString());
-
         if(Params().NetworkID() == CChainParams::MAIN) {
             if(service.GetPort() != 31000) {
                 notCapableReason = strprintf("Invalid port: %u - only 31000 is supported on mainnet.", service.GetPort());
@@ -83,11 +81,15 @@ void CActiveStormnode::ManageStatus()
             return;
         }
 
-        if(!ConnectNode((CAddress)service, NULL, true)){
+        LogPrintf("CActiveStormnode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString());
+
+        CNode *pnode = ConnectNode((CAddress)service, NULL, false);
+        if(!pnode){
             notCapableReason = "Could not connect to " + service.ToString();
             LogPrintf("CActiveStormnode::ManageStatus() - not capable: %s\n", notCapableReason);
             return;
         }
+        pnode->Release();
 
         // Choose coins to use
         CPubKey pubKeyCollateralAddress;

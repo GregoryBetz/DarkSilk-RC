@@ -3,6 +3,7 @@
 using namespace std;
 
 #include "mruset.h"
+#include "random.h"
 #include "util.h"
 
 #define NUM_TESTS 16

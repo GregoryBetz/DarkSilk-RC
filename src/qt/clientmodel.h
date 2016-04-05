@@ -6,6 +6,7 @@
 class OptionsModel;
 class AddressTableModel;
 class PeerTableModel;
+class BanTableModel;
 class TransactionTableModel;
 class CWallet;
 
@@ -25,11 +26,17 @@ public:
 
     OptionsModel *getOptionsModel();
     PeerTableModel *getPeerTableModel();
+    BanTableModel *getBanTableModel();
 
     int getNumConnections() const;
     QString getStormnodeCountString() const;
     int getNumBlocks() const;
     int getNumBlocksAtStartup();
+
+    //! Return number of transactions in the mempool
+    long getMempoolSize() const;
+    //! Return the dynamic memory usage of the mempool
+    size_t getMempoolDynamicUsage() const;
 
     quint64 getTotalBytesRecv() const;
     quint64 getTotalBytesSent() const;
@@ -65,6 +72,7 @@ public:
 private:
     OptionsModel *optionsModel;
     PeerTableModel *peerTableModel;
+    BanTableModel *banTableModel;
 
     int cachedNumBlocks;
 
@@ -94,6 +102,8 @@ signals:
 
     // Show progress dialog e.g. for verifychain
     void showProgress(const QString &title, int nProgress);
+    // Updates the memory usage stats on debug page.
+    void mempoolSizeChanged(long count, size_t mempoolSizeInBytes);
 
 public slots:
     void updateTimer();

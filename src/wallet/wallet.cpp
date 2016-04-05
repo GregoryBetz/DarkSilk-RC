@@ -13,6 +13,7 @@
 
 #include "wallet/wallet.h"
 #include "base58.h"
+#include "chainparams.h"
 #include "checkpoints.h"
 #include "coincontrol.h"
 #include "kernel.h"
@@ -485,15 +486,13 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
     RandAddSeedPerfmon();
 
     vMasterKey.resize(WALLET_CRYPTO_KEY_SIZE);
-    if (!GetRandBytes(&vMasterKey[0], WALLET_CRYPTO_KEY_SIZE))
-        return false;
+    GetRandBytes(&vMasterKey[0], WALLET_CRYPTO_KEY_SIZE);
 
-    CMasterKey kMasterKey(nDerivationMethodIndex);
-
+    CMasterKey kMasterKey;
     RandAddSeedPerfmon();
+
     kMasterKey.vchSalt.resize(WALLET_CRYPTO_SALT_SIZE);
-    if (!GetRandBytes(&kMasterKey.vchSalt[0], WALLET_CRYPTO_SALT_SIZE))
-        return false;
+    GetRandBytes(&kMasterKey.vchSalt[0], WALLET_CRYPTO_SALT_SIZE);
 
     CCrypter crypter;
     int64_t nStartTime = GetTimeMillis();
@@ -1222,29 +1221,23 @@ void CWallet::ReacceptWalletTransactions()
     }
 }
 
-void CWalletTx::RelayWalletTransaction(CTxDB& txdb, std::string strCommand)
+void CWalletTx::RelayWalletTransaction(std::string strCommand)
 {
     if (!(IsCoinBase() || IsCoinStake()))
     {
         if (GetDepthInMainChain() == 0) {
             uint256 hash = GetHash();
-            if(strCommand == "txlreq"){
-                LogPrintf("Relaying txlreq %s\n", hash.ToString());
-                mapTxLockReq.insert(make_pair(hash, ((CTransaction)*this)));
+            LogPrintf("Relaying wtx %s\n", hash.ToString());
+
+            if(strCommand == "ix"){
+                mapTxLockReq.insert(make_pair(hash, (CTransaction)*this));
                 CreateNewLock(((CTransaction)*this));
                 RelayTransactionLockReq((CTransaction)*this, true);
             } else {
-                LogPrintf("Relaying wtx %s\n", hash.ToString());
-                RelayTransaction((CTransaction)*this, hash);
+                RelayTransaction((CTransaction)*this);
             }
         }
     }
-}
-
-void CWalletTx::RelayWalletTransaction(std::string strCommand)
-{
-   CTxDB txdb("r");
-   RelayWalletTransaction(txdb, strCommand);
 }
 
 set<uint256> CWalletTx::GetConflicts() const
@@ -1298,7 +1291,7 @@ void CWallet::ResendWalletTransactions(bool fForce)
         BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
         {
             CWalletTx& wtx = *item.second;
-            wtx.RelayWalletTransaction(txdb);
+            wtx.RelayWalletTransaction();
         }
     }
 }
@@ -2603,7 +2596,7 @@ bool CWallet::HasCollateralInputs() const
 
 bool CWallet::IsCollateralAmount(CAmount nInputAmount) const
 {
-    return  nInputAmount != 0 && nInputAmount % SANDSTORM_COLLATERAL == 0 && nInputAmount < SANDSTORM_COLLATERAL * 5 && nInputAmount > SANDSTORM_COLLATERAL;
+    return  nInputAmount != 0 && nInputAmount % Params().SandstormCollateral() == 0 && nInputAmount < Params().SandstormCollateral() * 5 && nInputAmount > Params().SandstormCollateral();
 }
 
 bool CWallet::SelectCoinsWithoutDenomination(const CAmount& nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const
@@ -2652,9 +2645,9 @@ bool CWallet::CreateCollateralTransaction(CMutableTransaction& txCollateral, std
     BOOST_FOREACH(CTxIn v, vCoinsCollateral)
         txCollateral.vin.push_back(v);
 
-    if(nValueIn2 - SANDSTORM_COLLATERAL - nFeeRet > 0) {
+    if(nValueIn2 - Params().SandstormCollateral() - nFeeRet > 0) {
         //pay collateral charge in fees
-        CTxOut vout3 = CTxOut(nValueIn2 - SANDSTORM_COLLATERAL, scriptChange);
+        CTxOut vout3 = CTxOut(nValueIn2 - Params().SandstormCollateral(), scriptChange);
         txCollateral.vout.push_back(vout3);
     }
 
@@ -2751,8 +2744,8 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend, 
         CTxDB txdb("r");
         LOCK2(cs_main, cs_wallet);
         {
-            nFeeRet = MIN_FEE * COIN;
-            CAmount nFee = MIN_FEE * COIN;
+            nFeeRet = Params().MinimumFee() * COIN;
+            CAmount nFee = Params().MinimumFee() * COIN;
             if(useIX) nFeeRet = max(CENT, nFeeRet);
             while (true)
             {
@@ -3878,7 +3871,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     // Calculate coin age reward
     CAmount nReward;
     {
-        nReward = STATIC_POS_REWARD + nFees;
+        nReward = Params().StakingReward() + nFees;
         if (nReward <= 0)
             return false;
 
@@ -3887,14 +3880,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
     // start stormnode payments
     bool bStormNodePayment = false;
-    if ( Params().NetworkID() == CChainParams::TESTNET ){
-        if (pindexBest->nHeight+1 >= TESTNET_STORMNODE_PAYMENT_START) {
-            bStormNodePayment = true;
-        }
-    }
-    else
     {   if ( Params().NetworkID() == CChainParams::MAIN ){
-            if (pindexBest->nHeight+1 >= STORMNODE_PAYMENT_START){
+            if (pindexBest->nHeight+1 >= Params().StormnodePaymentStart()){
                 bStormNodePayment = true;
             }
         }
@@ -3934,7 +3921,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     }
 
 
-    // GetBlockValue should return STATIC_POS_REWARD + nFees. When you switched to GetBlockValue from nCredit.
+    // GetBlockValue should return Params().StakingReward() + nFees. When you switched to GetBlockValue from nCredit.
     // Ncredit is no longer needed past this point.
 
 
@@ -4114,7 +4101,7 @@ string CWallet::PrepareSandstormDenominate(int minRounds, int maxRounds)
         if minRounds >= 0 it means only denominated inputs are going in and coming out
     */
     if(minRounds >= 0){
-        if (!SelectCoinsByDenominations(sandStormPool.sessionDenom, 0.1*COIN, SANDSTORM_POOL_MAX, vCoins, vCoins2, nValueIn, minRounds, maxRounds))
+        if (!SelectCoinsByDenominations(sandStormPool.sessionDenom, 0.1*COIN, Params().SandstormPoolMax(), vCoins, vCoins2, nValueIn, minRounds, maxRounds))
             return _("Error: Can't select current denominated inputs");
     }
 
@@ -4820,21 +4807,4 @@ void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const {
     // Extract block timestamps for those keys
     for (std::map<CKeyID, CBlockIndex*>::const_iterator it = mapKeyFirstBlock.begin(); it != mapKeyFirstBlock.end(); it++)
         mapKeyBirth[it->first] = it->second->nTime - 7200; // block times can be 2h off
-}
-
-bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)
-{
-    if (!IsHex(strHexBlk))
-        return false;
-
-    std::vector<unsigned char> blockData(ParseHex(strHexBlk));
-    CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
-    try {
-        ssBlock >> block;
-    }
-    catch (const std::exception &) {
-        return false;
-    }
-
-    return true;
 }

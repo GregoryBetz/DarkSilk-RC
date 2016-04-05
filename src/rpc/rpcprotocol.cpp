@@ -19,6 +19,7 @@
 
 #include "rpc/rpcprotocol.h"
 #include "util.h"
+#include "utilstrencodings.h"
 
 using namespace std;
 using namespace boost;

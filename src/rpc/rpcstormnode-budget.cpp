@@ -48,7 +48,8 @@ Value snbudget(const Array& params, bool fHelp)
                 );
 
     if(strCommand == "nextblock")
-    {
+    {   
+        LOCK(cs_main);
         CBlockIndex* pindexPrev = pindexBest;
         if(!pindexPrev) return "unknown";
 
@@ -57,7 +58,8 @@ Value snbudget(const Array& params, bool fHelp)
     }
 
     if(strCommand == "nextsuperblocksize")
-    {
+    {   
+        LOCK(cs_main);
         CBlockIndex* pindexPrev = pindexBest;
         if(!pindexPrev) return "unknown";
 
@@ -73,7 +75,8 @@ Value snbudget(const Array& params, bool fHelp)
             throw runtime_error("Correct usage is 'snbudget prepare <proposal-name> <url> <payment-count> <block-start> <darksilk-address> <monthly-payment-darksilk>'");
 
         int nBlockMin = 0;
-        CBlockIndex* pindexPrev = pindexBest;
+        LOCK(cs_main);
+        CBlockIndex* pindex = pindexBest;
 
         std::vector<CStormnodeConfig::CStormnodeEntry> snEntries;
         snEntries = stormnodeConfig.getEntries();
@@ -84,7 +87,7 @@ Value snbudget(const Array& params, bool fHelp)
         int nBlockStart = params[4].get_int();
 
         //set block min
-        if(pindexPrev != NULL) nBlockMin = pindexPrev->nHeight;
+        if(pindex != NULL) nBlockMin = pindex->nHeight;
 
         if(nBlockStart < nBlockMin)
             return "Invalid block start, must be more than current height.";
@@ -136,6 +139,7 @@ Value snbudget(const Array& params, bool fHelp)
         }
 
         int nBlockMin = 0;
+        LOCK(cs_main);
         CBlockIndex* pindexPrev = pindexBest;
 
         std::vector<CStormnodeConfig::CStormnodeEntry> snEntries;
@@ -647,8 +651,8 @@ Value snbudgetvoteraw(const Array& params, bool fHelp)
     vote.nTime = nTime;
     vote.vchSig = vchSig;
 
-    if(!vote.SignatureValid(true)){
-        return "Failure to verify signature.";
+    if(!vote.IsValid(true)){
+        return "Failure to verify vote.";
     }
 
     std::string strError = "";
@@ -883,7 +887,7 @@ Value snfinalbudget(const Array& params, bool fHelp)
             return "Invalid finalized proposal";
         }
 
-
+        LOCK(cs_main);
         CBlockIndex* pindexPrev = pindexBest;
         if(!pindexPrev) return "invalid chaintip";
 
@@ -941,6 +945,7 @@ Value snfinalbudget(const Array& params, bool fHelp)
             return "Invalid finalized proposal";
         }
 
+        LOCK(cs_main);
         CBlockIndex* pindexPrev = pindexBest;
         if(!pindexPrev) return "invalid pindexBest";
 

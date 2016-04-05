@@ -123,6 +123,7 @@ PRE_TARGETDEPS += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o
 QMAKE_EXTRA_TARGETS += gensecp256k1
 QMAKE_CLEAN += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o; cd $$PWD/src/secp256k1 ; $(MAKE) clean
 
+
 #Build LevelDB
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers src/leveldb/helpers/memenv
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
@@ -210,7 +211,12 @@ DEPENDPATH += . \
               src/secp256k1/src/java
 
 HEADERS +=  src/qt/darksilkgui.h \
-	    src/anon/stormnode/activestormnode.h \
+	    src/prevector.h \
+    	    src/scheduler.h \
+            src/cryptkey.h \
+            src/pow.h \
+            src/anon/stormnode/activestormnode.h \
+            src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
             src/qt/addresstablemodel.h \
             src/qt/optionsdialog.h \
@@ -222,24 +228,32 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/aboutdialog.h \
             src/qt/editaddressdialog.h \
             src/qt/darksilkaddressvalidator.h \
+	    src/blindtext.h \
             src/alert.h \
+            src/allocators.h \
             src/addrman.h \
             src/base58.h \
             src/bignum.h \
+            src/bloom.h \
             src/chainparams.h \
             src/chainparamsseeds.h \
             src/checkpoints.h \
             src/cleanse.h \
-            src/compat.h \
+            src/compat/compat.h \
             src/coincontrol.h \
+            src/core_io.h \
             src/sync.h \
+            src/random.h \
             src/util.h \
+            src/utilstrencodings.h \
+            src/utilmoneystr.h \
             src/hash.h \
             src/uint256.h \
             src/kernel.h \
             src/scrypt.h \
             src/pbkdf2.h \
             src/serialize.h \
+            src/limitedmap.h \
             src/main.h \
             src/miner.h \
             src/net.h \
@@ -249,10 +263,13 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/wallet/db.h \
             src/txdb.h \
             src/txmempool.h \
+            src/univalue.h \
+            src/univalue_escapes.h \
             src/wallet/walletdb.h \
             src/script/script.h \
             src/init.h \
             src/mruset.h \
+            src/consensus/validation.h \
             src/json/json_spirit_writer_template.h \
             src/json/json_spirit_writer.h \
             src/json/json_spirit_value.h \
@@ -282,8 +299,6 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/rpc/rpcserver.h \
             src/timedata.h \
             src/qt/overviewpage.h \
-            src/qt/blockbrowser.h \
-            src/qt/statisticspage.h \
             src/qt/csvmodelwriter.h \
             src/crypter.h \
             src/qt/sendcoinsentry.h \
@@ -294,7 +309,6 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/protocol.h \
             src/qt/notificator.h \
             src/qt/paymentserver.h \
-            src/allocators.h \
             src/ui_interface.h \
             src/qt/debugconsole.h \
             src/version.h \
@@ -332,11 +346,13 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/plugins/mrichtexteditor/mrichtextedit.h \
             src/qt/qvalidatedtextedit.h \
             src/qt/peertablemodel.h \
+            src/qt/bantablemodel.h \
             src/primitives/block.h \
             src/primitives/transaction.h \
             src/anon/stormnode/stormnode-sync.h \
             src/chain.h \
             src/coins.h \
+	    src/torcontrol.h \
             src/script/compressor.h \
             src/undo.h \
             src/leveldbwrapper.h \
@@ -352,9 +368,20 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/crypto/argon2/blake2/blake2.h \
             src/crypto/argon2/blake2/blamka-round-opt.h \
             src/crypto/argon2/blake2/blamka-round-ref.h \
-            src/crypto/argon2/opt.h
+            src/crypto/argon2/opt.h \
+            src/qt/multisiginputentry.h \
+            src/qt/multisigaddressentry.h \
+            src/qt/multisigdialog.h \
+            src/memusage.h \
+            src/consensus/params.h
 
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
+            src/blindtext.cpp \
+	    src/torcontrol.cpp \
+	    src/rest.cpp \
+	    src/scheduler.cpp \
+            src/cryptkey.cpp \
+            src/pow.cpp \
             src/anon/stormnode/activestormnode.cpp \
             src/qt/transactiontablemodel.cpp \
             src/qt/addresstablemodel.cpp \
@@ -362,20 +389,33 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/qt/sendcoinsdialog.cpp \
             src/qt/coincontroldialog.cpp \
             src/qt/coincontroltreewidget.cpp \
+            src/cryptogram/cryptogram.cpp \
+            src/cryptogram/ecies.cpp \
             src/qt/addressbookpage.cpp \
             src/qt/signverifymessagedialog.cpp \
             src/qt/aboutdialog.cpp \
             src/qt/editaddressdialog.cpp \
             src/qt/darksilkaddressvalidator.cpp \
-            src/qt/statisticspage.cpp \
             src/qt/peertablemodel.cpp \
+            src/qt/bantablemodel.cpp \
             src/alert.cpp \
+            src/allocators.cpp \
+            src/bloom.cpp \
+            src/core_read.cpp \
+            src/core_write.cpp \
             src/chainparams.cpp \
             src/cleanse.cpp \
             src/version.cpp \
             src/sync.cpp \
             src/txmempool.cpp \
+            src/gen.cpp \
+            src/univalue.cpp \
+            src/univalue_read.cpp \
+            src/univalue_write.cpp \
+            src/random.cpp \
             src/util.cpp \
+            src/utilstrencodings.cpp \
+            src/utilmoneystr.cpp \
             src/hash.cpp \
             src/netbase.cpp \
             src/key.cpp \
@@ -387,6 +427,9 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/init.cpp \
             src/net.cpp \
             src/checkpoints.cpp \
+            src/qt/multisiginputentry.cpp \
+            src/qt/multisigaddressentry.cpp \
+            src/qt/multisigdialog.cpp \
             src/addrman.cpp \
             src/base58.cpp \
             src/wallet/db.cpp \
@@ -407,6 +450,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/qt/transactionview.cpp \
             src/qt/walletmodel.cpp \
             src/rpc/rpcclient.cpp \
+            src/rpc/rpccrypt.cpp \
             src/rpc/rpcprotocol.cpp \
             src/rpc/rpcserver.cpp \
             src/wallet/rpcdump.cpp \
@@ -418,7 +462,6 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/rpc/rpcrawtransaction.cpp \
             src/timedata.cpp \
             src/qt/overviewpage.cpp \
-            src/qt/blockbrowser.cpp \
             src/qt/csvmodelwriter.cpp \
             src/crypter.cpp \
             src/qt/sendcoinsentry.cpp \
@@ -480,6 +523,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/txdb.cpp \
             src/amount.cpp \
             src/undo.cpp \
+            src/rpc/rpcblindtext.cpp \
             src/compat/glibc_sanity.cpp \
             src/compat/glibcxx_sanity.cpp \
             src/crypto/argon2/argon2.c \
@@ -487,7 +531,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/crypto/argon2/encoding.c \
             src/crypto/argon2/thread.c \
             src/crypto/argon2/blake2/blake2b.c \
-            src/crypto/argon2/opt.c
+            src/crypto/argon2/opt.c 
 
 RESOURCES += \
             src/qt/darksilk.qrc
@@ -498,10 +542,12 @@ FORMS += \
             src/qt/forms/addressbookpage.ui \
             src/qt/forms/signverifymessagedialog.ui \
             src/qt/forms/aboutdialog.ui \
-            src/qt/forms/editaddressdialog.ui \
+            src/qt/forms/editaddressdialog.ui \  
+            src/qt/forms/multisiginputentry.ui \
+            src/qt/forms/multisigaddressentry.ui \
+            src/qt/forms/multisigdialog.ui \
             src/qt/forms/transactiondescdialog.ui \
             src/qt/forms/overviewpage.ui \
-            src/qt/forms/blockbrowser.ui \
             src/qt/forms/sendcoinsentry.ui \
             src/qt/forms/askpassphrasedialog.ui \
             src/qt/forms/debugconsole.ui \
@@ -509,7 +555,6 @@ FORMS += \
             src/qt/forms/sandstormconfig.ui \
             src/qt/forms/stormnodemanager.ui \
             src/qt/forms/addeditstormnode.ui \
-            src/qt/forms/statisticspage.ui \
             src/qt/forms/stormnodeconfigdialog.ui \
             src/qt/forms/messagepage.ui \
             src/qt/forms/sendmessagesentry.ui \
@@ -626,11 +671,11 @@ macx:QMAKE_INFO_PLIST = share/qt/Info.plist
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
 INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
-LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
+LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX -lcryptopp -levent
 # -lgdi32 has to happen after -lcrypto (see  #681)
 windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
-windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
+LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
 
 contains(RELEASE, 1) {
     !windows:!macx {
@@ -639,9 +684,9 @@ contains(RELEASE, 1) {
     }
 }
 
-# Set GMP and Snappy libraries
+# Set GMP
 !windows: {
-    LIBS += -lgmp -lsnappy
+    LIBS += -lgmp
 }
 
 !windows:!macx {

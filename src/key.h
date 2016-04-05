@@ -103,7 +103,7 @@ public:
     // Compute the public key from a private key.
     // This is expensive.
     CPubKey GetPubKey() const;
-
+    
     /**
      * Create a DER-serialized signature.
      * The test_case parameter tweaks the deterministic nonce.

@@ -61,8 +61,7 @@
 #include "init.h"
 #include "anon/stormnode/stormnode-sync.h"
 #include "stormnodemanager.h"
-// #include "blockbrowser.h"
-// #include "statisticspage.h"
+#include "multisigdialog.h"
 #include "messagepage.h"
 
 #ifdef USE_NATIVE_I2P
@@ -139,11 +138,9 @@ DarkSilkGUI::DarkSilkGUI(QWidget *parent):
     addressBookPage = new AddressBookPage(AddressBookPage::ForEditing, AddressBookPage::SendingTab);    
 
     signVerifyMessageDialog = new SignVerifyMessageDialog(this);
-
-    /*blockBrowser = new BlockBrowser(this);
-
-    statisticsPage = new StatisticsPage(this);
-*/
+	
+	multisigPage = new MultisigDialog(this);
+ 
     messagePage = new MessagePage(this);
 
     stormnodeManagerPage = 0;
@@ -153,9 +150,8 @@ DarkSilkGUI::DarkSilkGUI(QWidget *parent):
     centralStackedWidget->setContentsMargins(0, 0, 0, 0);
     centralStackedWidget->addWidget(overviewPage);
     centralStackedWidget->addWidget(messagePage);
-    /*centralStackedWidget->addWidget(blockBrowser);
-    centralStackedWidget->addWidget(statisticsPage);
-    */centralStackedWidget->addWidget(transactionsPage);
+    centralStackedWidget->addWidget(multisigPage);
+    centralStackedWidget->addWidget(transactionsPage);
     centralStackedWidget->addWidget(addressBookPage);
     centralStackedWidget->addWidget(receiveCoinsPage);
     centralStackedWidget->addWidget(sendCoinsPage);
@@ -338,27 +334,17 @@ void DarkSilkGUI::createActions()
     addressBookAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
 #endif
     tabGroup->addAction(addressBookAction);
-/*
-    statisticsAction = new QAction(QIcon(":/icons/statistics"), tr("&Statistics"), this);
-    statisticsAction->setToolTip(tr("DRKSLK PoW/PoS Statistics"));
-    statisticsAction->setCheckable(true);
-#ifdef Q_OS_MAC
-    statisticsAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
-#else
-    statisticsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
-#endif
-    tabGroup->addAction(statisticsAction);
 
-    blockAction = new QAction(QIcon(":/icons/block"), tr("&Block Explorer"), this);
-    blockAction->setToolTip(tr("Explore the BlockChain"));
-    blockAction->setCheckable(true);
+    multisigAction = new QAction(QIcon(":/icons/send"), tr("&MultiSig"), this);
+    multisigAction->setToolTip(tr("Send a MultiSig Transaction"));
+    multisigAction->setCheckable(true);
 #ifdef Q_OS_MAC
-    blockAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_7));
+    multisigAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
 #else
-    blockAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_7));
+    multisigAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
 #endif
-    tabGroup->addAction(blockAction);
-*/
+    tabGroup->addAction(multisigAction);
+
     messageAction = new QAction(QIcon(":/icons/edit"), tr("Encrypted Messages"), this);
     messageAction->setToolTip(tr("View and Send Encrypted messages"));
     messageAction->setCheckable(true);
@@ -389,11 +375,9 @@ void DarkSilkGUI::createActions()
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(gotoAddressBookPage()));
-    /*connect(blockAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
-    connect(blockAction, SIGNAL(triggered()), this, SLOT(gotoBlockBrowser()));
-    connect(statisticsAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
-    connect(statisticsAction, SIGNAL(triggered()), this, SLOT(gotoStatisticsPage()));
-    */connect(messageAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(multisigAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(multisigAction, SIGNAL(triggered()), this, SLOT(gotoMultiSigPage()));
+    connect(messageAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(messageAction, SIGNAL(triggered()), this, SLOT(gotoMessagePage()));
 
     connect(stormnodeManagerAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -537,9 +521,8 @@ void DarkSilkGUI::createToolBars()
     toolbarMenu->addAction(sendCoinsAction);
     toolbarMenu->addAction(historyAction);
     toolbarMenu->addAction(addressBookAction);
-    /*toolbarMenu->addAction(statisticsAction);
-    toolbarMenu->addAction(blockAction);
-    */toolbarMenu->addAction(messageAction);
+    toolbarMenu->addAction(multisigAction);
+    toolbarMenu->addAction(messageAction);
     toolbarMenu->addAction(stormnodeManagerAction);
 
     QAction* menuAction = new QAction(QIcon(":/icons/overview"), tr("&Menu"), this);
@@ -1195,27 +1178,16 @@ void DarkSilkGUI::gotoVerifyMessageTab(QString addr)
         signVerifyMessageDialog->setAddress_VM(addr);
     }
 }
-/*
-void DarkSilkGUI::gotoBlockBrowser() 
+
+void DarkSilkGUI::gotoMultiSigPage() 
 {
-    blockAction->setChecked(true);
-    centralStackedWidget->setCurrentWidget(blockBrowser);
+    multisigAction->setChecked(true);
+    centralStackedWidget->setCurrentWidget(multisigPage);
 
     exportAction->setEnabled(false);
     disconnect(exportAction, SIGNAL(triggered()), 0, 0);
 }
 
-void DarkSilkGUI::gotoStatisticsPage() 
-{
-    statisticsAction->setChecked(true);
-    centralStackedWidget->setCurrentWidget(statisticsPage);
-
-    statisticsPage->updateStatistics();
-
-    exportAction->setEnabled(false);
-    disconnect(exportAction, SIGNAL(triggered()), 0, 0);
-}
-*/
 void DarkSilkGUI::gotoMessagePage()
 {
     messageAction->setChecked(true);      
@@ -1469,7 +1441,7 @@ void DarkSilkGUI::updateStakingIcon()
         uint64_t nWeight = this->nWeight;
         uint64_t nNetworkWeight = GetPoSKernelPS();
 
-        unsigned nEstimateTime = POS_TARGET_SPACING * nNetworkWeight / nWeight;
+        unsigned nEstimateTime = Params().ProofOfStakeSpacing() * nNetworkWeight / nWeight;
 
         QString text;
 

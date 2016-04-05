@@ -3,13 +3,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef DARKSILK_CHECKPOINT_H
-#define  DARKSILK_CHECKPOINT_H
+#define DARKSILK_CHECKPOINT_H
 
 #include <map>
 
 #include "uint256.h"
 
 class CBlockIndex;
+struct CCheckpointData;
 
 /** Block-chain checkpoints are compiled-in sanity checks.
  * They are updated every release or three.
@@ -27,6 +28,8 @@ namespace Checkpoints {
 
     const CBlockIndex* AutoSelectSyncCheckpoint();
     bool CheckSync(int nHeight);
+
+    double GuessVerificationProgress(const CCheckpointData& data, CBlockIndex* pindex, bool fSigchecks = true);
 
 } // namespace Checkpoints
 

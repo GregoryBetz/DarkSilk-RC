@@ -11,6 +11,7 @@
 #include "init.h"
 #include "main.h"
 #include "optionsmodel.h"
+#include "utilstrencodings.h"
 #include "walletmodel.h"
 #include "wallet/wallet.h"
 

@@ -12,6 +12,7 @@
 #include "keystore.h"
 #include "main.h"
 #include "sync.h"
+#include "random.h"
 #include "crypto/ripemd160.h"
 #include "crypto/sha1.h"
 #include "crypto/sha256.h"

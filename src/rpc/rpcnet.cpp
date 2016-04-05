@@ -15,6 +15,7 @@
 #include "sync.h"
 #include "timedata.h"
 #include "util.h"
+#include "utilstrencodings.h"
 #include "key.h"
 
 using namespace json_spirit;
@@ -106,7 +107,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
         obj.push_back(Pair("startingheight", stats.nStartingHeight));
         obj.push_back(Pair("banscore", stats.nMisbehavior));
         obj.push_back(Pair("syncnode", stats.fSyncNode));
-
+        obj.push_back(Pair("whitelisted", stats.fWhitelisted));
         ret.push_back(obj);
     }
 

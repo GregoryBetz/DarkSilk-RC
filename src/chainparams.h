@@ -11,6 +11,9 @@
 
 #include "bignum.h"
 #include "uint256.h"
+#include "amount.h"
+
+#include "consensus/params.h"
 
 using namespace std;
 
@@ -23,6 +26,15 @@ class CBlock;
 struct CDNSSeedData {
     string name, host;
     CDNSSeedData(const string &strName, const string &strHost) : name(strName), host(strHost) {}
+};
+
+typedef std::map<int, uint256> MapCheckpoints;
+
+struct CCheckpointData {
+    MapCheckpoints mapCheckpoints;
+    int64_t nTimeLastCheckpoint;
+    int64_t nTransactionsLastCheckpoint;
+    double fTransactionsPerDay;
 };
 
 /**
@@ -51,6 +63,7 @@ public:
 
         MAX_BASE58_TYPES
     };
+	
 
     const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
     const MessageStartChars& MessageStart() const { return pchMessageStart; }
@@ -65,16 +78,38 @@ public:
     const vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char> &Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
     virtual const vector<CAddress>& FixedSeeds() const = 0;
+    const CCheckpointData& Checkpoints() const { return checkpointData; }
     int RPCPort() const { return nRPCPort; }
     int FirstPOSBlock() const { return nFirstPOSBlock; }
     std::string StormnodePaymentPubKey() const { return strStormnodePaymentsPubKey; }
     int64_t StartStormnodePayments() const { return nStartStormnodePayments; }
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     std::string SandstormPoolDummyAddress() const { return strSandstormPoolDummyAddress; }
+    int ProofOfWorkSpacing() const { return nPoWTargetSpacing; }
+    int ProofOfStakeSpacing() const { return nPoSTargetSpacing; }
+    CAmount StakingReward() const { return nStakingReward; }
+    const Consensus::Params& GetConsensus() const { return consensus; }
+    double MinimumFee() const { return nMinFee; }
+    CAmount StormnodeCollateral() const { return nStormnodeCollateral; }
+    CAmount SandstormCollateral() const { return nSandstormCollateral; }
+    int StormnodePaymentStart() const { return nStormnodePaymentStart; }
+    CAmount SandstormPoolMax() const { return nSandstormPoolMax; }
+    int MiningReward() const { return nMiningReward; }
 
 protected:
     CChainParams() {};
-
+    
+    Consensus::Params consensus;
+    
+    int nPoWTargetSpacing;
+    int nPoSTargetSpacing;
+    CAmount nStakingReward;
+    CAmount nMiningReward;
+    double nMinFee;
+    CAmount nStormnodeCollateral;
+    int nStormnodePaymentStart;
+    CAmount nSandstormCollateral;
+    int nSandstormPoolMax;
     uint256 hashGenesisBlock;
     MessageStartChars pchMessageStart;
     // Raw pub key bytes for the broadcast alert signing key.
@@ -91,6 +126,7 @@ protected:
     int nFirstPOSBlock;
     int nPoolMaxTransactions;
     std::string strSandstormPoolDummyAddress;
+    CCheckpointData checkpointData;
 };
 
 /**

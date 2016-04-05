@@ -6,12 +6,15 @@ sudo: required
 dist: trusty
 install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y qt5-default qt5-qmake qtbase5-dev-tools qttools5-dev-tools build-essential libboost-dev libboost-system-dev libboost-filesystem-dev libboost-program-options-dev libboost-thread-dev libssl-dev libdb++-dev libminiupnpc-dev
+  - sudo apt-get install -y qt5-default qt5-qmake qtbase5-dev-tools qttools5-dev-tools build-essential libboost-dev libboost-system-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev libboost-thread-dev libssl-dev libdb++-dev libminiupnpc-dev
   - sudo apt-get install -y make libqt5webkit5-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools qtcreator zip unzip dh-autoreconf libboost-thread-dev libssl-dev libdb++-dev libstdc++6 libminiupnpc-dev libevent-dev libcurl4-openssl-dev git libpng-dev qrencode libqrencode-dev build-essential libboost-dev libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-program-options-dev 
-  - sudo apt-get install -y libevent-dev libgmp-dev liblz-dev libsnappy-dev
+  - sudo apt-get install -y libevent-dev libgmp-dev liblz-dev libcrypto++-dev 
 script:
   - qmake -qt=qt5 "USE_QRCODE=1" "USE_NATIVE_I2P=1"
   - make
+  - cd src && make -f makefile.unix USE_NATIVE_I2P=1
+  - strip darksilkd
+
 deploy:
   provider: releases
   file: "darksilk-qt"
@@ -19,4 +22,5 @@ deploy:
   on:
     tags: true
   api_key:
-    secure: "ZRckwqyeKAUcSWAfTEFmURtCXmROBSEFDvAhzyfKjTMW9n1O8EF+zRBBDTssfSUX+ucj5jzen1httXdoq8FUVrgTuK7lAwCWe8wizzPYmLaIt5p7GypHUJesSTYtIcZu+I6CL4AWgkplC50JCLd5Zgnz7IYRZPcObxC2/yIcJyhLhWnlskgL53Hr+WjEuAOLnWG4bNZmv/7VOL4OEI7cVsRGD8NTTrGKzmZ5KtJuK/TAsA8KKQQVkiUMcH6YnazDDa9ml36bZE3MVFsijLTBPxUFSm4kTHl84Ia4Y1GPj9IYZJjadbxR7roIKeD0y9AzY4c2TgaGVii/24RQPP2YKTnaHrRM3hohXDdGhb+qXLjckp237gjI3VTH6D9VI5f3aKESiLSUJBoz0eWJlbY/YP4bCkadPchRRqOJv6/HTipkIwOSXasZGKT0MckVnKAatAcnyWqa7nn3bLM/CPI9jGYgs3yRmWHOJbyktIkYTqK+yn48FUeYRg8U+3jlAZtJ+mk/rEzTP25cNt2oCV2jYuBpYzFoaQ3t3ZIU/PAlPfnVrthocEEJj9grvhl0gmb91aejdRuQewMIUTnzTN66OW0OkjnTQxHoix+DDiJmga0ZMR7ScQ3+zOINpNV/n1tTHfIu5ltOJ5mdtqh3qiLMp4hAiSNbCNSiyaMapIpnGNk="
+    secure: "iHQWfOP4ULGs5iS6D6kbI6l8j1T0ZBzYlENSpUlWHaSC6YpettfIbJDI8UEVJWfK9JrC73UiKPHU77Ug83o2crfrUdTSCQBXNbd5jAKyaO6ObJ3TwB+XYMS5cjcqiMFLTZ0qVBmXX1VzYkJz+UX35W6IleEhyfYLa6NaWVG5O42pJLb3Eo0ewgDuts7P2uPp8LOHIOvJ4aPkkNCD/8wtAFz+qytgtAygxjbH/0MW3zvD7s+iaDzOJ0bVIsEA4T4jK5wH3R8Kkwg0Ima29Y9NxgJNWrnfVHnfB4Ka3J0gnu69/z8lhW38/vdUBpmksKSwKavGvc5FnyXk4125BIaxMCwkIpYRw9BZK1N3ISNSdWyVvk0l3BbRTPbUhzoorYNZ/In7hOPzQZQjrYAT17rFAiIos3Pbxt70sPK9RsaOsEx1Ya/85JiNJBL8/LxKDCv6pcmTq4e41h78P0nIS41Uqtxl24lL7mUBTMorq+IbCrI4jR+rYI7OzH2Ny7UQ2oaQZNZtVC+P7HsrLZn+xh+vpyYLGX5v9wumyJlAXYjH9yPq+RJCEMikcEBWAca/NEX0gBmFYuufimo0XtKUQMpWQ9Ft/M7MzIO3BdhijXsKHUsTlgiFU6S6sAKj5qQ+p9KfijRoF/9IAv2dKk0Xxd18hYwNl7Yj45sWmmP4w4eeQuY="
+

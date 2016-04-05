@@ -154,15 +154,26 @@ void OptionsModel::Init(bool resetSettings)
         addOverriddenOption("-anonymizedarksilkamount");
     nAnonymizeDarkSilkAmount = settings.value("nAnonymizeDarkSilkAmount").toInt();
 
-    // These are shared with core DarkSilk; we want
-    // command-line options to override the GUI settings:
-    if (settings.contains("fUseUPnP"))
-        SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool());
-    if (settings.contains("addrProxy") && settings.value("fUseProxy").toBool())
-        SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString());
-    if (!language.isEmpty())
-        SoftSetArg("-lang", language.toStdString());
+    // Network
+    if (!settings.contains("fUseUPnP"))
+        settings.setValue("fUseUPnP", DEFAULT_UPNP);
+    if (!SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
+        addOverriddenOption("-upnp");
 
+    if (!settings.contains("fListen"))
+        settings.setValue("fListen", DEFAULT_LISTEN);
+    if (!SoftSetBoolArg("-listen", settings.value("fListen").toBool()))
+        addOverriddenOption("-listen");
+
+    if (!settings.contains("fUseProxy"))
+        settings.setValue("fUseProxy", false);
+    if (!settings.contains("addrProxy"))
+        settings.setValue("addrProxy", "127.0.0.1:9050");
+    // Only try to set -proxy, if user has enabled fUseProxy
+    if (settings.value("fUseProxy").toBool() && !SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString()))
+        addOverriddenOption("-proxy");
+    else if(!settings.value("fUseProxy").toBool() && !GetArg("-proxy", "").empty())
+        addOverriddenOption("-proxy");
 
 #ifdef USE_NATIVE_I2P
     ScopeGroupHelper s(settings, I2P_OPTIONS_SECTION_NAME);
@@ -250,7 +261,11 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         case MinimizeToTray:
             return QVariant(fMinimizeToTray);
         case MapPortUPnP:
-            return settings.value("fUseUPnP", GetBoolArg("-upnp", true));
+#ifdef USE_UPNP
+            return settings.value("fUseUPnP");
+#else
+            return false;
+#endif
         case MinimizeOnClose:
             return QVariant(fMinimizeOnClose);
         case ProxyUse:
@@ -277,7 +292,9 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("nSandstormRounds");
         case AnonymizeDarkSilkAmount:
             return settings.value("nAnonymizeDarkSilkAmount");
-        case DisplayUnit:
+        case Listen:
+            return settings.value("fListen");
+         case DisplayUnit:
             return QVariant(nDisplayUnit);
         case Language:
             return settings.value("language", "");
@@ -443,6 +460,12 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 nAnonymizeDarkSilkAmount = value.toInt();
                 settings.setValue("nAnonymizeDarkSilkAmount", nAnonymizeDarkSilkAmount);
                 emit anonymizeDarkSilkAmountChanged();
+            }
+            break;
+        case Listen:
+            if (settings.value("fListen") != value) {
+                settings.setValue("fListen", value);
+                setRestartRequired(true);
             }
             break;
 #ifdef USE_NATIVE_I2P

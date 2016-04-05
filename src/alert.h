@@ -15,10 +15,10 @@
 
 #include "serialize.h"
 #include "sync.h"
-#include "uint256.h"
 
 class CAlert;
 class CNode;
+class uint256;
 
 extern std::map<uint256, CAlert> mapAlerts;
 extern CCriticalSection cs_mapAlerts;
@@ -72,10 +72,9 @@ public:
     void SetNull();
 
     std::string ToString() const;
-    void print() const;
 };
 
-/** An alert is a combination of a serialized CUnsignedAlert and a signature. */
+///! An alert is a combination of a serialized CUnsignedAlert and a signature.
 class CAlert : public CUnsignedAlert
 {
 public:
@@ -105,10 +104,9 @@ public:
     bool RelayTo(CNode* pnode) const;
     bool CheckSignature() const;
     bool ProcessAlert(bool fThread = true);
+    static void Notify(const std::string& strMessage, bool fThread);
 
-    /*
-     * Get copy of (active) alert object by hash. Returns a null alert if it is not found.
-     */
+    //! Get copy of (active) alert object by hash. Returns a null alert if it is not found.
     static CAlert getAlertByHash(const uint256 &hash);
 };
 

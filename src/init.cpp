@@ -16,24 +16,29 @@
 #include "init.h"
 #include "main.h"
 #include "chainparams.h"
-#include "txdb.h"
-#include "rpc/rpcserver.h"
+#include "sanity.h"
 #include "net.h"
-#include "util.h"
 #include "key.h"
 #include "pubkey.h"
+#include "rpc/rpcserver.h"
+#include "txdb.h"
 #include "ui_interface.h"
+#include "util.h"
+#include "utilmoneystr.h"
+#include "utilstrencodings.h"
 #include "anon/stormnode/activestormnode.h"
-#include "sanity.h"
 #include "anon/stormnode/stormnode-budget.h"
 #include "anon/stormnode/stormnode-payments.h"
+// #include "anon/stormnode/stormnode-sync.h" //include after chainactive.Tip is active
 #include "anon/stormnode/stormnodeman.h"
-#include "anon/stormnode/spork.h"
 #include "anon/stormnode/stormnodeconfig.h"
+#include "anon/stormnode/spork.h"
 #include "smessage.h"
 #include "txdb-leveldb.h"
+#include "torcontrol.h"
 
 #ifdef ENABLE_WALLET
+#include "db.h"
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
 #endif
@@ -46,13 +51,15 @@
 #include "i2p/i2p.h"
 #endif
 
-using namespace std;
 using namespace boost;
+using namespace std;
 
 #ifdef ENABLE_WALLET
 CWallet* pwalletMain = NULL;
+int nWalletBackups = 10;
 #endif
-CClientUIInterface uiInterface;
+bool fFeeEstimatesInitialized = false;
+bool fRestartRequested = false;  // true: restart false: shutdown
 bool fConfChange;
 unsigned int nNodeLifespan;
 unsigned int nDerivationMethodIndex;
@@ -61,9 +68,27 @@ bool fUseFastIndex;
 bool fOnlyTor = false;
 bool fMinimizeCoinAge;
 
-bool fFeeEstimatesInitialized = false;
+#ifdef WIN32
+// Win32 LevelDB doesn't use filedescriptors, and the ones used for
+// accessing block files, don't count towards to fd_set size limit
+// anyway.
+#define MIN_CORE_FILEDESCRIPTORS 0
+#else
+#define MIN_CORE_FILEDESCRIPTORS 150
+#endif
+
+/** Used to pass flags to the Bind() function */
+enum BindFlags {
+    BF_NONE         = 0,
+    BF_EXPLICIT     = (1U << 0),
+    BF_REPORT_ERROR = (1U << 1),
+    BF_WHITELIST    = (1U << 2),
+};
+
+static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
 
 static const char* FEE_ESTIMATES_FILENAME="fee_estimates.dat";
+CClientUIInterface uiInterface;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -96,7 +121,16 @@ static const char* FEE_ESTIMATES_FILENAME="fee_estimates.dat";
 //
 
 volatile bool fRequestShutdown = false;
-static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
+
+void StartShutdown()
+{
+    fRequestShutdown = true;
+}
+
+bool ShutdownRequested()
+{
+    return fRequestShutdown || fRestartRequested;
+}
 
 class CCoinsViewErrorCatcher : public CCoinsViewBacked
 {
@@ -121,21 +155,16 @@ public:
 static CCoinsViewDB *pcoinsdbview = NULL;
 static CCoinsViewErrorCatcher *pcoinscatcher = NULL;
 
-void StartShutdown()
-{
-    fRequestShutdown = true;
-}
-bool ShutdownRequested()
-{
-    return fRequestShutdown;
-}
 
-void Shutdown()
-{
-    LogPrintf("Shutdown : In progress...\n");
+void PrepareShutdown()
+{   
+    fRequestShutdown = true; // Needed when we shutdown the wallet
+    fRestartRequested = true; // Needed when we restart the wallet
+    LogPrintf("%s: In progress...\n", __func__);
     static CCriticalSection cs_Shutdown;
     TRY_LOCK(cs_Shutdown, lockShutdown);
-    if (!lockShutdown) return;
+    if (!lockShutdown)
+        return;
 
     RenameThread("darksilk-shutoff");
     mempool.AddTransactionsUpdated(1);
@@ -151,6 +180,7 @@ void Shutdown()
     DumpBudgets();
     DumpStormnodePayments();
     UnregisterNodeSignals(GetNodeSignals());
+    StopTorControl();
 
     if (fFeeEstimatesInitialized)
     {
@@ -162,6 +192,7 @@ void Shutdown()
             LogPrintf("%s: Failed to write fee estimates to %s\n", __func__, est_path.string());
         fFeeEstimatesInitialized = false;
     }
+
     {
         LOCK(cs_main);
         if (pcoinsTip != NULL && pblocktree != NULL) {
@@ -187,13 +218,34 @@ void Shutdown()
     if (pwalletMain)
         bitdb.Flush(true);
 #endif
+#ifdef WIN32
     boost::filesystem::remove(GetPidFile());
-    UnregisterAllWallets();
+#endif
+    UnregisterAllValidationInterfaces();
+}
+
+/**
+* Shutdown is split into 2 parts:
+* Part 1: shut down everything but the main wallet instance (done in PrepareShutdown() )
+* Part 2: delete wallet instance
+*
+* In case of a restart PrepareShutdown() was already called before, but this method here gets
+* called implicitly when the parent object is deleted. In this case we have to skip the
+* PrepareShutdown() part because it was already executed and just delete the wallet instance.
+*/
+void Shutdown()
+{
+    // Shutdown part 1: prepare shutdown
+    if(!fRestartRequested){
+        PrepareShutdown();
+    }
+
+   // Shutdown part 2: delete wallet instance
 #ifdef ENABLE_WALLET
     delete pwalletMain;
     pwalletMain = NULL;
 #endif
-    LogPrintf("Shutdown : done\n");
+    LogPrintf("%s: done\n", __func__);
 }
 
 //
@@ -230,12 +282,12 @@ bool static BindNativeI2P(/*bool fError = true*/)
 }
 #endif
 
-bool static Bind(const CService &addr, bool fError = true) {
-    if (IsLimited(addr))
+bool static Bind(const CService &addr, unsigned int flags) {
+    if (!(flags & BF_EXPLICIT) && IsLimited(addr))
         return false;
     std::string strError;
-    if (!BindListenPort(addr, strError)) {
-        if (fError)
+    if (!BindListenPort(addr, strError, (flags & BF_WHITELIST) != 0)) {
+        if (flags & BF_REPORT_ERROR)
             return InitError(strError);
         return false;
     }
@@ -243,7 +295,7 @@ bool static Bind(const CService &addr, bool fError = true) {
 }
 
 // Core-specific options shared between UI and daemon
-std::string HelpMessage()
+std::string HelpMessage(HelpMessageMode hmm)
 {
     string strUsage = _("Options:") + "\n";
     strUsage += "  -?                     " + _("This help message") + "\n";
@@ -281,12 +333,24 @@ std::string HelpMessage()
     strUsage += "  -upnp                  " + _("Use UPnP to map the listening port (default: 0)") + "\n";
 #endif
 #endif
+    strUsage += "  -whitebind=<addr>      " + _("Bind to given address and whitelist peers connecting to it. Use [host]:port notation for IPv6") + "\n";
+    strUsage += "  -whitelist=<netmask>   " + _("Whitelist peers connecting from the given netmask or IP address. Can be specified multiple times.") + "\n";
+    strUsage += "                         " + _("Whitelisted peers cannot be DoS banned and their transactions are always relayed, even if they are already in the mempool, useful e.g. for a gateway") + "\n";
     strUsage += "  -paytxfee=<amt>        " + _("Fee per KB to add to transactions you send") + "\n";
     strUsage += "  -mininput=<amt>        " + _("When creating transactions, ignore inputs with value less than this (default: 0.01)") + "\n";
     strUsage += "  -server                " + _("Accept command line and JSON-RPC commands") + "\n";
 #if !defined(WIN32)
     strUsage += "  -daemon                " + _("Run in the background as a daemon and accept commands") + "\n";
 #endif
+if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
+    {
+
+    strUsage += "\n" + _("Debugging/Testing options:") + "\n";
+    if (GetBoolArg("-help-debug", false))
+    {
+    strUsage += "  -fuzzmessagestest=<n>  " + _("Randomly fuzz 1 of every <n> network messages") + "\n";
+    }
+
     strUsage += "  -testnet               " + _("Use the test network") + "\n";
     strUsage += "  -litemode=<n>          " + strprintf(_("Disable all Darksilk specific functionality (Stormnodes, Sandstorm, InstantX, Budgeting) (0-1, default: %u)"), 0) + "\n";
     strUsage += "  -debug=<category>      " + _("Output debugging information (default: 0, supplying <category> is optional)") + "\n";
@@ -338,14 +402,13 @@ std::string HelpMessage()
     strUsage += "  -stormnodeaddr=<n>        " + _("Set external address:port to get to this stormnode (example: address:port)") + "\n";
     strUsage += "  -stormnodeminprotocol=<n> " + _("Ignore stormnodes less than version (example: 60700; default : 0)") + "\n";
 
-    strUsage += "  -enablesandstorm=<n>          " + strprintf(_("Enable use of automated sandstorm for funds stored in this wallet (0-1, default: 0)"), fEnableSandstorm) + "\n";
-    strUsage += "  -sandstormmultisession=<n>    " + strprintf(_("Enable multiple sandstorm mixing sessions per block, experimental (0-1, default: %u)"), fSandstormMultiSession) + "\n";
-    strUsage += "  -sandstormrounds=<n>          " + strprintf(_("Use N separate stormnodes to anonymize funds  (2-50, default: 2)"), nSandstormRounds) + "\n";
-    strUsage += "  -anonymizedarksilkamount=<n> " + strprintf(_("Keep N DarkSilk anonymized (default: 0)"), nAnonymizeDarkSilkAmount) + "\n";
-    strUsage += "  -liquidityprovider=<n>       " + strprintf(_("Provide liquidity to Sandstorm by infrequently mixing coins on a continual basis (0-100, default: 0, 1=very frequent, high fees, 100=very infrequent, low fees)"), nLiquidityProvider) + "\n";
- 
+    strUsage += "  -enablesandstorm=<n>          " + strprintf(_("Enable use of automated sandstorm for funds stored in this wallet (0-1, default: %u)"), fEnableSandstorm) + "\n";
+    strUsage += "  -sandstormrounds=<n>          " + strprintf(_("Use N separate stormnodes to anonymize funds  (2-50, default: %u)"), nSandstormRounds) + "\n";
+    strUsage += "  -anonymizedarksilkamount=<n> " + strprintf(_("Keep N DarkSilk anonymized (default: %u)"), nAnonymizeDarkSilkAmount) + "\n";
+    strUsage += "  -liquidityprovider=<n>       " + strprintf(_("Provide liquidity to Sandstorm by infrequently mixing coins on a continual basis (0-100, default: %u, 1=very frequent, high fees, 100=very infrequent, low fees)"), nLiquidityProvider) + "\n";
+}
     strUsage += "\n" + _("InstantX options:") + "\n";
-    strUsage += "  -enableinstantx=<n>    " + strprintf(_("Enable instantx, show confirmations for locked transactions (0-1, default: %u)"), "true") + "\n";
+    strUsage += "  -enableinstantx=<n>    " + strprintf(_("Enable instantx, show confirmations for locked transactions (0-1, default: %u)"), fEnableInstantX) + "\n";
     strUsage += "  -instantxdepth=<n>     " + strprintf(_("Show N confirmations for a successfully locked transaction (0-9999, default: %u)"), nInstantXDepth) + "\n"; 
     strUsage += _("Secure messaging options:") + "\n" +
         "  -nosmsg                                  " + _("Disable secure messaging.") + "\n" +
@@ -353,6 +416,20 @@ std::string HelpMessage()
         "  -smsgscanchain                           " + _("Scan the block chain for public key addresses on startup.") + "\n";
 
     return strUsage;
+}
+
+std::string LicenseInfo()
+{
+    return FormatParagraph(strprintf(_("Copyright (C) 2009-%i The Bitcoin Core Developers"), COPYRIGHT_YEAR)) + "\n" +
+           "\n" +
+           FormatParagraph(strprintf(_("Copyright (C) 2015-%i The DarkSilk Core Developers"), COPYRIGHT_YEAR)) + "\n" +
+           "\n" +
+           FormatParagraph(_("This is experimental software.")) + "\n" +
+           "\n" +
+           FormatParagraph(_("Distributed under the MIT software license, see the accompanying file COPYING or <http://www.opensource.org/licenses/mit-license.php>.")) + "\n" +
+           "\n" +
+           FormatParagraph(_("This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit <https://www.openssl.org/> and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard.")) +
+           "\n";
 }
 
 /** Sanity checks
@@ -601,11 +678,11 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     std::string strDataDir = GetDataDir().string();
 #ifdef ENABLE_WALLET
-    std::string strWalletFileName = GetArg("-wallet", "wallet.dat");
+    std::string strWalletFile = GetArg("-wallet", "wallet.dat");
 
     // strWalletFileName must be a plain filename without a directory
-    if (strWalletFileName != boost::filesystem::basename(strWalletFileName) + boost::filesystem::extension(strWalletFileName))
-        return InitError(strprintf(_("Wallet %s resides outside data directory %s."), strWalletFileName, strDataDir));
+    if (strWalletFile != boost::filesystem::basename(strWalletFile) + boost::filesystem::extension(strWalletFile))
+        return InitError(strprintf(_("Wallet %s resides outside data directory %s."), strWalletFile, strDataDir));
 #endif
     // Make sure only a single DarkSilk process is using the data directory.
     boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
@@ -647,7 +724,79 @@ bool AppInit2(boost::thread_group& threadGroup)
     // ********************************************************* Step 5: verify database integrity
 #ifdef ENABLE_WALLET
     if (!fDisableWallet) {
-        uiInterface.InitMessage(_("Verifying database integrity..."));
+    
+        filesystem::path backupDir = GetDataDir() / "backups";
+        if (!filesystem::exists(backupDir))
+        {
+            // Always create backup folder to not confuse the operating system's file browser
+            filesystem::create_directories(backupDir);
+        }
+        nWalletBackups = GetArg("-createwalletbackups", 10);
+        nWalletBackups = std::max(0, std::min(10, nWalletBackups));
+        if(nWalletBackups > 0)
+        {
+            if (filesystem::exists(backupDir))
+            {
+                // Create backup of the wallet
+                std::string dateTimeStr = DateTimeStrFormat(".%Y-%m-%d-%H-%M", GetTime());
+                std::string backupPathStr = backupDir.string();
+                backupPathStr += "/" + strWalletFile;
+                std::string sourcePathStr = GetDataDir().string();
+                sourcePathStr += "/" + strWalletFile;
+                boost::filesystem::path sourceFile = sourcePathStr;
+                boost::filesystem::path backupFile = backupPathStr + dateTimeStr;
+                sourceFile.make_preferred();
+                backupFile.make_preferred();
+                if(boost::filesystem::exists(sourceFile)) {
+                    try {
+                        boost::filesystem::copy_file(sourceFile, backupFile);
+                        LogPrintf("Creating backup of %s -> %s\n", sourceFile, backupFile);
+                    } catch(boost::filesystem::filesystem_error &error) {
+                        LogPrintf("Failed to create backup %s\n", error.what());
+                    }
+                }
+                // Keep only the last 10 backups, including the new one of course
+                typedef std::multimap<std::time_t, boost::filesystem::path> folder_set_t;
+                folder_set_t folder_set;
+                boost::filesystem::directory_iterator end_iter;
+                boost::filesystem::path backupFolder = backupDir.string();
+                backupFolder.make_preferred();
+                // Build map of backup files for current(!) wallet sorted by last write time
+                boost::filesystem::path currentFile;
+                for (boost::filesystem::directory_iterator dir_iter(backupFolder); dir_iter != end_iter; ++dir_iter)
+                {
+                    // Only check regular files
+                    if ( boost::filesystem::is_regular_file(dir_iter->status()))
+                    {
+                        currentFile = dir_iter->path().filename();
+                        // Only add the backups for the current wallet, e.g. wallet.dat.*
+                        if(dir_iter->path().stem().string() == strWalletFile)
+                        {
+                            folder_set.insert(folder_set_t::value_type(boost::filesystem::last_write_time(dir_iter->path()), *dir_iter));
+                        }
+                    }
+                }
+                // Loop backward through backup files and keep the N newest ones (1 <= N <= 10)
+                int counter = 0;
+                BOOST_REVERSE_FOREACH(PAIRTYPE(const std::time_t, boost::filesystem::path) file, folder_set)
+                {
+                    counter++;
+                    if (counter > nWalletBackups)
+                    {
+                        // More than nWalletBackups backups: delete oldest one(s)
+                        try {
+                            boost::filesystem::remove(file.second);
+                            LogPrintf("Old backup deleted: %s\n", file.second);
+                        } catch(boost::filesystem::filesystem_error &error) {
+                            LogPrintf("Failed to delete backup %s\n", error.what());
+                        }
+                    }
+                }
+            }
+        }
+
+        LogPrintf("Using wallet %s\n", strWalletFile);
+        uiInterface.InitMessage(_("Verifying wallet..."));
 
         if (!bitdb.Open(GetDataDir()))
         {
@@ -672,13 +821,13 @@ bool AppInit2(boost::thread_group& threadGroup)
         if (GetBoolArg("-salvagewallet", false))
         {
             // Recover readable keypairs:
-            if (!CWalletDB::Recover(bitdb, strWalletFileName, true))
+            if (!CWalletDB::Recover(bitdb, strWalletFile, true))
                 return false;
         }
 
-        if (filesystem::exists(GetDataDir() / strWalletFileName))
+        if (filesystem::exists(GetDataDir() / strWalletFile))
         {
-            CDBEnv::VerifyResult r = bitdb.Verify(strWalletFileName, CWalletDB::Recover);
+            CDBEnv::VerifyResult r = bitdb.Verify(strWalletFile, CWalletDB::Recover);
             if (r == CDBEnv::RECOVER_OK)
             {
                 string msg = strprintf(_("Warning: wallet.dat corrupt, data salvaged!"
@@ -690,6 +839,7 @@ bool AppInit2(boost::thread_group& threadGroup)
             if (r == CDBEnv::RECOVER_FAIL)
                 return InitError(_("wallet.dat corrupt, salvage failed"));
         }
+
     } // (!fDisableWallet)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
@@ -711,6 +861,15 @@ bool AppInit2(boost::thread_group& threadGroup)
             enum Network net = (enum Network)n;
             if (!nets.count(net))
                 SetLimited(net);
+        }
+    }
+
+    if (mapArgs.count("-whitelist")) {
+        BOOST_FOREACH(const std::string& net, mapMultiArgs["-whitelist"]) {
+            CSubNet subnet(net);
+            if (!subnet.IsValid())
+                return InitError(strprintf(_("Invalid netmask specified in -whitelist: '%s'"), net));
+            CNode::AddWhitelistedRange(subnet);
         }
     }
 
@@ -743,22 +902,29 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
 
     // see Step 2: parameter interactions for more information about these
-    fNoListen = !GetBoolArg("-listen", true);
+    fListen = GetBoolArg("-listen", true);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
 
     bool fBound = false;
-    if (!fNoListen)
-    {
-        std::string strError;
-        if (mapArgs.count("-bind")) {
+    if (fListen) {
+        if (mapArgs.count("-bind") || mapArgs.count("-whitebind")) {
             BOOST_FOREACH(std::string strBind, mapMultiArgs["-bind"]) {
                 CService addrBind;
                 if (!Lookup(strBind.c_str(), addrBind, GetListenPort(), false))
                     return InitError(strprintf(_("Cannot resolve -bind address: '%s'"), strBind));
-                fBound |= Bind(addrBind);
+                fBound |= Bind(addrBind, (BF_EXPLICIT | BF_REPORT_ERROR));
             }
-        } else {
+            BOOST_FOREACH(std::string strBind, mapMultiArgs["-whitebind"]) {
+                CService addrBind;
+                if (!Lookup(strBind.c_str(), addrBind, 0, false))
+                    return InitError(strprintf(_("Cannot resolve -whitebind address: '%s'"), strBind));
+                if (addrBind.GetPort() == 0)
+                    return InitError(strprintf(_("Need to specify a port with -whitebind: '%s'"), strBind));
+                fBound |= Bind(addrBind, (BF_EXPLICIT | BF_REPORT_ERROR | BF_WHITELIST));
+            }
+        }
+        else {
             struct in_addr inaddr_any;
             inaddr_any.s_addr = INADDR_ANY;
             if (!IsLimited(NET_IPV6))
@@ -774,8 +940,7 @@ bool AppInit2(boost::thread_group& threadGroup)
             return InitError(_("Failed to listen on any port. Use -listen=0 if you want this."));
     }
 
-    if (mapArgs.count("-externalip"))
-    {
+    if (mapArgs.count("-externalip")) {
         BOOST_FOREACH(string strAddr, mapMultiArgs["-externalip"]) {
             CService addrLocal(strAddr, GetListenPort(), fNameLookup);
             if (!addrLocal.IsValid())
@@ -957,7 +1122,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
         nStart = GetTimeMillis();
         bool fFirstRun = true;
-        pwalletMain = new CWallet(strWalletFileName);
+        pwalletMain = new CWallet(strWalletFile);
         DBErrors nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
         if (nLoadWalletRet != DB_LOAD_OK)
         {
@@ -1022,7 +1187,7 @@ bool AppInit2(boost::thread_group& threadGroup)
             pindexRescan = pindexGenesisBlock;
         else
         {
-            CWalletDB walletdb(strWalletFileName);
+            CWalletDB walletdb(strWalletFile);
             CBlockLocator locator;
             if (walletdb.ReadBestBlock(locator))
                 pindexRescan = locator.GetBlockIndex();
@@ -1190,16 +1355,22 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     }
 
-    nLiquidityProvider = GetArg("-liquidityprovider", nLiquidityProvider);
-    nLiquidityProvider = std::min(std::max(nLiquidityProvider, 0), 100);
-    sandStormPool.SetMinBlockSpacing(nLiquidityProvider * 15);
+   fEnableSandstorm = GetBoolArg("-enablesandstorm", false);
 
-    fEnableSandstorm = GetBoolArg("-enablesandstorm", fEnableSandstorm);
-    fSandstormMultiSession = GetBoolArg("-sandstormmultisession", fSandstormMultiSession);
-    nSandstormRounds = GetArg("-sandstormrounds", nSandstormRounds);
-    nSandstormRounds = std::min(std::max(nSandstormRounds, 1), 99999);
-    nAnonymizeDarkSilkAmount = GetArg("-anonymizedarksilkamount", nAnonymizeDarkSilkAmount);
-    nAnonymizeDarkSilkAmount = std::min(std::max(nAnonymizeDarkSilkAmount, 2), 999999);
+    nSandstormRounds = GetArg("-sandstormrounds", 2);
+    if(nSandstormRounds > 16) nSandstormRounds = 16;
+    if(nSandstormRounds < 1) nSandstormRounds = 1;
+
+    nLiquidityProvider = GetArg("-liquidityprovider", 0); //0-100
+    if(nLiquidityProvider != 0) {
+        sandStormPool.SetMinBlockSpacing(std::min(nLiquidityProvider,100)*15);
+        fEnableSandstorm = true;
+        nSandstormRounds = 99999;
+    }
+
+    nAnonymizeDarkSilkAmount = GetArg("-anonymizedarksilkamount", 0);
+    if(nAnonymizeDarkSilkAmount > 999999) nAnonymizeDarkSilkAmount = 999999;
+    if(nAnonymizeDarkSilkAmount < 2) nAnonymizeDarkSilkAmount = 2;
 
     fEnableInstantX = GetBoolArg("-enableinstantx", fEnableInstantX);
     nInstantXDepth = GetArg("-instantxdepth", nInstantXDepth);
@@ -1221,6 +1392,19 @@ bool AppInit2(boost::thread_group& threadGroup)
     sandStormPool.InitDenominations();
     sandStormPool.InitCollateralAddress();
 
+
+//TODO(AA): Implement once chainactive.tip is active
+/* 
+    // force UpdatedBlockTip to initialize pCurrentBlockIndex for SS, SN payments and budgets
+    // but don't call it directly to prevent triggering of other listeners like zmq etc.
+    // GetMainSignals().UpdatedBlockTip(chainActive.Tip());
+    sandStormPool.UpdatedBlockTip(chainActive.Tip());
+    snpayments.UpdatedBlockTip(chainActive.Tip());
+    budget.UpdatedBlockTip(chainActive.Tip());
+    stormnodeSync.UpdatedBlockTip(chainActive.Tip());
+*/
+
+    // start darksilk-sandstorm thread
     threadGroup.create_thread(boost::bind(&ThreadCheckSandStormPool));
 
 
@@ -1252,6 +1436,9 @@ bool AppInit2(boost::thread_group& threadGroup)
     LogPrintf("mapWallet.size() = %u\n",       pwalletMain ? pwalletMain->mapWallet.size() : 0);
     LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain ? pwalletMain->mapAddressBook.size() : 0);
 #endif
+
+    if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
+        StartTorControl(threadGroup);
 
     StartNode(threadGroup);
     

@@ -250,7 +250,8 @@ public:
     }
 
     int GetStormnodeInputAge()
-    {
+    {   
+        LOCK(cs_main);
         if(pindexBest == NULL) return 0;
 
         if(cacheInputAge == 0){
@@ -258,7 +259,7 @@ public:
             cacheInputAgeBlock = pindexBest->nHeight;
         }
 
-        return cacheInputAge+(pindexBest->nHeight-cacheInputAgeBlock);
+        return cacheInputAge + (pindexBest->nHeight - cacheInputAgeBlock);
     }
 
     std::string Status() {

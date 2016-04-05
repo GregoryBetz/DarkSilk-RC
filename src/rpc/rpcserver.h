@@ -133,6 +133,11 @@ extern std::string HelpExampleCli(std::string methodname, std::string args);
 extern std::string HelpExampleRpc(std::string methodname, std::string args);
 extern void EnsureWalletIsUnlocked();
 
+extern bool HTTPReq_REST(AcceptedConnection *conn,
+                  std::string& strURI,
+                  std::map<std::string, std::string>& mapHeaders,
+                  bool fRun);
+
 //
 // Utilities: convert hex-encoded Values
 // (throws error if not hex).
@@ -207,6 +212,10 @@ extern json_spirit::Value makekeypair(const json_spirit::Array& params, bool fHe
 extern json_spirit::Value validatepubkey(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getnewpubkey(const json_spirit::Array& params, bool fHelp);
 
+extern json_spirit::Value encryptdata(const json_spirit::Array& params, bool fHelp); // in rpccrypt.cpp
+extern json_spirit::Value decryptdata(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value decryptsend(const json_spirit::Array& params, bool fHelp);
+
 extern json_spirit::Value getrawtransaction(const json_spirit::Array& params, bool fHelp); // in rcprawtransaction.cpp
 extern json_spirit::Value searchrawtransactions(const json_spirit::Array& params, bool fHelp);
 
@@ -226,6 +235,7 @@ extern json_spirit::Value getblockhash(const json_spirit::Array& params, bool fH
 extern json_spirit::Value getblock(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getblockbynumber(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getcheckpoint(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value setgenerate(const json_spirit::Array& params, bool fHelp);
 
 extern json_spirit::Value getnewstealthaddress(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value liststealthaddresses(const json_spirit::Array& params, bool fHelp);
@@ -235,6 +245,7 @@ extern json_spirit::Value scanforalltxns      (const json_spirit::Array& params,
 
 extern json_spirit::Value sandstorm(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value spork(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getpoolinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value stormnode(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snbudget(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snbudgetvoteraw(const json_spirit::Array& params, bool fHelp);

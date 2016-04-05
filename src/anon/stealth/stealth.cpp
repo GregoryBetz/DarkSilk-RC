@@ -2,12 +2,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#include <openssl/rand.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
 #include "anon/stealth/stealth.h"
+#include "random.h"
 #include "base58.h"
 
 const uint8_t stealth_version_byte = 0x4b; //Stealth addresses start with X

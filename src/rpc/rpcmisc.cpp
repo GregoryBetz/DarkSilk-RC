@@ -20,6 +20,7 @@
 #include "netbase.h"
 #include "timedata.h"
 #include "util.h"
+#include "utilstrencodings.h"
 #include "anon/stealth/stealth.h"
 #include "anon/stormnode/spork.h"
 #include "anon/stormnode/stormnode-sync.h"
@@ -184,14 +185,14 @@ Value spork(const Array& params, bool fHelp)
 {
     if(params.size() == 1 && params[0].get_str() == "show"){
         Object ret;
-        for(int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++){
+        for(unsigned int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++){
             if(sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
                 ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), GetSporkValue(nSporkID)));
         }
         return ret;
     } else if(params.size() == 1 && params[0].get_str() == "active"){
         Object ret;
-        for(int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++){
+        for(unsigned int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++){
             if(sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
                 ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), IsSporkActive(nSporkID)));
         }

@@ -3,22 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //--------------------------------------------------------------------------------------------------
 
-#ifdef WIN32
-//#define _WIN32_WINNT 0x0501
-#define WIN32_LEAN_AND_MEAN 1
-#define FD_SETSIZE
-#include <winsock2.h>
-#else
-#include <sys/socket.h>
-#include <netinet/in.h>     // for sockaddr_in
-#include <arpa/inet.h>      // for ntohs and htons
-#endif
-
-#ifndef WIN32
-#include <errno.h>
-#include <unistd.h>
-#endif
-
 #include <iostream>
 #include <stdio.h>
 #include <string.h>         // for memset
@@ -27,9 +11,10 @@
 #include <stdarg.h>
 
 #include "i2p/i2psam.h"
+#include "util.h"
 
 #ifndef WIN32
-#define closesocket         close
+#define CloseSocket close
 #endif
 
 #define SAM_BUFSIZE         65536
@@ -161,7 +146,7 @@ void Socket::write(const std::string& msg)
         print_error("Failed to send data because socket is closed");
         return;
     }
-    std::cout << "Send: " << msg << std::endl;
+    LogPrintf("[I2P] Send: ", msg);
     ssize_t sentBytes = send(socket_, msg.c_str(), msg.length(), 0);
     if (sentBytes == SAM_SOCKET_ERROR)
     {
@@ -198,14 +183,14 @@ std::string Socket::read()
         close();
         print_error("Socket was closed");
     }
-    std::cout << "Reply: " << buffer << std::endl;
+    LogPrintf("[I2P] Reply: ", buffer);
     return std::string(buffer);
 }
 
 void Socket::close()
 {
     if (socket_ != SAM_INVALID_SOCKET)
-        ::closesocket(socket_);
+        ::CloseSocket(socket_);
     socket_ = SAM_INVALID_SOCKET;
 }
 
@@ -262,7 +247,7 @@ StreamSession::StreamSession(
     , isSick_(false)
 {
     myDestination_ = createStreamSession(destination);
-    std::cout << "Created a brand new SAM session (" << sessionID_ << ")" << std::endl;
+    LogPrintf("[I2P] Created a brand new SAM session :", sessionID_);
 }
 
 StreamSession::StreamSession(StreamSession& rhs)
@@ -280,13 +265,14 @@ StreamSession::StreamSession(StreamSession& rhs)
     for(ForwardedStreamsContainer::const_iterator it = rhs.forwardedStreams_.begin(), end = rhs.forwardedStreams_.end(); it != end; ++it)
         forward(it->host, it->port, it->silent);
 
-    std::cout << "Created a new SAM session (" << sessionID_ << ")  from another (" << rhs.sessionID_ << ")" << std::endl;
+    LogPrintf("[I2P] Created a new SAM session :", sessionID_);
+    LogPrintf("[I2P] Originated from another", rhs.sessionID_);
 }
 
 StreamSession::~StreamSession()
 {
     stopForwardingAll();
-    std::cout << "Closing SAM session (" << sessionID_ << ") ..." << std::endl;
+    LogPrintf("[I2P] Closing SAM session :", sessionID_);
 }
 
 /*static*/

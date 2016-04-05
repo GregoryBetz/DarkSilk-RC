@@ -19,12 +19,20 @@
 
 #include "uint256.h"
 #include "serialize.h"
+#include "prevector.h"
 
 static const unsigned int OUTPUT_BYTES = 32;
 
 #ifdef WIN32
 #define UINT32_MAX 0xffffffff  /* 4294967295U */
 #endif
+
+/** Compute the 160-bit hash of a vector. */
+template<unsigned int N>
+inline uint160 Hash160(const prevector<N, unsigned char>& vch)
+{
+    return Hash160(vch.begin(), vch.end());
+}
 
 /** A hasher class for DarkSilk's 256-bit hash (double SHA-256). */
 class CHash256 {
@@ -268,6 +276,8 @@ typedef struct
 int HMAC_SHA512_Init(HMAC_SHA512_CTX *pctx, const void *pkey, size_t len);
 int HMAC_SHA512_Update(HMAC_SHA512_CTX *pctx, const void *pdata, size_t len);
 int HMAC_SHA512_Final(unsigned char *pmd, HMAC_SHA512_CTX *pctx);
+
+unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char>& vDataToHash);
 
 void BIP32Hash(const unsigned char chainCode[32], unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]); 
 

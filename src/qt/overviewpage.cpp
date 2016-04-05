@@ -419,16 +419,15 @@ void OverviewPage::updateSandstormProgress()
 
 void OverviewPage::sandStormStatus()
 {
+    //TODO: Remove this line after TODO below is implemented
     if(IsInitialBlockDownload()) return;
  
-    if (!pindexBest) return;
-    
     //TODO
     //if(!stormnodeSync.IsBlockchainSynced() || ShutdownRequested()) return;
 
     static int64_t nLastSSProgressBlockTime = 0;
 
-    int nBestHeight = pindexBest->nHeight;
+    int nBestHeight = clientModel->getNumBlocks();
 
     // we we're processing more then 1 block per second, we'll just leave
     if(((nBestHeight - sandStormPool.cachedNumBlocks) / (GetTimeMillis() - nLastSSProgressBlockTime + 1) > 1)) return;

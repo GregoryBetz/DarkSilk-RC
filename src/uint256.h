@@ -15,13 +15,6 @@
 
 #include <stdint.h>
 
-extern const signed char p_util_hexdigit[256]; // defined in util.cpp
-
-inline signed char HexDigit(char c)
-{
-    return p_util_hexdigit[(unsigned char)c];
-}
-
 class uint_error : public std::runtime_error {
 public:
     explicit uint_error(const std::string& str) : std::runtime_error(str) {}

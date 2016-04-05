@@ -11,7 +11,7 @@
 #include "amount.h"
 #include "uint256.h"
 #include "serialize.h"
-#include "util.h"
+#include "utilmoneystr.h"
 #include "script/script.h"
 #include "timedata.h"
 
@@ -310,6 +310,9 @@ public:
     {
         return SerializeHash(*this); //TODO (Amir): Use a cached result (need member variables to const).
     }
+
+    // Compute modified tx size for priority calculation (optionally given tx size)
+    unsigned int CalculateModifiedSize(unsigned int nTxSize=0) const;
 
     bool IsCoinBase() const
     {

@@ -36,6 +36,8 @@ LIBS= \
  -l db_cxx \
  -l ssl \
  -l crypto \
+ -l snappy \
+ -l event \
  -l z
 
 DEFS=-D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -DBOOST_SPIRIT_THREADSAFE
@@ -59,36 +61,47 @@ HEADERS = $(wildcard *.h)
 
 OBJS= \
     obj/alert.o \
+    obj/allocators.o \
+    obj/bloom.o \
     obj/cleanse.o \
-    obj/base58.o \
+    obj/core_read.o \
+    obj/core_write.o \
+    obj/gen.o \
+    obj/univalue.o \
+    obj/univalue_read.o \
+    obj/univalue_write.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \
     obj/addrman.o \
+    obj/base58.o \
     obj/crypter.o \
     obj/chain.o \
     obj/key.o \
+    obj/init.o \
     obj/pubkey.o \
     obj/ecwrapper.o \
-    obj/init.o \
     obj/darksilkd.o \
     obj/keystore.o \
     obj/main.o \
     obj/net.o \
     obj/protocol.o \
-    obj/rpcclient.o \
-    obj/rpcprotocol.o \
-    obj/rpcserver.o \
-    obj/rpcmisc.o \
-    obj/rpcnet.o \
-    obj/rpcblockchain.o \
-    obj/rpcrawtransaction.o \
-    obj/rpcsmessage.o \
+    obj/random.o \
+    obj/rpc/rpcclient.o \
+    obj/rpc/rpcprotocol.o \
+    obj/rpc/rpcserver.o \
+    obj/rpc/rpcmisc.o \
+    obj/rpc/rpcnet.o \
+    obj/rpc/rpcblockchain.o \
+    obj/rpc/rpcrawtransaction.o \
+    obj/rpc/rpcsmessage.o \
     obj/timedata.o \
-    obj/script.o \
+    obj/script/script.o \
     obj/sync.o \
     obj/txmempool.o \
     obj/util.o \
+    obj/utilstrencodings.o \
+    obj/utilmoneystr.o \
     obj/hash.o \
     obj/noui.o \
     obj/kernel.o \
@@ -98,29 +111,30 @@ OBJS= \
     obj/scrypt-x86.o \
     obj/scrypt-x86_64.o \
     obj/chainparams.o \
-    obj/stealth.o \
-    obj/activestormnode.o \
-    obj/sandstorm.o \
-    obj/sandstorm-relay.o \
-    obj/instantx.o \
-    obj/stormnodeconfig.o \
-    obj/stormnodeman.o \
-    obj/stormnode.o \
-    obj/stormnode-budget.o \
-    obj/stormnode-payments.o \
-    obj/stormnode-sync.o \
-    obj/rpcstormnode.o \
-    obj/rpcstormnode-budget.o \
-    obj/spork.o \
+    obj/anon/stealth/stealth.o \
+    obj/anon/stormnode/activestormnode.o \
+    obj/anon/sandstorm/sandstorm.o \
+    obj/anon/sandstorm/sandstorm-relay.o \
+    obj/anon/instantx/instantx.o \
+    obj/anon/stormnode/stormnodeconfig.o \
+    obj/anon/stormnode/stormnodeman.o \
+    obj/anon/stormnode/stormnode.o \
+    obj/anon/stormnode/stormnode-budget.o \
+    obj/anon/stormnode/stormnode-payments.o \
+    obj/anon/stormnode/stormnode-sync.o \
+    obj/rpc/rpcstormnode.o \
+    obj/rpc/rpcstormnode-budget.o \
+    obj/anon/stormnode/spork.o \
     obj/crypto/hmac_sha256.o \
     obj/crypto/hmac_sha512.o \
+    obj/crypto/rfc6979_hmac_sha256.o \
     obj/crypto/ripemd160.o \
     obj/crypto/sha1.o \
     obj/crypto/sha256.o \
     obj/crypto/sha512.o \
     obj/smessage.o \
     obj/coins.o \
-    obj/compressor.o \
+    obj/script/compressor.o \
     obj/primitives/transaction.o \
     obj/primitives/block.o \
     obj/leveldbwrapper.o \
@@ -128,25 +142,35 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
-    obj/glibc_sanity.o \
-    obj/glibcxx_sanity.o \
+    obj/compat/glibc_sanity.o \
+    obj/compat/glibcxx_sanity.o \
     obj/crypto/argon2/argon2.o \
     obj/crypto/argon2/core.o \
     obj/crypto/argon2/encoding.o \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
-    obj/crypto/argon2/blake2/blake2b.o
+    obj/crypto/argon2/blake2/blake2b.o \
+    obj/utilstrencodings.o \
+    obj/rest.o \
+    obj/scheduler.o \
+    obj/torcontrol.o \
+    obj/pow.o
+
+ifdef USE_NATIVE_I2P
+        OBJS += obj/i2p/i2p.o
+        OBJS += obj/i2p/i2psam.o
+endif
 
 ifeq (${USE_WALLET}, 1)
     DEFS += -DENABLE_WALLET
     OBJS += \
-obj/db.o \
-obj/miner.o \
-obj/rpcdump.o \
-obj/rpcmining.o \
-obj/rpcwallet.o \
-obj/wallet.o \
-obj/walletdb.o
+    obj/miner.o \
+    obj/rpc/rpcmining.o \
+    obj/wallet/db.o \
+    obj/wallet/rpcdump.o \
+    obj/wallet/rpcwallet.o \
+    obj/wallet/wallet.o \
+    obj/wallet/walletdb.o
 endif
 
 all: darksilkd.exe

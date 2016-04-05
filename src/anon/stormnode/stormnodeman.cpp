@@ -266,7 +266,7 @@ void CStormnodeMan::CheckAndRemove(bool forceExpiredRemoval)
                 (*it).activeState == CStormnode::STORMNODE_VIN_SPENT ||
                 (forceExpiredRemoval && (*it).activeState == CStormnode::STORMNODE_EXPIRED) ||
                 (*it).protocolVersion < stormnodePayments.GetMinStormnodePaymentsProto()) {
-            LogPrint("stormnode", "CStormnodeMan: Removing inactive Stormnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
+            LogPrint("stormnode", "CStormnodeMan: CheckAndRemove - Removing inactive Stormnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
 
             //erase all of the broadcasts we've seen from this vin
             // -- if we missed a few pings and the node was removed, this will allow is to get it back without them
@@ -330,9 +330,10 @@ void CStormnodeMan::CheckAndRemove(bool forceExpiredRemoval)
     // remove expired mapSeenStormnodeBroadcast
     map<uint256, CStormnodeBroadcast>::iterator it3 = mapSeenStormnodeBroadcast.begin();
     while(it3 != mapSeenStormnodeBroadcast.end()){
-        if((*it3).second.lastPing.sigTime < GetTime()-(STORMNODE_REMOVAL_SECONDS*2)){
-            mapSeenStormnodeBroadcast.erase(it3++);
+        if((*it3).second.lastPing.sigTime < GetTime() - STORMNODE_REMOVAL_SECONDS*2){
+            LogPrint("stormnode", "CStormnodeMan::CheckAndRemove - Removing expired Stormnode broadcast %s\n", (*it3).second.GetHash().ToString());
             stormnodeSync.mapSeenSyncSNB.erase((*it3).second.GetHash());
+            mapSeenStormnodeBroadcast.erase(it3++);
         } else {
             ++it3;
         }
@@ -341,7 +342,8 @@ void CStormnodeMan::CheckAndRemove(bool forceExpiredRemoval)
     // remove expired mapSeenStormnodePing
     map<uint256, CStormnodePing>::iterator it4 = mapSeenStormnodePing.begin();
     while(it4 != mapSeenStormnodePing.end()){
-        if((*it4).second.sigTime < GetTime()-(STORMNODE_REMOVAL_SECONDS*2)){
+        if((*it4).second.sigTime < GetTime() - STORMNODE_REMOVAL_SECONDS*2){
+            LogPrint("stormnode", "CStormnodeMan::CheckAndRemove - Removing expired Stormnode ping %s\n", (*it3).second.GetHash().ToString());
             mapSeenStormnodePing.erase(it4++);
         } else {
             ++it4;
@@ -664,10 +666,11 @@ void CStormnodeMan::ProcessStormnodeConnections()
 {
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes) {
-        if(pnode->fSandStorm){
+        if(pnode->fSandStormMaster){
             if(sandStormPool.pSubmittedToStormnode != NULL && pnode->addr == sandStormPool.pSubmittedToStormnode->addr) continue;
             LogPrintf("Closing Stormnode connection %s \n", pnode->addr.ToString());
-            pnode->fDisconnect = true;
+            pnode->fSandStormMaster = false;
+            pnode->Release();
         }
     }
 }

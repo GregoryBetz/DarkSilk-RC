@@ -10,29 +10,20 @@
 
 #include <list>
 
-#include "txmempool.h"
+#include "chain.h"
+#include "coins.h"
 #include "net.h"
 #include "txdb.h"
-#include "chain.h"
+#include "txmempool.h"
+#include "pow.h"
 
+class CCoinsViewCache;
+class CTxMemPool;
 class CValidationState;
 class CWallet;
-class CTxMemPool;
 
-// Minimum Transaction Fee of 0.00001 DRKSLK, Fees smaller than this are considered zero fee (for transaction creation)
-static const double MIN_FEE = 0.00001;
-// Collateral Amount Locked for Stormnodes
-static const CAmount STORMNODE_COLLATERAL = 10000;
-// Main Stormnode Payments Start Block
-static const int STORMNODE_PAYMENT_START = 420;
-// Testnet Stormnode Payment Start Block
-static const int TESTNET_STORMNODE_PAYMENT_START = 100;
-// Sandstorm Collateral Payment
-static const CAmount SANDSTORM_COLLATERAL = (0.01*COIN);
-// Sandstorm Pool Max Amount
-static const CAmount SANDSTORM_POOL_MAX = (9999.99*COIN);
-// Static Proof-of-Stake Reward of 0.01 DRKSLK
-static const CAmount STATIC_POS_REWARD = COIN * 0.01;
+struct CNodeStateStats;
+
 // Number of blocks that can be requested at any given time from a single peer.
 static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
 // Timeout in seconds before considering a block download peer unresponsive.
@@ -53,27 +44,13 @@ static const unsigned int MAX_TX_SIGOPS = MAX_BLOCK_SIGOPS/5;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 // Default for -maxorphanblocksmib, maximum memory used by orphan blocks
 static const unsigned int DEFAULT_MAX_ORPHAN_BLOCKS = 512;
-/// The maximum number of entries in an 'inv' protocol message
-static const unsigned int MAX_INV_SZ = 50000;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov 5th 00:53:20 1985 UTC
-// Target timing between Proof-of-Work blocks
-static const unsigned int POW_TARGET_SPACING = 1 * 60; // 60 seconds
-// Target timing between Proof-of-Stake blocks
-static const unsigned int POS_TARGET_SPACING = 1 * 64; // 64 seconds
+
 // Time to wait (in seconds) between writing blockchain state to disk.
 static const unsigned int DATABASE_WRITE_INTERVAL = 3600;
 // Maximum length of "REJECT" messages
 static const unsigned int MAX_REJECT_MESSAGE_LENGTH = 111;
-// "REJECT" message codes
-static const unsigned char REJECT_MALFORMED = 0x01;
-static const unsigned char REJECT_INVALID = 0x10;
-static const unsigned char REJECT_OBSOLETE = 0x11;
-static const unsigned char REJECT_DUPLICATE = 0x12;
-static const unsigned char REJECT_NONSTANDARD = 0x40;
-static const unsigned char REJECT_DUST = 0x41;
-static const unsigned char REJECT_INSUFFICIENTFEE = 0x42;
-static const unsigned char REJECT_CHECKPOINT = 0x43;
 
 struct BlockHasher
 {
@@ -128,13 +105,6 @@ class CTxDB;
 class CTxIndex;
 class CWalletInterface;
 
-struct CNodeStateStats {
-    int nMisbehavior;
-    int nSyncHeight;
-    int nCommonHeight;
-    std::vector<int> vHeightInFlight;
-};
-
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
 
@@ -143,9 +113,11 @@ void RegisterWallet(CWalletInterface* pwalletIn);
 /** Unregister a wallet from core */
 void UnregisterWallet(CWalletInterface* pwalletIn);
 /** Unregister all wallets from core */
-void UnregisterAllWallets();
-/** Push an updated transaction to all registered wallets */
+void UnregisterAllValidationInterfaces();
+/** Push an updated transaction to all registered wallets old function*/
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fConnect = true);
+/** Push an updated transaction to all registered wallets new function*/
+void SyncWithWallets(const CTransaction& tx, const CBlockIndex *pindex, const CBlock* pblock = NULL);
 /** Ask wallets to resend their transactions */
 void ResendWalletTransactions(bool fForce = false);
 
@@ -172,7 +144,6 @@ bool SendMessages(CNode* pto, bool fSendTrickle);
 void ThreadImport(std::vector<boost::filesystem::path> vImportFiles);
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake);
 CAmount GetProofOfWorkReward(CAmount nFees);
 
 bool IsConfirmedInNPrevBlocks(const CTxIndex& txindex, const CBlockIndex* pindexFrom, int nMaxDepth, int& nActualDepth);
@@ -187,13 +158,12 @@ void ThreadStakeMiner(CWallet *pwallet);
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool ignoreFees = false);
 bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isSSTX=false);
 
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees);
+CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork = true);
 
 bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint256> &vtxhash);
 
 int GetInputAge(CTxIn& vin);
-/// Abort with a message
-bool AbortNode(const std::string &msg, const std::string &userMessage="");
+
 /// Increase a node's misbehavior score.
 void Misbehaving(NodeId nodeid, int howmuch);
 
@@ -213,7 +183,12 @@ FILE* OpenDiskFile(const CDiskBlockPos &pos, const char *prefix, bool fReadOnly 
 FILE* AppendBlockFile(unsigned int& nFileRet);
 FILE* OpenUndoFile(const CDiskBlockPos &pos, bool fReadOnly = false);
 
-
+struct CNodeStateStats {
+    int nMisbehavior;
+    int nSyncHeight;
+    int nCommonHeight;
+    std::vector<int> vHeightInFlight;
+};
 
 /// Position on disk for a particular transaction.
 class CDiskTxPos
@@ -370,6 +345,16 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason);
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight = 0, int64_t nBlockTime = 0);
 
+/// Functions for disk access for blocks
+bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart);
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams);
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams);
+/** Undo the effects of this block (with given index) on the UTXO set represented by coins.
+ *  In case pfClean is provided, operation will try to be tolerant about errors, and *pfClean
+ *  will be true if no problems were found. Otherwise, the return value will be false in case
+ *  of problems. Note that in any case, coins may be modified. */
+bool DisconnectBlock(const CBlock& block, CValidationState& state, const CBlockIndex* pindex, CCoinsViewCache& coins, bool* pfClean = NULL);
+
 /** A transaction with a merkle branch linking it to the block chain. */
 class CMerkleTx : public CTransaction
 {
@@ -486,69 +471,6 @@ public:
 
 };
 
-/** Capture information about block/transaction validation */
-class CValidationState {
-private:
-    enum mode_state {
-        MODE_VALID,   //! everything ok
-        MODE_INVALID, //! network rule violation (DoS value may be set)
-        MODE_ERROR,   //! run-time error
-    } mode;
-    int nDoS;
-    std::string strRejectReason;
-    unsigned char chRejectCode;
-    bool corruptionPossible;
-public:
-    CValidationState() : mode(MODE_VALID), nDoS(0), chRejectCode(0), corruptionPossible(false) {}
-    bool DoS(int level, bool ret = false,
-             unsigned char chRejectCodeIn=0, std::string strRejectReasonIn="",
-             bool corruptionIn=false) {
-        chRejectCode = chRejectCodeIn;
-        strRejectReason = strRejectReasonIn;
-        corruptionPossible = corruptionIn;
-        if (mode == MODE_ERROR)
-            return ret;
-        nDoS += level;
-        mode = MODE_INVALID;
-        return ret;
-    }
-    bool Invalid(bool ret = false,
-                 unsigned char _chRejectCode=0, std::string _strRejectReason="") {
-        return DoS(0, ret, _chRejectCode, _strRejectReason);
-    }
-    bool Error(std::string strRejectReasonIn="") {
-        if (mode == MODE_VALID)
-            strRejectReason = strRejectReasonIn;
-        mode = MODE_ERROR;
-        return false;
-    }
-    bool Abort(const std::string &msg) {
-        AbortNode(msg);
-        return Error(msg);
-    }
-    bool IsValid() const {
-        return mode == MODE_VALID;
-    }
-    bool IsInvalid() const {
-        return mode == MODE_INVALID;
-    }
-    bool IsError() const {
-        return mode == MODE_ERROR;
-    }
-    bool IsInvalid(int &nDoSOut) const {
-        if (IsInvalid()) {
-            nDoSOut = nDoS;
-            return true;
-        }
-        return false;
-    }
-    bool CorruptionPossible() const {
-        return corruptionPossible;
-    }
-    unsigned char GetRejectCode() const { return chRejectCode; }
-    std::string GetRejectReason() const { return strRejectReason; }
-};
-
 class CWalletInterface {
 protected:
     virtual void SyncTransaction(const CTransaction &tx, const CBlock *pblock, bool fConnect) =0;
@@ -559,8 +481,12 @@ protected:
     virtual void ResendWalletTransactions(bool fForce) =0;
     friend void ::RegisterWallet(CWalletInterface*);
     friend void ::UnregisterWallet(CWalletInterface*);
-    friend void ::UnregisterAllWallets();
+    friend void ::UnregisterAllValidationInterfaces();
 };
+
+///! The currently-connected chain of blocks.
+class CChain;
+extern CChain chainActive;
 
 class CBlockTreeDB;
 class CCoinsViewCache;

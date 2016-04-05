@@ -64,6 +64,7 @@ bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, s
         return false;
     }
 
+    LOCK(cs_main);
     int conf = GetIXConfirmations(nTxCollateralHash);
    
     if (nBlockHash != uint256(0)) {
@@ -209,7 +210,7 @@ CBudgetDB::CBudgetDB()
 
 bool CBudgetDB::Write(const CBudgetManager& objToSave)
 {
-    LOCK(objToSave.cs);
+    //LOCK(objToSave.cs);
 
     int64_t nStart = GetTimeMillis();
 
@@ -408,12 +409,14 @@ void CBudgetManager::CheckAndRemove()
         if(pfinalizedBudget->fValid) {
             pfinalizedBudget->AutoCheck();
             ++it;
-        // if it's too old, remove it
+        continue;
         } else if(pfinalizedBudget->nBlockStart != 0 && pfinalizedBudget->nBlockStart < pindexPrev->nHeight - GetBudgetPaymentCycleBlocks()) {
+        // if it's too old, remove it        
             mapFinalizedBudgets.erase(it++);
             LogPrintf("CBudgetManager::CheckAndRemove - removing budget %s\n", pfinalizedBudget->GetHash().ToString());
+            continue;
         }
-
+        // it's not valid already but it's not too old yet, keep it and move to the next one
         ++it;
     }
 
@@ -452,41 +455,22 @@ void CBudgetManager::FillBlockPayee(CTransaction& txNew, CAmount nFees)
         ++it;
     }
 
-    CAmount blockValue = GetBlockValue(pindexPrev->nBits, pindexPrev->nHeight, nFees);
+    CAmount blockValue = GetProofOfWorkReward(nFees);
+
+    txNew.vout[0].nValue = blockValue;
 
     if(nHighestCount > 0){
+        txNew.vout.resize(2);
 
+        //these are super blocks, so their value can be much larger than normal
         txNew.vout[1].scriptPubKey = payee;
+        txNew.vout[1].nValue = nAmount;
 
-        //these are super blocks, PoS and budget payments only.  No stormnode payments. (TODO (Amir): add SN payment here)
-        if(txNew.vout.size() == 4) // 2 stake outputs, stake was split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = nAmount;
-            txNew.vout[2].nValue = (blockValue / 2 / CENT) * CENT;
-            txNew.vout[3].nValue = blockValue;
-        }
-        else if(txNew.vout.size() == 3) // only 1 stake output, was not split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = nAmount;
-            txNew.vout[2].nValue = blockValue;
-        }
-        CTxDestination ctxdAddress1;
-        ExtractDestination(payee, ctxdAddress1);
-        CDarkSilkAddress address1(ctxdAddress1);
-        LogPrintf("Budget payment 1 to %s for %lld\n", address1.ToString().c_str(), nAmount);
-    }
-    else
-    {
-        //No budget finalized and approved, so we only pay PoS minters. (add SN payment here)
-        if(txNew.vout.size() == 3) // 2 stake outputs, stake was split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = (blockValue / 2 / CENT) * CENT;
-            txNew.vout[2].nValue = blockValue;
-        }
-        else if(txNew.vout.size() == 2) // only 1 stake output, was not split, plus 3x budget payments
-        {
-            txNew.vout[1].nValue = blockValue;
-        }
+        CTxDestination address1;
+        ExtractDestination(payee, address1);
+        CDarkSilkAddress address2(address1);
+
+        LogPrintf("CBudgetManager::FillBlockPayee - Budget payment to %s for %lld\n", address2.ToString(), nAmount);
     }
 }
 
@@ -981,7 +965,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
 
 
         mapSeenStormnodeBudgetVotes.insert(make_pair(vote.GetHash(), vote));
-        if(!vote.SignatureValid(true)){
+        if(!vote.IsValid(true)){
             LogPrintf("svote - signature invalid\n");
             if(stormnodeSync.IsSynced()) Misbehaving(pfrom->GetId(), 20);
             // it could just be a non-synced stormnode
@@ -1051,8 +1035,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
         }
 
         mapSeenFinalizedBudgetVotes.insert(make_pair(vote.GetHash(), vote));
-        if(!vote.SignatureValid(true)){
-            LogPrintf("fbvote - signature invalid\n");
+        if(!vote.IsValid(true)){
             if(stormnodeSync.IsSynced()) Misbehaving(pfrom->GetId(), 20);
             // it could just be a non-synced stormnode
             snodeman.AskForSN(pfrom, vote.vin);
@@ -1438,12 +1421,6 @@ bool CBudgetProposal::AddOrUpdateVote(CBudgetVote& vote, std::string& strError)
         }
     }
 
-    if(vote.nTime > GetTime() + (60*60)){
-        strError = strprintf("new vote is too far ahead of current time - %s - nTime %lli - Max Time %lli\n", vote.GetHash().ToString(), vote.nTime, GetTime() + (60*60));
-        LogPrint("snbudget", "CBudgetProposal::AddOrUpdateVote - %s\n", strError);
-        return false;
-    }
-
     mapVotes[hash] = vote;
     return true;
 }
@@ -1454,7 +1431,7 @@ void CBudgetProposal::CleanAndRemove(bool fSignatureCheck)
     std::map<uint256, CBudgetVote>::iterator it = mapVotes.begin();
 
     while(it != mapVotes.end()) {
-        (*it).second.fValid = (*it).second.SignatureValid(fSignatureCheck);
+        (*it).second.fValid = (*it).second.IsValid(fSignatureCheck);
         ++it;
     }
 }
@@ -1620,23 +1597,28 @@ bool CBudgetVote::Sign(CKey& keyStormnode, CPubKey& pubKeyStormnode)
     return true;
 }
 
-bool CBudgetVote::SignatureValid(bool fSignatureCheck)
+bool CBudgetVote::IsValid(bool fSignatureCheck)
 {
-    std::string errorMessage;
-    std::string strMessage = vin.prevout.ToStringShort() + nProposalHash.ToString() + boost::lexical_cast<std::string>(nVote) + boost::lexical_cast<std::string>(nTime);
+    if(nTime > GetTime() + (60*60)){
+        LogPrint("snbudget", "CBudgetVote::IsValid() - vote is too far ahead of current time - %s - nTime %lli - Max Time %lli\n", GetHash().ToString(), nTime, GetTime() + (60*60));
+        return false;
+    }
 
     CStormnode* psn = snodeman.Find(vin);
 
     if(psn == NULL)
     {
-        LogPrintf("CBudgetVote::SignatureValid() - Unknown Stormnode - %s\n", vin.ToString());
+        LogPrintf("CBudgetVote::IsValid() - Unknown Stormnode - %s\n", vin.ToString());
         return false;
     }
 
     if(!fSignatureCheck) return true;
 
+    std::string errorMessage;
+    std::string strMessage = vin.prevout.ToStringShort() + nProposalHash.ToString() + boost::lexical_cast<std::string>(nVote) + boost::lexical_cast<std::string>(nTime);
+
     if(!sandStormSigner.VerifyMessage(psn->pubkey2, vchSig, strMessage, errorMessage)) {
-        LogPrintf("CBudgetVote::SignatureValid() - Verify message failed\n");
+        LogPrintf("CBudgetVote::IsValid() - Verify message failed - Error: %s\n, errorMessage");
         return false;
     }
 
@@ -1683,12 +1665,6 @@ bool CFinalizedBudget::AddOrUpdateVote(CFinalizedBudgetVote& vote, std::string& 
             LogPrint("snbudget", "CFinalizedBudget::AddOrUpdateVote - %s\n", strError);
             return false;
         }
-    }
-
-    if(vote.nTime > GetTime() + (60*60)){
-        strError = strprintf("new vote is too far ahead of current time - %s - nTime %lli - Max Time %lli", vote.GetHash().ToString(), vote.nTime, GetTime() + (60*60));
-        LogPrint("snbudget", "CFinalizedBudget::AddOrUpdateVote - %s\n", strError);
-        return false;
     }
 
     mapVotes[hash] = vote;
@@ -1779,7 +1755,7 @@ void CFinalizedBudget::CleanAndRemove(bool fSignatureCheck)
     std::map<uint256, CFinalizedBudgetVote>::iterator it = mapVotes.begin();
 
     while(it != mapVotes.end()) {
-        (*it).second.fValid = (*it).second.SignatureValid(fSignatureCheck);
+        (*it).second.fValid = (*it).second.IsValid(fSignatureCheck);
         ++it;
     }
 }
@@ -2021,24 +1997,28 @@ bool CFinalizedBudgetVote::Sign(CKey& keyStormnode, CPubKey& pubKeyStormnode)
     return true;
 }
 
-bool CFinalizedBudgetVote::SignatureValid(bool fSignatureCheck)
+bool CFinalizedBudgetVote::IsValid(bool fSignatureCheck)
 {
-    std::string errorMessage;
-
-    std::string strMessage = vin.prevout.ToStringShort() + nBudgetHash.ToString() + boost::lexical_cast<std::string>(nTime);
+    if(nTime > GetTime() + (60*60)){
+        LogPrint("snbudget", "CFinalizedBudgetVote::IsValid() - vote is too far ahead of current time - %s - nTime %lli - Max Time %lli\n", GetHash().ToString(), nTime, GetTime() + (60*60));
+        return false;
+    }
 
     CStormnode* psn = snodeman.Find(vin);
 
     if(psn == NULL)
     {
-        LogPrintf("CFinalizedBudgetVote::SignatureValid() - Unknown Stormnode\n");
+        LogPrintf("CFinalizedBudgetVote::IsValid() - Unknown Stormnode\n");
         return false;
     }
 
     if(!fSignatureCheck) return true;
 
+    std::string errorMessage;
+    std::string strMessage = vin.prevout.ToStringShort() + nBudgetHash.ToString() + boost::lexical_cast<std::string>(nTime);
+
     if(!sandStormSigner.VerifyMessage(psn->pubkey2, vchSig, strMessage, errorMessage)) {
-        LogPrintf("CFinalizedBudgetVote::SignatureValid() - Verify message failed\n");
+        LogPrintf("CFinalizedBudgetVote::IsValid() - Verify message failed\n");
         return false;
     }
 

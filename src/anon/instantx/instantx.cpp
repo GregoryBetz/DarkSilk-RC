@@ -237,7 +237,13 @@ int64_t CreateNewLock(CTransaction tx)
         This prevents attackers from using transaction mallibility to predict which stormnodes
         they'll use.
     */
-    int nBlockHeight = (pindexBest->nHeight - nTxAge)+4;
+    int nBlockHeight = 0;
+    {
+        LOCK(cs_main);
+        CBlockIndex* tip = pindexBest;
+        if(tip) nBlockHeight = tip->nHeight - nTxAge + 4;
+        else return 0;
+    }
 
     if (!mapTxLocks.count(tx.GetHash())){
         LogPrintf("CreateNewLock - New Transaction Lock %s !\n", tx.GetHash().ToString().c_str());
@@ -434,8 +440,6 @@ int64_t GetAverageVoteTime()
 
 void CleanTransactionLocksList()
 {
-    if(pindexBest == NULL) return;
-
     std::map<uint256, CTransactionLock>::iterator it = mapTxLocks.begin();
 
     while(it != mapTxLocks.end()) {
@@ -460,7 +464,6 @@ void CleanTransactionLocksList()
             it++;
         }
     }
-
 }
 
 uint256 CConsensusVote::GetHash() const

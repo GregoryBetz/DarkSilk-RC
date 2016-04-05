@@ -62,7 +62,7 @@ bool AppInit(int argc, char* argv[])
                   "  darksilkd [options] help                " + _("List commands") + "\n" +
                   "  darksilkd [options] help <command>      " + _("Get help for a command") + "\n";
 
-            strUsage += "\n" + HelpMessage();
+            strUsage += "\n" + HelpMessage(HMM_DARKSILKD);
 
             fprintf(stdout, "%s", strUsage.c_str());
             return false;

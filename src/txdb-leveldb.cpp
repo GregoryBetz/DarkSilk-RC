@@ -24,7 +24,7 @@
 #include "checkpoints.h"
 #include "txdb.h"
 #include "util.h"
-#include "main.h"
+#include "consensus/validation.h"
 
 using namespace std;
 using namespace boost;
@@ -65,6 +65,8 @@ static void init_blockindex(leveldb::Options& options, bool fRemoveOld = false, 
             nFile++;
         }
     }
+
+    options.create_if_missing = true;
 
     filesystem::create_directory(directory);
     LogPrintf("Opening LevelDB in %s\n", directory.string());

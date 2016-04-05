@@ -21,7 +21,8 @@ std::map<int64_t, uint256> mapCacheBlockHashes;
 
 //Get the last hash that matches the modulus given. Processed in reverse order
 bool GetBlockHash(uint256& hash, int nBlockHeight)
-{
+{   
+    LOCK(cs_main);
     if (pindexBest == NULL) return false;
 
     if(nBlockHeight == 0)
@@ -152,7 +153,10 @@ bool CStormnode::UpdateFromNewBroadcast(CStormnodeBroadcast& snb)
 //
 uint256 CStormnode::CalculateScore(int mod, int64_t nBlockHeight)
 {
-    if(pindexBest == NULL) return 0;
+    {
+        LOCK(cs_main);
+        if(pindexBest == NULL) return uint256();
+    }
 
     uint256 hash = 0;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
@@ -245,8 +249,12 @@ int64_t CStormnode::SecondsSincePayment() {
 }
 
 int64_t CStormnode::GetLastPaid() {
-    CBlockIndex* pindexPrev = pindexBest;
-    if(pindexPrev == NULL) return false;
+    CBlockIndex *pindexPrev = NULL;
+    {
+        LOCK(cs_main);
+        pindexPrev = pindexBest;
+        if(!pindexPrev) return 0;
+    }    if(pindexPrev == NULL) return false;
 
     CScript snpayee;
     snpayee = GetScriptForDestination(pubkey.GetID());
@@ -260,9 +268,7 @@ int64_t CStormnode::GetLastPaid() {
     //TODO (Amir): Ramifications of using a GetCompact PoS hash?
     int64_t nOffset = hash.GetCompact(false) % 150;
 
-    if (pindexBest == NULL) return false;
-
-    const CBlockIndex *BlockReading = pindexBest;
+    const CBlockIndex *BlockReading = pindexPrev;
 
     int nSnCount = snodeman.CountEnabled()*1.25;
     int n = 0;
@@ -404,8 +410,18 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     //search existing Stormnode list, this is where we update existing Stormnodes with new snb broadcasts
     CStormnode* psn = snodeman.Find(vin);
 
-    // no such stormnode or it's not enabled yet/already, nothing to update
-    if(psn == NULL || (psn != NULL && !psn->IsEnabled())) return true;
+    // no such stormnode, nothing to update
+    if(psn == NULL) return true ;
+    else {
+        // this broadcast older than we have, it's bad. 
+        if(psn->sigTime > sigTime) {
+            LogPrintf("snb - Bad sigTime %d for Stormnode %20s %105s (existing broadcast is at %d)\n",
+                          sigTime, addr.ToString(), vin.ToString(), psn->sigTime);
+            return false;
+        }
+        // masternode is not enabled yet/already, nothing to update
+        if(!psn->IsEnabled()) return true;
+    }
 
     // sn.pubkey = pubkey, IsVinAssociatedWithPubkey is validated once below,
     //   after that they just need to match
@@ -478,16 +494,19 @@ bool CStormnodeBroadcast::CheckInputsAndAdd(int& nDoS)
     CTransaction tx2;
     GetTransaction(vin.prevout.hash, tx2, hashBlock);
     //TODO (Amir): Put these line back...
-    /*BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi != mapBlockIndex.end() && (*mi).second)
-    {
-        CBlockIndex* pSNIndex = (*mi).second; // block for 10000 DRKSLK tx -> 1 confirmation
-        CBlockIndex* pConfIndex = chainActive[pSNIndex->nHeight + STORMNODE_MIN_CONFIRMATIONS - 1]; // block where tx got STORMNODE_MIN_CONFIRMATIONS
-        if(pConfIndex->GetBlockTime() > sigTime)
+    /*{
+        LOCK(cs_main);
+        BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
+        if (mi != mapBlockIndex.end() && (*mi).second)
         {
-            LogPrintf("snb - Bad sigTime %d for Stormnode %20s %105s (%i conf block is at %d)\n",
-                      sigTime, addr.ToString(), vin.ToString(), STORMNODE_MIN_CONFIRMATIONS, pConfIndex->GetBlockTime());
-            return false;
+            CBlockIndex* pSNIndex = (*mi).second; // block for 10000 DRKSLK tx -> 1 confirmation
+            CBlockIndex* pConfIndex = chainActive[pSNIndex->nHeight + STORMNODE_MIN_CONFIRMATIONS - 1]; // block where tx got STORMNODE_MIN_CONFIRMATIONS
+            if(pConfIndex->GetBlockTime() > sigTime)
+            {
+                LogPrintf("mnb - Bad sigTime %d for Masternode %20s %105s (%i conf block is at %d)\n",
+                          sigTime, addr.ToString(), vin.ToString(), MASTERNODE_MIN_CONFIRMATIONS, pConfIndex->GetBlockTime());
+                return false;
+            }
         }
     }*/
 
@@ -547,9 +566,15 @@ CStormnodePing::CStormnodePing()
 
 CStormnodePing::CStormnodePing(CTxIn& newVin)
 {
+    {
+        LOCK(cs_main);
+        CBlockIndex* pindexPrev = pindexBest;
+        if(!pindexPrev) return;
+    }
+
     vin = newVin;
     //TODO (Amir): Needs chainActive to work. put this back...
-    //blockHash = chainActive[pindexBest->nHeight - 12]->GetBlockHash();
+    //blockHash = chainActive[nHeight - 12]->GetBlockHash();
     sigTime = GetAdjustedTime();
     vchSig = std::vector<unsigned char>();
 }
@@ -615,26 +640,29 @@ bool CStormnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled)
 
             //TODO (Amir): Put these lines back...
             /*
-            BlockMap::iterator mi = mapBlockIndex.find(blockHash);
-            if (mi != mapBlockIndex.end() && (*mi).second)
             {
-                if((*mi).second->nHeight < nBestHeight - 24)
+                LOCK(cs_main);
+                BlockMap::iterator mi = mapBlockIndex.find(blockHash);
+                if (mi != mapBlockIndex.end() && (*mi).second)
                 {
-                    LogPrintf("CStormnodePing::CheckAndUpdate - Stormnode %s block hash %s is too old\n", vin.ToString(), blockHash.ToString());
-                    // Do nothing here (no Stormnode update, no snping relay)
-                    // Let this node to be visible but fail to accept snping
+                    if((*mi).second->nHeight < chainActive.Height() - 24)
+                    {
+                        LogPrintf("CStormnodePing::CheckAndUpdate - Stormnode %s block hash %s is too old\n", vin.ToString(), blockHash.ToString());
+                        // Do nothing here (no Stormnode update, no mnping relay)
+                        // Let this node to be visible but fail to accept snping
+
+                        return false;
+                    }
+                } else {
+                    if (fDebug) LogPrintf("CStormnodePing::CheckAndUpdate - Stormnode %s block hash %s is unknown\n", vin.ToString(), blockHash.ToString());
+                    // maybe we stuck so we shouldn't ban this node, just fail to accept it
+                    // TODO: or should we also request this block?
 
                     return false;
                 }
-            } else {
-                if (fDebug) LogPrintf("CStormnodePing::CheckAndUpdate - Stormnode %s block hash %s is unknown\n", vin.ToString(), blockHash.ToString());
-                // maybe we stuck so we shouldn't ban this node, just fail to accept it
-                // TODO: or should we also request this block?
+            }*/
 
-                LogPrintf("CStormnodePing::CheckAndUpdate - Not Implemented Yet!");
-                return false;
-            //}
-            */
+            //TODO: Remove these two lines after above is implemented    
             LogPrintf("CStormnodePing::CheckAndUpdate - Not Implemented Yet!");
             return false;
 
