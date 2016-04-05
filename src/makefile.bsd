@@ -130,8 +130,11 @@ OBJS= \
     obj/rpc/rpcrawtransaction.o \
     obj/rpc/rpcsmessage.o \
     obj/timedata.o \
+    obj/script/interpreter.o \
     obj/script/script.o \
     obj/script/script_error.o \
+    obj/script/sign.o \
+    obj/script/standard.o \
     obj/sync.o \
     obj/txmempool.o \
     obj/util.o \
