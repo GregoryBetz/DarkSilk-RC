@@ -546,7 +546,7 @@ void WriteConfigFile(FILE* configFile)
     fputs ("daemon=1\n", configFile);
     fputs ("rpcallow=0\n", configFile);
     fputs ("rpcallowip=127.0.0.1\n", configFile);
-    fputs ("addnode=159.203.21.45:31000\n", configFile); //TODO (Amir): removed hardcoded addnode...
+    fputs ("addnode=52.26.182.136:31000\n", configFile); //TODO (Amir): removed hardcoded Amazon addnode...
     fclose(configFile);
 }
 

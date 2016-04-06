@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <boost/foreach.hpp>
+#include "chainparams.h"
 
 #include "primitives/block.h"
 #include "chainparams.h"

@@ -138,6 +138,7 @@ OBJS= \
     obj/crypto/sha1.o \
     obj/crypto/sha256.o \
     obj/crypto/sha512.o \
+    obj/crypto/blake256.o \
     obj/smessage.o \
     obj/coins.o \
     obj/script/compressor.o \

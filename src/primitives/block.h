@@ -90,12 +90,7 @@ public:
 
     uint256 GetPoWHash() const
     {
-        return scrypt_blockhash(CVOIDBEGIN(nVersion));
-    }
-
-    uint256 GetPoWArgonHash() const
-    {
-        return hashArgon2d(BEGIN(nVersion), END(nNonce));
+        return hashArgon2d(UVOIDBEGIN(nVersion));
     }
 
     int64_t GetBlockTime() const

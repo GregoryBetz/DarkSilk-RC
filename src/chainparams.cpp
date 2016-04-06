@@ -66,7 +66,7 @@ public:
         vAlertPubKey = ParseHex("0450e0acc669231cfe2d0a8f0d164c341547487adff89f09e1e78a5299d204bd1c9f05897cb916365c56a31377d872abddb551a12d8d8163149abfc851be7f88ba");
         nDefaultPort = 31000;
         nRPCPort = 31500;
-        bnProofOfWorkLimit = CBigNum(~uint256(0) >> 20); // PoW starting difficulty = 0.0002441
+        bnProofOfWorkLimit = CBigNum(~uint256(0) >> 2); // PoW starting difficulty = 0.0002441
 
         // Build the genesis block. Note that the output of the genesis coinbase cannot
         // be spent as it did not originally exist in the database.
@@ -87,26 +87,25 @@ public:
         genesis.nBits    = 0x1e0ffff0;
         genesis.nNonce   = 763220;
 
-        hashGenesisBlock = genesis.GetHash(); 
+        hashGenesisBlock = genesis.GetHash();
 
         //// debug print
-        /*
-        printf("Gensis Hash: %s\n", genesis.GetHash().ToString().c_str());
-        printf("Gensis Hash Merkle: %s\n", genesis.hashMerkleRoot.ToString().c_str());
-        printf("Gensis nTime: %u\n", genesis.nTime);
-        printf("Gensis nBits: %08x\n", genesis.nBits);
-        printf("Gensis Nonce: %u\n\n\n", genesis.nNonce);
-        */
+        //printf("hashGenesisBlock: %s\n", hashGenesisBlock.ToString().c_str());
+        //printf("Gensis Hash: %s\n", genesis.GetHash().ToString().c_str());
+        //printf("Gensis Hash Merkle: %s\n", genesis.hashMerkleRoot.ToString().c_str());
+        //printf("Gensis nTime: %u\n", genesis.nTime);
+        //printf("Gensis nBits: %08x\n", genesis.nBits);
+        //printf("Gensis Nonce: %u\n\n", genesis.nNonce);
 
-        assert(hashGenesisBlock == uint256("0xdcc5e22e275eff273799a4c06493f8364316d032813c22845602f05ff13d7ec7"));
-        assert(genesis.hashMerkleRoot == uint256("0xfed7550a453e532c460fac58d438740235c380f9908cae2d602b705ca2c2f0a6"));
+        assert(hashGenesisBlock == uint256("0xc22606c50d13f59b98220efa9822ff2b5ae48815dd702b796f21378b70d9c853"));
+        assert(genesis.hashMerkleRoot == uint256("0x77a9ada8f10cd4fb7f05dadc582ec1880fcd2af4414ed664a07fb230a4da390d"));
 
         vSeeds.push_back(CDNSSeedData("darksilk.org", "ds1.darksilk.org"));
         vSeeds.push_back(CDNSSeedData("", ""));
         
         base58Prefixes[PUBKEY_ADDRESS] = list_of(30);                     //DarkSilk addresses start with 'D'
         base58Prefixes[SCRIPT_ADDRESS] = list_of(10);                     //DarkSilk script addresses start with '5'
-        base58Prefixes[SECRET_KEY] =     list_of(140);                    //DarkSilk private keys start with 'y'              
+        base58Prefixes[SECRET_KEY]     = list_of(140);                    //DarkSilk private keys start with 'y'
         base58Prefixes[EXT_PUBLIC_KEY] = list_of(0x02)(0xFE)(0x52)(0x7D); //DarkSilk BIP32 pubkeys start with 'drks'
         base58Prefixes[EXT_SECRET_KEY] = list_of(0x02)(0xFE)(0x52)(0x8C); //DarkSilk BIP32 prvkeys start with 'drky'
 
@@ -147,7 +146,7 @@ public:
         pchMessageStart[1] = 0x22;
         pchMessageStart[2] = 0x05;
         pchMessageStart[3] = 0x30;
-        bnProofOfWorkLimit = CBigNum(~uint256(0) >> 20); // PoW starting difficulty = 0.0002441
+        bnProofOfWorkLimit = CBigNum(~uint256(0) >> 2); // PoW starting difficulty = 0.0002441
         vAlertPubKey = ParseHex("");
         nDefaultPort = 31750;
         nRPCPort = 31800;
@@ -159,8 +158,15 @@ public:
         genesis.nNonce = 0;
         hashGenesisBlock = genesis.GetHash(); 
 
-        //printf("Test Genesis Hash: %s\n", genesis.GetHash().ToString().c_str());
-        assert(hashGenesisBlock == uint256("0xf788ac4ae46429468897b4b9758651cb8a642a6e01f16968134a75078905e24d"));
+        //// debug print
+        //printf("Test hashGenesisBlock: %s\n", hashGenesisBlock.ToString().c_str());
+        //printf("Test Gensis Has: %s\n", genesis.GetHash().ToString().c_str());
+        //printf("Test Gensis Hash Merkle: %s\n", genesis.hashMerkleRoot.ToString().c_str());
+        //printf("Test Gensis nTime: %u\n", genesis.nTime);
+        //printf("Test Gensis nBits: %08x\n", genesis.nBits);
+        //printf("Test Gensis Nonce: %u\n\n\n", genesis.nNonce);
+
+        assert(genesis.GetHash() == uint256("0x236d17365d9336ab02561840c9b2828064c44316b5fdb7d35f2ce376545a8528"));
 
         vFixedSeeds.clear();
         vSeeds.clear();

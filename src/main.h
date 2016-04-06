@@ -36,8 +36,10 @@ static const CAmount SANDSTORM_COLLATERAL = (0.01*COIN);
 static const CAmount SANDSTORM_POOL_MAX = (9999.99*COIN);
 // Static Proof-of-Stake Reward of 0.01 DRKSLK
 static const CAmount STATIC_POS_REWARD = COIN * 0.01;
-// Static Proof-of-Work Reward of 1.0 DRKSLK
-static const CAmount STATIC_POW_REWARD = COIN * 1; //TODO (Amir): Change to 1.25 before release.
+// Static Proof-of-Work Reward of 1.25 DRKSLK.
+// 1.0 DRKSLK goes to the miner and 0.25 goes to a stormnode.
+// Without stormnodes, the PoW miner gets 1.25 DRKSLK.
+static const CAmount STATIC_POW_REWARD = COIN * 1.25;
 // Number of blocks that can be requested at any given time from a single peer.
 static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
 // Timeout in seconds before considering a block download peer unresponsive.
