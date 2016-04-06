@@ -372,6 +372,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/multisiginputentry.h \
             src/qt/multisigaddressentry.h \
             src/qt/multisigdialog.h \
+            src/httpserver.h \
             src/memusage.h \
             src/consensus/params.h
 
@@ -520,6 +521,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/coins.cpp \
             src/script/compressor.cpp \
             src/leveldbwrapper.cpp \
+            src/httpserver.cpp \
             src/txdb.cpp \
             src/amount.cpp \
             src/undo.cpp \
