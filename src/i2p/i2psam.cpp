@@ -146,7 +146,7 @@ void Socket::write(const std::string& msg)
         print_error("Failed to send data because socket is closed");
         return;
     }
-    LogPrintf("[I2P] Send: ", msg);
+    LogPrintf("[I2P] Send: %s\n", msg);
     ssize_t sentBytes = send(socket_, msg.c_str(), msg.length(), 0);
     if (sentBytes == SAM_SOCKET_ERROR)
     {
@@ -183,7 +183,7 @@ std::string Socket::read()
         close();
         print_error("Socket was closed");
     }
-    LogPrintf("[I2P] Reply: ", buffer);
+    LogPrintf("[I2P] Reply: %s\n", buffer);
     return std::string(buffer);
 }
 
@@ -247,7 +247,7 @@ StreamSession::StreamSession(
     , isSick_(false)
 {
     myDestination_ = createStreamSession(destination);
-    LogPrintf("[I2P] Created a brand new SAM session :", sessionID_);
+    LogPrintf("[I2P] Created a brand new SAM session : %s\n", sessionID_);
 }
 
 StreamSession::StreamSession(StreamSession& rhs)
@@ -265,14 +265,14 @@ StreamSession::StreamSession(StreamSession& rhs)
     for(ForwardedStreamsContainer::const_iterator it = rhs.forwardedStreams_.begin(), end = rhs.forwardedStreams_.end(); it != end; ++it)
         forward(it->host, it->port, it->silent);
 
-    LogPrintf("[I2P] Created a new SAM session :", sessionID_);
-    LogPrintf("[I2P] Originated from another", rhs.sessionID_);
+    LogPrintf("[I2P] Created a new SAM session : %s\n", sessionID_);
+    LogPrintf("[I2P] Originated from another : %s\n", rhs.sessionID_);
 }
 
 StreamSession::~StreamSession()
 {
     stopForwardingAll();
-    LogPrintf("[I2P] Closing SAM session :", sessionID_);
+    LogPrintf("[I2P] Closing SAM session : %s\n", sessionID_);
 }
 
 /*static*/
