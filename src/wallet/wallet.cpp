@@ -3877,53 +3877,14 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         nCredit += nReward;
     }
 
-    // start stormnode payments
-    bool bStormNodePayment = false;
-    if ( Params().NetworkID() == CChainParams::TESTNET ){
-        if (pindexBest->nHeight+1 >= TESTNET_STORMNODE_PAYMENT_START) {
-            bStormNodePayment = true;
-        }
+    // Set output amount
+    if (txNew.vout.size() == 3)
+    {
+        txNew.vout[1].nValue = (nCredit / 2 / CENT) * CENT;
+        txNew.vout[2].nValue = nCredit - txNew.vout[1].nValue;
     }
     else
-    {   if ( Params().NetworkID() == CChainParams::MAIN ){
-            if (pindexBest->nHeight+1 >= STORMNODE_PAYMENT_START){
-                bStormNodePayment = true;
-            }
-        }
-    }
-
-    CScript payee;
-    CTxIn vin;
-    bool hasPayment = false;
-    if(bStormNodePayment) {
-        //spork
-        if(!stormnodePayments.GetBlockPayee(pindexPrev->nHeight+1, payee)){
-            CStormnode* winningNode = snodeman.GetCurrentStormNode(1);
-            if(winningNode){
-                payee = GetScriptForDestination(winningNode->pubkey.GetID());
-                hasPayment = true;
-            } else {
-                LogPrintf("CreateCoinStake: Failed to detect stormnode to pay\n");
-                hasPayment = false;
-            }
-        }
-    }
-
-    // Stormnode and general budget payments
-    if(hasPayment) {
-        FillBlockPayee(txNew, nFees);
-    }
-    else {
-        CAmount blockValue = nCredit;
-        // Set output amount for PoS without stormnodes
-        if (!hasPayment && txNew.vout.size() == 3) // 2 stake outputs, stake was split, no stormnode payment
-        {
-            txNew.vout[1].nValue = (blockValue / 2 / CENT) * CENT;
-            txNew.vout[2].nValue = blockValue - txNew.vout[1].nValue;
-        }
-        else if(!hasPayment && txNew.vout.size() == 2) // only 1 stake output, was not split, no stormnode payment
-            txNew.vout[1].nValue = blockValue;
-    }
+        txNew.vout[1].nValue = nCredit;
 
 
     // GetBlockValue should return STATIC_POS_REWARD + nFees. When you switched to GetBlockValue from nCredit.
