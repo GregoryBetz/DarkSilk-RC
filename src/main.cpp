@@ -5008,6 +5008,31 @@ bool static DisconnectTip(CValidationState& state, const Consensus::Params& cons
     // 0-confirmed or conflicted:
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         SyncWithWallets(tx, pindexDelete->pprev, NULL);
+        // DARKSILK disconnect services related block
+        if (tx.nVersion == DARKSILK_TX_VERSION) {
+            vector<vector<unsigned char> > vvchArgs;
+            int op, nOut;
+            if(DecodeAccountTx(tx, op, nOut, vvchArgs))
+            {
+                DisconnectAccount(pindexDelete, tx, op, vvchArgs);    
+            }
+            if(DecodeOfferTx(tx, op, nOut, vvchArgs))
+            {
+                DisconnectOffer(pindexDelete, tx, op, vvchArgs); 
+            }
+            if(DecodeCertTx(tx, op, nOut, vvchArgs))
+            {
+                DisconnectCertificate(pindexDelete, tx, op, vvchArgs);              
+            }
+            if(DecodeEscrowTx(tx, op, nOut, vvchArgs))
+            {
+                DisconnectEscrow(pindexDelete, tx, op, vvchArgs);   
+            }
+            if(DecodeMessageTx(tx, op, nOut, vvchArgs))
+            {
+                DisconnectMessage(pindexDelete, tx, op, vvchArgs);  
+            }
+        }
     }
     return true;
 }
@@ -5067,6 +5092,10 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
         SyncWithWallets(tx, pblock);
     }
 
+    // DARKSILK update services db
+    CCoinsViewCache view(pcoinsTip);
+    if (!AddDarkSilkServicesToDB(*pblock, view, pindexNew->nHeight))
+        return error("ConnectTip(): AddDarkSilkServicesToDB on %s failed", pindexNew->GetBlockHash().ToString());
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint("bench", "  - Connect postprocess: %.2fms [%.2fs]\n", (nTime6 - nTime5) * 0.001, nTimePostConnect * 0.000001);
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
