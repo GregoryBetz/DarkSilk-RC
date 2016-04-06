@@ -1406,7 +1406,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     // start darksilk-sandstorm thread
     threadGroup.create_thread(boost::bind(&ThreadCheckSandStormPool));
-
+    CScheduler scheduler;
 
 
     RandAddSeedPerfmon();
@@ -1438,7 +1438,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 #endif
 
     if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
-        StartTorControl(threadGroup);
+        StartTorControl(threadGroup, scheduler);
 
     StartNode(threadGroup);
     
