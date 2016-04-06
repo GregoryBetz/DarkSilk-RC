@@ -12,6 +12,7 @@
 #include "script/script.h"
 #include "serialize.h"
 #include "consensus/params.h"
+#include "univalue.h"
 
 class CWalletTx;
 class CTransaction;
@@ -79,13 +80,13 @@ public:
 	const std::vector<unsigned char> Serialize();
 };
 
-class CAccountDB : public CDBWrapper {
+class CAccountDB : public CLevelDBWrapper {
 public:
-    CAccountDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "accountes", nCacheSize, fMemory, fWipe) {
+    CAccountDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDBWrapper(GetDataDir() / "accounts", nCacheSize, fMemory, fWipe) {
     }
 
 	bool WriteAccount(const std::vector<unsigned char>& name, const std::vector<unsigned char>& address, std::vector<CAccountIndex>& vtxPos) {
-		return Write(make_pair(std::string("namei"), name), vtxPos) && Write(make_pair(std::string("namea"), address), name);
+		return Write(make_pair(std::string("namei"), name), vtxPos) && Write(make_pair(std::string("names"), address), name);
 	}
 
 	bool EraseAccount(const std::vector<unsigned char>& name) {

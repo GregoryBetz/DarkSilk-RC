@@ -96,9 +96,9 @@ public:
 };
 
 
-class CCertDB : public CDBWrapper {
+class CCertDB : public CLevelDBWrapper {
 public:
-    CCertDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "certificates", nCacheSize, fMemory, fWipe) {}
+    CCertDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDBWrapper(GetDataDir() / "certificates", nCacheSize, fMemory, fWipe) {}
 
     bool WriteCert(const std::vector<unsigned char>& name, std::vector<CCert>& vtxPos) {
         return Write(make_pair(std::string("certi"), name), vtxPos);

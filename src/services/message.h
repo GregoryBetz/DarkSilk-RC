@@ -94,9 +94,9 @@ public:
 };
 
 
-class CMessageDB : public CDBWrapper {
+class CMessageDB : public CLevelDBWrapper {
 public:
-    CMessageDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "message", nCacheSize, fMemory, fWipe) {}
+    CMessageDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDBWrapper(GetDataDir() / "message", nCacheSize, fMemory, fWipe) {}
 
     bool WriteMessage(const std::vector<unsigned char>& name, std::vector<CMessage>& vtxPos) {
         return Write(make_pair(std::string("messagei"), name), vtxPos);

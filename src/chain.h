@@ -149,6 +149,7 @@ public:
     unsigned int nStakeTime;
 
     uint256 hashProof;
+    uint256 txHash;
 
     // block header
     int nVersion;
@@ -201,6 +202,7 @@ public:
         nStatus = 0;
         nSequenceId = 0;
         hashProof = 0;
+        txHash = 0;
         prevoutStake.SetNull();
         nStakeTime = 0;
 
