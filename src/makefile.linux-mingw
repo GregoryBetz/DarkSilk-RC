@@ -135,6 +135,12 @@ OBJS= \
     obj/script/compressor.o \
     obj/primitives/transaction.o \
     obj/primitives/block.o \
+    obj/services/account.o \
+    obj/services/cert.o \
+    obj/services/escrow.o \
+    obj/services/message.o \
+    obj/services/messagecrypter.o \
+    obj/services/offer.o \
     obj/leveldbwrapper.o \
     obj/amount.o \
     obj/undo.o \
