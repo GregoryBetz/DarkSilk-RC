@@ -13,6 +13,7 @@
 #include "chain.h"
 #include "coins.h"
 #include "net.h"
+#include "script/script_error.h"
 #include "txdb.h"
 #include "txmempool.h"
 
