@@ -1,4 +1,5 @@
 // Copyright (c) 2015 The Bitcoin Core developers
+// Copyright {c} 2015-2016 Silk Network
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,5 +29,5 @@ private:
     Lock& lock;
 };
 
-#endif // BITCOIN_REVERSELOCK_H
+#endif // DARKSILK_REVERSELOCK_H
 
