@@ -14,6 +14,7 @@
 #include "coins.h"
 #include "networking/net.h"
 #include "elements/txdb/txdb.h"
+#include "script/script_error.h"
 #include "txmempool.h"
 #include "proofs.h"
 
