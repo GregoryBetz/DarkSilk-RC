@@ -127,7 +127,7 @@ QMAKE_CLEAN += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o; cd $$PWD/src
 #Build LevelDB
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers src/leveldb/helpers/memenv
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
-SOURCES += src/txdb-leveldb.cpp
+SOURCES += src/elements/txdb/txdb-leveldb.cpp
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
     genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
@@ -158,9 +158,9 @@ QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) cl
 
 #contains(DEFINES, USE_NATIVE_I2P) {
 #    geni2pbuild.depends = FORCE
-#    geni2pbuild.commands = cd $$PWD; /bin/sh share/inc_build_number.sh src/i2p/i2pbuild.h darksilk-core-build-number
-#    geni2pbuild.target = src/i2p/i2pbuild.h
-#    PRE_TARGETDEPS += src/i2p/i2pbuild.h
+#    geni2pbuild.commands = cd $$PWD; /bin/sh share/inc_build_number.sh src/networking/i2p/i2pbuild.h darksilk-core-build-number
+#    geni2pbuild.target = src/networking/i2p/i2pbuild.h
+#    PRE_TARGETDEPS += src/networking/i2p/i2pbuild.h
 #    QMAKE_EXTRA_TARGETS += geni2pbuild
 #}
 
@@ -197,7 +197,7 @@ DEPENDPATH += . \
               src/leveldb/issues \
               src/leveldb/port \
               src/leveldb/table \
-              src/leveldb/util \
+              src/leveldb/elements/util/util \
               src/qt/forms \
               src/qt/locale \
               src/qt/test \
@@ -217,7 +217,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/cryptkey.h \
             src/proofs.h \
             src/reward.h \
-            src/anon/stormnode/activestormnode.h \
+            src/stormnode/activestormnode.h \
             src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
             src/qt/addresstablemodel.h \
@@ -232,9 +232,9 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/darksilkaddressvalidator.h \
             src/blindtext.h \
 	    src/alert.h \
-            src/secure/allocators/pagelocker.h \
-            src/secure/allocators/secure.h \
-            src/secure/allocators/zeroafterfee.h \
+            src/support/allocators/pagelocker.h \
+            src/support/allocators/secure.h \
+            src/support/allocators/zeroafterfee.h \
             src/addrman.h \
             src/base58.h \
             src/bignum.h \
@@ -242,15 +242,15 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/chainparams.h \
             src/chainparamsseeds.h \
             src/checkpoints.h \
-            src/secure/cleanse.h \
+            src/support/cleanse.h \
             src/compat/compat.h \
             src/coincontrol.h \
-            src/core_io.h \
+            src/elements/core/core_io.h \
             src/sync.h \
             src/random.h \
-            src/util.h \
-            src/utilstrencodings.h \
-            src/utilmoneystr.h \
+            src/elements/util/util.h \
+            src/elements/util/utilstrencodings.h \
+            src/elements/util/utilmoneystr.h \
             src/hash.h \
             src/uint256.h \
             src/kernel.h \
@@ -260,12 +260,12 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/limitedmap.h \
             src/main.h \
             src/miner.h \
-            src/net.h \
+            src/networking/net.h \
             src/key.h \
             src/ecwrapper.h \
             src/pubkey.h \
             src/wallet/db.h \
-            src/txdb.h \
+            src/elements/txdb/txdb.h \
             src/txmempool.h \
             src/univalue.h \
             src/univalue_escapes.h \
@@ -277,14 +277,14 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/json/json_spirit_writer_template.h \
             src/json/json_spirit_writer.h \
             src/json/json_spirit_value.h \
-            src/json/json_spirit_utils.h \
+            src/json/json_spirit_elements/util/utils.h \
             src/json/json_spirit_stream_reader.h \
             src/json/json_spirit_reader_template.h \
             src/json/json_spirit_reader.h \
             src/json/json_spirit_error_position.h \
             src/json/json_spirit.h \
             src/qt/clientmodel.h \
-            src/qt/guiutil.h \
+            src/qt/guielements/util/util.h \
             src/qt/transactionrecord.h \
             src/qt/guiconstants.h \
             src/qt/optionsmodel.h \
@@ -316,21 +316,21 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/ui_interface.h \
             src/qt/debugconsole.h \
             src/version.h \
-            src/netbase.h \
+            src/networking/netbase.h \
             src/clientversion.h \
             src/threadsafety.h \
             src/tinyformat.h \
-            src/anon/stealth/stealth.h \
+            src/stealth/stealth.h \
             src/qt/flowlayout.h \
             src/qt/sandstormconfig.h \
-            src/anon/stormnode/stormnode.h \ 
-            src/anon/stormnode/stormnode-budget.h \
-            src/anon/stormnode/stormnode-payments.h \
-            src/anon/sandstorm/sandstorm.h \    
-            src/anon/sandstorm/sandstorm-relay.h \
-            src/anon/instantx/instantx.h \
-            src/anon/stormnode/stormnodeman.h \
-            src/anon/stormnode/spork.h \
+            src/stormnode/stormnode.h \ 
+            src/stormnode/stormnode-budget.h \
+            src/stormnode/stormnode-payments.h \
+            src/sandstorm/sandstorm.h \    
+            src/sandstorm/sandstorm-relay.h \
+            src/instantx/instantx.h \
+            src/stormnode/stormnodeman.h \
+            src/stormnode/spork.h \
             src/crypto/common.h \
             src/crypto/hmac_sha256.h \
             src/crypto/hmac_sha512.h \
@@ -353,15 +353,15 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/bantablemodel.h \
             src/primitives/block.h \
             src/primitives/transaction.h \
-            src/anon/stormnode/stormnode-sync.h \
+            src/stormnode/stormnode-sync.h \
             src/chain.h \
             src/coins.h \
-	    src/torcontrol.h \
+	    src/networking/tor/torcontrol.h \
             src/script/compressor.h \
             src/undo.h \
             src/leveldbwrapper.h \
             src/streams.h \
-            src/txdb-leveldb.h \
+            src/elements/txdb/txdb-leveldb.h \
             src/amount.h \
             src/sanity.h \
             src/crypto/argon2/argon2.h \
@@ -383,13 +383,13 @@ HEADERS +=  src/qt/darksilkgui.h \
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/walletinterface.cpp \
 	    src/blindtext.cpp \
-	    src/torcontrol.cpp \
+    src/networking/tor/torcontrol.cpp \
             src/rest.cpp \
 	    src/scheduler.cpp \
             src/cryptkey.cpp \
             src/proofs.cpp \
             src/reward.cpp \
-            src/anon/stormnode/activestormnode.cpp \
+            src/stormnode/activestormnode.cpp \
             src/qt/transactiontablemodel.cpp \
             src/qt/addresstablemodel.cpp \
             src/qt/optionsdialog.cpp \
@@ -406,12 +406,12 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/qt/peertablemodel.cpp \
             src/qt/bantablemodel.cpp \
             src/alert.cpp \
-            src/secure/allocators/pagelocker.cpp \
+            src/support/allocators/pagelocker.cpp \
             src/bloom.cpp \
-            src/core_read.cpp \
-            src/core_write.cpp \
+            src/elements/core/core_read.cpp \
+            src/elements/core/core_write.cpp \
             src/chainparams.cpp \
-            src/secure/cleanse.cpp \
+            src/support/cleanse.cpp \
             src/version.cpp \
             src/sync.cpp \
             src/txmempool.cpp \
@@ -420,11 +420,11 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/univalue_read.cpp \
             src/univalue_write.cpp \
             src/random.cpp \
-            src/util.cpp \
-            src/utilstrencodings.cpp \
-            src/utilmoneystr.cpp \
+            src/elements/util/util.cpp \
+            src/elements/util/utilstrencodings.cpp \
+            src/elements/util/utilmoneystr.cpp \
             src/hash.cpp \
-            src/netbase.cpp \
+            src/networking/netbase.cpp \
             src/key.cpp \
             src/ecwrapper.cpp \
             src/pubkey.cpp \
@@ -432,7 +432,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/main.cpp \
             src/miner.cpp \
             src/init.cpp \
-            src/net.cpp \
+            src/networking/net.cpp \
             src/checkpoints.cpp \
             src/qt/multisiginputentry.cpp \
             src/qt/multisigaddressentry.cpp \
@@ -442,7 +442,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/wallet/db.cpp \
             src/wallet/walletdb.cpp \
             src/qt/clientmodel.cpp \
-            src/qt/guiutil.cpp \
+            src/qt/guielements/util/util.cpp \
             src/qt/transactionrecord.cpp \
             src/qt/optionsmodel.cpp \
             src/qt/monitoreddatamapper.cpp \
@@ -462,7 +462,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/rpc/rpcserver.cpp \
             src/wallet/rpcdump.cpp \
             src/rpc/rpcmisc.cpp \
-            src/rpc/rpcnet.cpp \
+            src/rpc/rpcnetworking/net.cpp \
             src/rpc/rpcmining.cpp \
             src/wallet/rpcwallet.cpp \
             src/rpc/rpcblockchain.cpp \
@@ -487,20 +487,20 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/scrypt-x86_64.S \
             src/scrypt.cpp \
             src/pbkdf2.cpp \
-            src/anon/stealth/stealth.cpp \
+            src/stealth/stealth.cpp \
             src/qt/flowlayout.cpp \
             src/qt/sandstormconfig.cpp \
-            src/anon/stormnode/stormnode.cpp \
-            src/anon/stormnode/stormnode-budget.cpp \
-            src/anon/stormnode/stormnode-payments.cpp \
-            src/anon/sandstorm/sandstorm.cpp \
-            src/anon/sandstorm/sandstorm-relay.cpp \
+            src/stormnode/stormnode.cpp \
+            src/stormnode/stormnode-budget.cpp \
+            src/stormnode/stormnode-payments.cpp \
+            src/sandstorm/sandstorm.cpp \
+            src/sandstorm/sandstorm-relay.cpp \
             src/rpc/rpcstormnode.cpp \
             src/rpc/rpcstormnode-budget.cpp \
-            src/anon/instantx/instantx.cpp \
-            src/anon/stormnode/spork.cpp \
-            src/anon/stormnode/stormnodeconfig.cpp \
-            src/anon/stormnode/stormnodeman.cpp \
+            src/instantx/instantx.cpp \
+            src/stormnode/spork.cpp \
+            src/stormnode/stormnodeconfig.cpp \
+            src/stormnode/stormnodeman.cpp \
             src/crypto/hmac_sha256.cpp \
             src/crypto/hmac_sha512.cpp \
             src/crypto/ripemd160.cpp \
@@ -521,14 +521,14 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/rpc/rpcsmessage.cpp \
             src/primitives/block.cpp \
             src/primitives/transaction.cpp \
-            src/anon/stormnode/stormnode-sync.cpp \
+            src/stormnode/stormnode-sync.cpp \
             src/chain.cpp \
             src/uint256.cpp \
             src/coins.cpp \
             src/script/compressor.cpp \
             src/leveldbwrapper.cpp \
             src/httpserver.cpp \
-            src/txdb.cpp \
+            src/elements/txdb/txdb.cpp \
             src/amount.cpp \
             src/undo.cpp \
             src/rpc/rpcblindtext.cpp \
@@ -570,13 +570,13 @@ FORMS += \
             src/qt/plugins/mrichtexteditor/mrichtextedit.ui
 
 contains(DEFINES, USE_NATIVE_I2P) {
-HEADERS +=  src/i2p/i2p.h \
-            src/i2p/i2psam.h \
+HEADERS +=  src/networking/i2p/i2p.h \
+            src/networking/i2p/i2psam.h \
             src/qt/showi2paddresses.h \
             src/qt/i2poptionswidget.h
 
-SOURCES +=  src/i2p/i2p.cpp \
-            src/i2p/i2psam.cpp \
+SOURCES +=  src/networking/i2p/i2p.cpp \
+            src/networking/i2p/i2psam.cpp \
             src/qt/showi2paddresses.cpp \
             src/qt/i2poptionswidget.cpp
 

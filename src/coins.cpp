@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include "coins.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "txdb.h"
 
 /**

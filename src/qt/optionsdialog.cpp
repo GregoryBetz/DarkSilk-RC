@@ -7,7 +7,7 @@
 #include "ui_optionsdialog.h"
 #include "darksilkunits.h"
 #include "monitoreddatamapper.h"
-#include "netbase.h"
+#include "networking/netbase.h"
 #include "optionsmodel.h"
 
 #ifdef USE_NATIVE_I2P

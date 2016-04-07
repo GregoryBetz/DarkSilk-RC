@@ -20,9 +20,9 @@
 #include <stdint.h>
 
 
-#include "support/pagelocker.h"
-#include "support/secure.h"
-#include "support/zeroafterfee.h"
+#include "support/allocators/pagelocker.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfee.h"
 
 #include "serialize.h"
 

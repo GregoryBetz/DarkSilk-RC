@@ -5,7 +5,7 @@
 #ifndef DARKSILK_QT_BANTABLEMODEL_H
 #define DARKSILK_QT_BANTABLEMODEL_H
 
-#include "net.h"
+#include "networking/net.h"
 
 #include <QAbstractTableModel>
 #include <QStringList>

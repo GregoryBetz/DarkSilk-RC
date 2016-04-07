@@ -16,7 +16,7 @@
 
 #include "serialize.h"
 #include "uint256.h"
-#include "utilstrencodings.h"
+#include "elements/util/utilstrencodings.h"
 
 /** Errors thrown by the bignum class */
 class bignum_error : public std::runtime_error

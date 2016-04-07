@@ -13,7 +13,7 @@
 #include "crypto/hmac_sha512.h"
 #include "pubkey.h"
 #include "random.h"
-#include "util.h"
+#include "elements/util/util.h"
 
 // anonymous namespace
 namespace {

@@ -14,7 +14,7 @@
 #include "init.h"
 #include "main.h"
 #include "reward.h"
-#include "net.h"
+#include "networking/net.h"
 #include "wallet/wallet.h"
 #include "blindtext.h"
 

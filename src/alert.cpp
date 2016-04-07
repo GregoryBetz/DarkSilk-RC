@@ -15,11 +15,11 @@
 #include "alert.h"
 #include "chainparams.h"
 #include "pubkey.h"
-#include "net.h"
+#include "networking/net.h"
 #include "timedata.h"
 #include "ui_interface.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 
 using namespace std;
 

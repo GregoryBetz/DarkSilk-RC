@@ -26,7 +26,7 @@
 #include "guiutil.h"
 #include "init.h"
 #include "optionsmodel.h"
-#include "anon/sandstorm/sandstorm.h"
+#include "sandstorm/sandstorm.h"
 #include "wallet/wallet.h"
 #include "walletmodel.h"
 

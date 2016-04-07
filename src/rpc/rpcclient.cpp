@@ -21,7 +21,7 @@
 
 #include "rpc/rpcclient.h"
 #include "rpc/rpcprotocol.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "ui_interface.h"
 #include "chainparams.h" // for Params().RPCPort()
 

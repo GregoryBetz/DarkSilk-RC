@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "primitives/block.h"
-#include "utilmoneystr.h"
+#include "elements/util/utilmoneystr.h"
 #include "chainparams.h"
 
 class CTxDB;

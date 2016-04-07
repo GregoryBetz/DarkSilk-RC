@@ -26,7 +26,7 @@
 #include "base58.h"
 #include "init.h"
 #include "ui_interface.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "sync.h"
 #include "base58.h"
 #include "wallet/db.h"

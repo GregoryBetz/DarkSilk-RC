@@ -12,9 +12,9 @@
 #include "chainparamsseeds.h"
 #include "main.h"
 #include "reward.h"
-#include "net.h"
+#include "networking/net.h"
 #include "random.h"
-#include "utilstrencodings.h"
+#include "elements/util/utilstrencodings.h"
 
 using namespace boost::assign;
 

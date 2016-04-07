@@ -18,25 +18,25 @@
 #include "reward.h"
 #include "chainparams.h"
 #include "sanity.h"
-#include "net.h"
+#include "networking/net.h"
 #include "key.h"
 #include "pubkey.h"
 #include "rpc/rpcserver.h"
 #include "txdb.h"
 #include "ui_interface.h"
-#include "util.h"
-#include "utilmoneystr.h"
-#include "utilstrencodings.h"
-#include "anon/stormnode/activestormnode.h"
-#include "anon/stormnode/stormnode-budget.h"
-#include "anon/stormnode/stormnode-payments.h"
-// #include "anon/stormnode/stormnode-sync.h" //include after chainactive.Tip is active
-#include "anon/stormnode/stormnodeman.h"
-#include "anon/stormnode/stormnodeconfig.h"
-#include "anon/stormnode/spork.h"
+#include "elements/util/util.h"
+#include "elements/util/utilmoneystr.h"
+#include "elements/util/utilstrencodings.h"
+#include "stormnode/activestormnode.h"
+#include "stormnode/stormnode-budget.h"
+#include "stormnode/stormnode-payments.h"
+// #include "stormnode/stormnode-sync.h" //include after chainactive.Tip is active
+#include "stormnode/stormnodeman.h"
+#include "stormnode/stormnodeconfig.h"
+#include "stormnode/spork.h"
 #include "smessage.h"
 #include "txdb-leveldb.h"
-#include "torcontrol.h"
+#include "networking/tor/torcontrol.h"
 
 #ifdef ENABLE_WALLET
 #include "db.h"
@@ -49,7 +49,7 @@
 #endif
 
 #ifdef USE_NATIVE_I2P
-#include "i2p/i2p.h"
+#include "networking/i2p/i2p.h"
 #endif
 
 using namespace boost;

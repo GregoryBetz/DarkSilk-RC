@@ -11,9 +11,9 @@
 
 #include "uint256.h"
 
-#include "support/pagelocker.h"
-#include "support/secure.h"
-#include "support/zeroafterfee.h"
+#include "support/allocators/pagelocker.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfee.h"
  /* for SecureString */
 #include "smessage.h"
 

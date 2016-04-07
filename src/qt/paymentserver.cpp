@@ -17,7 +17,7 @@
 #include "paymentserver.h"
 #include "guiconstants.h"
 #include "ui_interface.h"
-#include "util.h"
+#include "elements/util/util.h"
 
 using namespace boost;
 

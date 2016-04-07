@@ -10,7 +10,7 @@
 
 #include "main.h"
 #include "reward.h"
-#include "net.h"
+#include "networking/net.h"
 
 class ClientModel;
 class PeerTablePriv;

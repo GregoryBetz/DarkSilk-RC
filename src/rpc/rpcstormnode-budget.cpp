@@ -9,14 +9,14 @@
 #include "reward.h"
 #include "wallet/db.h"
 #include "init.h"
-#include "anon/stormnode/activestormnode.h"
-#include "anon/stormnode/stormnode-budget.h"
-#include "anon/stormnode/stormnode-payments.h"
-#include "anon/stormnode/stormnode-sync.h"
-#include "anon/stormnode/stormnodeconfig.h"
-#include "anon/stormnode/stormnodeman.h"
-#include "util.h"
-#include "anon/sandstorm/sandstorm.h"
+#include "stormnode/activestormnode.h"
+#include "stormnode/stormnode-budget.h"
+#include "stormnode/stormnode-payments.h"
+#include "stormnode/stormnode-sync.h"
+#include "stormnode/stormnodeconfig.h"
+#include "stormnode/stormnodeman.h"
+#include "elements/util/util.h"
+#include "sandstorm/sandstorm.h"
 
 using namespace json_spirit;
 using namespace std;

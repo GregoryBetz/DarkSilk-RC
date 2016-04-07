@@ -59,7 +59,7 @@
 #include "debugconsole.h"
 #include "wallet/wallet.h"
 #include "init.h"
-#include "anon/stormnode/stormnode-sync.h"
+#include "stormnode/stormnode-sync.h"
 #include "stormnodemanager.h"
 #include "multisigdialog.h"
 #include "messagepage.h"

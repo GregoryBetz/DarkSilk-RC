@@ -8,7 +8,7 @@
 
 #include "primitives/transaction.h"
 #include "crypto/argon2/argon2.h"
-#include "scrypt.h"
+#include "crypto/scrypt/scrypt.h"
 #include "proofs.h"
 #include "consensus/params.h"
 

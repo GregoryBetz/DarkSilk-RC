@@ -23,7 +23,7 @@
 #include <unistd.h> // for sysconf
 #endif
 
-#include "support/pagelocker.h"
+#include "support/allocators/pagelocker.h"
 
 LockedPageManager* LockedPageManager::_instance = NULL;
 boost::once_flag LockedPageManager::init_flag = BOOST_ONCE_INIT;

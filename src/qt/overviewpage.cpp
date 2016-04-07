@@ -8,7 +8,7 @@
 #include "overviewpage.h"
 #include "ui_overviewpage.h"
 #include "clientmodel.h"
-#include "anon/sandstorm/sandstorm.h"
+#include "sandstorm/sandstorm.h"
 #include "sandstormconfig.h"
 #include "walletmodel.h"
 #include "darksilkunits.h"

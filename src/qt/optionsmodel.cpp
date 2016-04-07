@@ -8,7 +8,7 @@
 #include "guiutil.h"
 
 #ifdef USE_NATIVE_I2P
-#include "i2p/i2p.h"
+#include "networking/i2p/i2p.h"
 #include <sstream>
 
 #define I2P_OPTIONS_SECTION_NAME    "I2P"

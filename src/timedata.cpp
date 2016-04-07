@@ -5,11 +5,11 @@
 #include <boost/foreach.hpp>
 
 #include "timedata.h"
-#include "netbase.h"
+#include "networking/netbase.h"
 #include "sync.h"
 #include "ui_interface.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 
 using namespace std;
 

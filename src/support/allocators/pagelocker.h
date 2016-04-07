@@ -15,7 +15,7 @@
 #include <string.h>
 #include <vector>
 
-#include "cleanse.h"
+#include "support/cleanse.h"
 
 /**
  * Thread-safe class to keep track of locked (ie, non-swappable) memory pages.

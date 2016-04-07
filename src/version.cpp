@@ -64,7 +64,7 @@ const std::string CLIENT_NAME("DRKSLK");
 
 #ifdef USE_NATIVE_I2P
 
-#include "i2p/i2pbuild.h"
+#include "networking/i2p/i2pbuild.h"
 
 #define BUILD_I2P_NATIVE_DESC_FROM_COMMIT(maj,min,rev,build,commit) \
     "v" DO_STRINGIZE(maj) "." DO_STRINGIZE(min) "." DO_STRINGIZE(rev) "." DO_STRINGIZE(build) "-r" commit

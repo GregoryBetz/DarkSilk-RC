@@ -11,12 +11,12 @@
 
 #include <stdint.h>
 
-#include "netbase.h"
+#include "networking/netbase.h"
 #include "protocol.h"
 #include "random.h"
 #include "sync.h"
 #include "timedata.h"
-#include "util.h"
+#include "elements/util/util.h"
 
 /** 
  * Extended statistics about a CAddress 

@@ -17,9 +17,9 @@
 
 #include "pubkey.h"
 #include "bignum.h"
-#include "util.h"
-#include "utilstrencodings.h"
-#include "anon/stealth/stealth.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
+#include "stealth/stealth.h"
 
 typedef std::vector<unsigned char> valtype;
 

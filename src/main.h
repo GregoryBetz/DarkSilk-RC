@@ -12,7 +12,7 @@
 
 #include "chain.h"
 #include "coins.h"
-#include "net.h"
+#include "networking/net.h"
 #include "txdb.h"
 #include "txmempool.h"
 #include "proofs.h"
