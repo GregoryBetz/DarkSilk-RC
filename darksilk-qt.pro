@@ -254,7 +254,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/hash.h \
             src/uint256.h \
             src/kernel.h \
-            src/scrypt.h \
+            src/crypto/scrypt/scrypt.h \
             src/pbkdf2.h \
             src/serialize.h \
             src/limitedmap.h \
@@ -277,14 +277,14 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/json/json_spirit_writer_template.h \
             src/json/json_spirit_writer.h \
             src/json/json_spirit_value.h \
-            src/json/json_spirit_elements/util/utils.h \
+            src/json/json_spirit_utils.h \
             src/json/json_spirit_stream_reader.h \
             src/json/json_spirit_reader_template.h \
             src/json/json_spirit_reader.h \
             src/json/json_spirit_error_position.h \
             src/json/json_spirit.h \
             src/qt/clientmodel.h \
-            src/qt/guielements/util/util.h \
+            src/qt/guiutil.h \
             src/qt/transactionrecord.h \
             src/qt/guiconstants.h \
             src/qt/optionsmodel.h \
@@ -442,7 +442,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/wallet/db.cpp \
             src/wallet/walletdb.cpp \
             src/qt/clientmodel.cpp \
-            src/qt/guielements/util/util.cpp \
+            src/qt/guiutil.cpp \
             src/qt/transactionrecord.cpp \
             src/qt/optionsmodel.cpp \
             src/qt/monitoreddatamapper.cpp \
@@ -462,7 +462,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/rpc/rpcserver.cpp \
             src/wallet/rpcdump.cpp \
             src/rpc/rpcmisc.cpp \
-            src/rpc/rpcnetworking/net.cpp \
+            src/rpc/rpcnet.cpp \
             src/rpc/rpcmining.cpp \
             src/wallet/rpcwallet.cpp \
             src/rpc/rpcblockchain.cpp \
@@ -482,10 +482,10 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/qt/debugconsole.cpp \
             src/noui.cpp \
             src/kernel.cpp \
-            src/scrypt-arm.S \
-            src/scrypt-x86.S \
-            src/scrypt-x86_64.S \
-            src/scrypt.cpp \
+            src/crypto/scrypt/scrypt-arm.S \
+            src/crypto/scrypt/scrypt-x86.S \
+            src/crypto/scrypt/scrypt-x86_64.S \
+            src/crypto/scrypt/scrypt.cpp \
             src/pbkdf2.cpp \
             src/stealth/stealth.cpp \
             src/qt/flowlayout.cpp \

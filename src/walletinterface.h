@@ -9,24 +9,13 @@
 #include <boost/signals2/signal.hpp>
 
 class CBlock;
+class CBlockIndex;
 class CBlockLocator;
 class CTransaction;
-class CValidationInterface;
+class CWalletInterface;
+class CWalletState;
 class CValidationState;
 class uint256;
-
-/** Register a wallet to receive updates from core */
-void RegisterWallet(CWalletInterface* pwalletIn);
-/** Unregister a wallet from core */
-void UnregisterWallet(CWalletInterface* pwalletIn);
-/** Unregister all wallets from core */
-void UnregisterAllValidationInterfaces();
-/** Push an updated transaction to all registered wallets old function*/
-void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fConnect = true);
-/** Push an updated transaction to all registered wallets new function*/
-void SyncWithWallets(const CTransaction& tx, const CBlockIndex *pindex, const CBlock* pblock = NULL);
-/** Ask wallets to resend their transactions */
-void ResendWalletTransactions(bool fForce = false);
 
 class CWalletInterface {
 protected:
@@ -56,7 +45,20 @@ struct CMainSignals {
         boost::signals2::signal<void (const uint256 &)> Inventory;
         // Tells listeners to broadcast their data.
         boost::signals2::signal<void (bool)> Broadcast;
-} g_signals;
+    };
+
+/** Register a wallet to receive updates from core */
+void RegisterWallet(CWalletInterface* pwalletIn);
+/** Unregister a wallet from core */
+void UnregisterWallet(CWalletInterface* pwalletIn);
+/** Unregister all wallets from core */
+void UnregisterAllValidationInterfaces();
+/** Push an updated transaction to all registered wallets old function*/
+void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fConnect = true);
+/** Push an updated transaction to all registered wallets new function*/
+void SyncWithWallets(const CTransaction& tx, const CBlockIndex *pindex, const CBlock* pblock = NULL);
+/** Ask wallets to resend their transactions */
+void ResendWalletTransactions(bool fForce = false);
 
 CMainSignals& GetMainSignals();
 

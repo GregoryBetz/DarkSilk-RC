@@ -20,7 +20,7 @@
 #include "networking/net.h"
 #include "stormnode/stormnode-budget.h"
 #include "timedata.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "ui_interface.h"
 #include "wallet/walletdb.h"
 #include "crypter.h"
@@ -33,7 +33,7 @@
 #include "stormnode/stormnode-payments.h"
 #include "chainparams.h"
 #include "smessage.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 using namespace std;
 

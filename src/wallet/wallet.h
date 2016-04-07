@@ -20,6 +20,7 @@
 #include "keystore.h"
 #include "script/script.h"
 #include "ui_interface.h"
+#include "walletinterface.h"
 #include "elements/util/util.h"
 #include "elements/util/utilstrencodings.h"
 #include "stealth/stealth.h"

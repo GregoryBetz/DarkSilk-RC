@@ -7,7 +7,7 @@
 #define DARKSILK_COMPRESSOR_H
 
 #include "primitives/transaction.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 
 class CKeyID;
 class CPubKey;

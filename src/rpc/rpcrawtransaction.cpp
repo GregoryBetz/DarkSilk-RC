@@ -10,14 +10,14 @@
 #include "base58.h"
 #include "primitives/transaction.h"
 #include "elements/core/core_io.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "init.h"
 #include "main.h"
 #include "reward.h"
 #include "networking/net.h"
 #include "keystore.h"
 #include "script/script.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"

@@ -58,10 +58,10 @@ Notes:
 #include "base58.h"
 #include "wallet/db.h"
 #include "init.h" // pwalletMain
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "sync.h"
 #include "ecwrapper.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 boost::thread_group threadGroupSmsg;
 

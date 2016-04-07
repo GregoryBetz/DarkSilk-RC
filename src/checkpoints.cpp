@@ -7,7 +7,7 @@
 #include <boost/foreach.hpp>
 
 #include "checkpoints.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "main.h"
 #include "reward.h"
 #include "uint256.h"

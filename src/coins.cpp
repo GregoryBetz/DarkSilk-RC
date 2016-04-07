@@ -6,7 +6,7 @@
 
 #include "coins.h"
 #include "elements/util/util.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 
 /**
  * calculate number of bytes for the bitmask, and its number of non-zero bytes

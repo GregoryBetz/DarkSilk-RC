@@ -21,7 +21,7 @@
 #include "wallet/db.h"
 #include "init.h"
 #include "kernel.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "proofs.h"
 #include "ui_interface.h"
 #include "elements/util/util.h"
@@ -35,7 +35,7 @@
 #include "stormnode/stormnode-sync.h"
 #include "stormnode/spork.h"
 #include "smessage.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 using namespace std;
 using namespace boost;

@@ -12,11 +12,11 @@
 #include "main.h"
 #include "reward.h"
 #include "wallet/db.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "init.h"
 #include "miner.h"
 #include "kernel.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 #include "stormnode/stormnode-sync.h"
 
 using namespace json_spirit;

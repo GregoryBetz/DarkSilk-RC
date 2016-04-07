@@ -16,13 +16,13 @@
 
 #include <map>
 
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 #include "networking/net.h"
 #include "protocol.h"
 #include "chainparams.h"
 #include "kernel.h"
 #include "checkpoints.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "elements/util/util.h"
 #include "consensus/validation.h"
 

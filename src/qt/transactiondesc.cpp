@@ -11,7 +11,7 @@
 #include "timedata.h"
 #include "ui_interface.h"
 #include "wallet/wallet.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 QString TransactionDesc::FormatTxStatus(const CWalletTx& wtx)
 {

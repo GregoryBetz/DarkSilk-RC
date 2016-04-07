@@ -391,6 +391,11 @@ bool WildcardMatch(const string& str, const string& mask)
     return WildcardMatch(str.c_str(), mask.c_str());
 }
 
+
+static const int screenWidth = 79;
+static const int optIndent = 2;
+static const int msgIndent = 7;
+
 std::string HelpMessageGroup(const std::string &message) {
     return std::string(message) + std::string("\n\n");
 }

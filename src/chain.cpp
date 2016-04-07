@@ -10,7 +10,7 @@
 #include "checkpoints.h"
 #include "stormnode/spork.h"
 #include "kernel.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 #ifdef ENABLE_WALLET
 

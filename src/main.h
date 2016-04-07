@@ -13,7 +13,7 @@
 #include "chain.h"
 #include "coins.h"
 #include "networking/net.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "txmempool.h"
 #include "proofs.h"
 
@@ -103,7 +103,6 @@ static const uint64_t nMinDiskSpace = 52428800;
 
 class CTxDB;
 class CTxIndex;
-class CWalletInterface;
 
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);

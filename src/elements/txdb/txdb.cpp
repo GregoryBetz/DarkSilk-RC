@@ -7,9 +7,9 @@
 
 #include <stdint.h>
 
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "uint256.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 using namespace std;
 

@@ -22,7 +22,7 @@
 #include "key.h"
 #include "pubkey.h"
 #include "rpc/rpcserver.h"
-#include "txdb.h"
+#include "elements/txdb/txdb.h"
 #include "ui_interface.h"
 #include "elements/util/util.h"
 #include "elements/util/utilmoneystr.h"
@@ -35,7 +35,7 @@
 #include "stormnode/stormnodeconfig.h"
 #include "stormnode/spork.h"
 #include "smessage.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 #include "networking/tor/torcontrol.h"
 
 #ifdef ENABLE_WALLET
