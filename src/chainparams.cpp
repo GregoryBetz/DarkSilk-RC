@@ -11,6 +11,7 @@
 #include "chainparams.h"
 #include "chainparamsseeds.h"
 #include "main.h"
+#include "reward.h"
 #include "net.h"
 #include "random.h"
 #include "utilstrencodings.h"

@@ -14,6 +14,7 @@
 
 #include "leveldbwrapper.h"
 #include "main.h"
+#include "reward.h"
 
 class CCoinsStats;
 class CCoins;

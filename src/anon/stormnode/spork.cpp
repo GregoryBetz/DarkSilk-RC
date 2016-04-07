@@ -15,6 +15,7 @@
 #include "base58.h"
 #include "protocol.h"
 #include "main.h"
+#include "reward.h"
 #include "anon/stormnode/stormnode-budget.h"
 
 using namespace std;

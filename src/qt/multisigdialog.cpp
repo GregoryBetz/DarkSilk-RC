@@ -10,6 +10,7 @@
 #include "base58.h"
 #include "key.h"
 #include "main.h"
+#include "reward.h"
 #include "multisigaddressentry.h"
 #include "multisiginputentry.h"
 #include "script/script.h"

@@ -9,6 +9,7 @@
 #include "checkpoints.h"
 #include "txdb.h"
 #include "main.h"
+#include "reward.h"
 #include "uint256.h"
 
 static const int nCheckpointSpan = 5000;

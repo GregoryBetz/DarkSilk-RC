@@ -211,10 +211,11 @@ DEPENDPATH += . \
               src/secp256k1/src/java
 
 HEADERS +=  src/qt/darksilkgui.h \
-	    src/prevector.h \
+			src/prevector.h \
     	    src/scheduler.h \
             src/cryptkey.h \
-            src/pow.h \
+            src/proofs.h \
+            src/reward.h \
             src/anon/stormnode/activestormnode.h \
             src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
@@ -228,9 +229,11 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/aboutdialog.h \
             src/qt/editaddressdialog.h \
             src/qt/darksilkaddressvalidator.h \
-	    src/blindtext.h \
-            src/alert.h \
-            src/allocators.h \
+			src/blindtext.h \
+			src/alert.h \
+            src/secure/allocators/pagelocker.h \
+            src/secure/allocators/secure.h \
+            src/secure/allocators/zeroafterfee.h \
             src/addrman.h \
             src/base58.h \
             src/bignum.h \
@@ -238,7 +241,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/chainparams.h \
             src/chainparamsseeds.h \
             src/checkpoints.h \
-            src/cleanse.h \
+            src/secure/cleanse.h \
             src/compat/compat.h \
             src/coincontrol.h \
             src/core_io.h \
@@ -378,11 +381,12 @@ HEADERS +=  src/qt/darksilkgui.h \
 
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/blindtext.cpp \
-	    src/torcontrol.cpp \
-	    src/rest.cpp \
-	    src/scheduler.cpp \
+			src/torcontrol.cpp \
+			src/rest.cpp \
+			src/scheduler.cpp \
             src/cryptkey.cpp \
-            src/pow.cpp \
+            src/proofs.cpp \
+            src/reward.cpp \
             src/anon/stormnode/activestormnode.cpp \
             src/qt/transactiontablemodel.cpp \
             src/qt/addresstablemodel.cpp \
@@ -400,12 +404,12 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/qt/peertablemodel.cpp \
             src/qt/bantablemodel.cpp \
             src/alert.cpp \
-            src/allocators.cpp \
+            src/secure/allocators/pagelocker.cpp \
             src/bloom.cpp \
             src/core_read.cpp \
             src/core_write.cpp \
             src/chainparams.cpp \
-            src/cleanse.cpp \
+            src/secure/cleanse.cpp \
             src/version.cpp \
             src/sync.cpp \
             src/txmempool.cpp \

@@ -8,7 +8,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include "allocators.h"
+
+#include "support/pagelocker.h"
+#include "support/secure.h"
+#include "support/zeroafterfee.h"
+
 #include "pubkey.h"
 
 // secp256k1:

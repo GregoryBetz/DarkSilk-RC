@@ -15,6 +15,7 @@
 
 #include "init.h"
 #include "main.h"
+#include "reward.h"
 #include "chainparams.h"
 #include "sanity.h"
 #include "net.h"

@@ -10,6 +10,7 @@
 #include "base58.h"
 #include "chainparams.h"
 #include "main.h"
+#include "reward.h"
 #include "wallet/db.h"
 #include "txdb.h"
 #include "init.h"

@@ -13,6 +13,7 @@
 #include "wallet/db.h"
 #include "init.h"
 #include "main.h"
+#include "reward.h"
 #include "net.h"
 #include "wallet/wallet.h"
 #include "blindtext.h"

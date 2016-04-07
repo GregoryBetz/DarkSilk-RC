@@ -9,6 +9,7 @@
 #include "rpc/rpcserver.h"
 #include "alert.h"
 #include "main.h"
+#include "reward.h"
 #include "net.h"
 #include "netbase.h"
 #include "protocol.h"

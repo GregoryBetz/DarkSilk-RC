@@ -5,7 +5,11 @@
 #include <vector>
 #include <map>
 
-#include "allocators.h" /* for SecureString */
+
+#include "support/pagelocker.h"
+#include "support/secure.h"
+#include "support/zeroafterfee.h"
+ /* for SecureString */
 #include "anon/instantx/instantx.h"
 #include "wallet/wallet.h"
 

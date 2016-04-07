@@ -5,7 +5,11 @@
 #ifndef __CRYPTER_H__
 #define __CRYPTER_H__
 
-#include "allocators.h" ///! for SecureString
+
+#include "support/pagelocker.h"
+#include "support/secure.h"
+#include "support/zeroafterfee.h"
+ ///! for SecureString
 #include "serialize.h"
 #include "keystore.h"
 

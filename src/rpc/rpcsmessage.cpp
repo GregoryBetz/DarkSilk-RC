@@ -7,6 +7,7 @@
 
 #include "rpc/rpcserver.h"
 #include "main.h"
+#include "reward.h"
 #include "smessage.h"
 #include "init.h" // pwalletMain
 

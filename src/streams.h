@@ -19,7 +19,11 @@
 
 #include <stdint.h>
 
-#include "allocators.h"
+
+#include "support/pagelocker.h"
+#include "support/secure.h"
+#include "support/zeroafterfee.h"
+
 #include "serialize.h"
 
 /// Double ended buffer combining vector and stream-like interfaces.

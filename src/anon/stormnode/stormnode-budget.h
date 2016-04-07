@@ -8,6 +8,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "main.h"
+#include "reward.h"
 #include "sync.h"
 #include "net.h"
 #include "key.h"

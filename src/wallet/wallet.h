@@ -15,6 +15,7 @@
 #include "primitives/transaction.h"
 #include "crypter.h"
 #include "main.h"
+#include "reward.h"
 #include "key.h"
 #include "keystore.h"
 #include "script/script.h"

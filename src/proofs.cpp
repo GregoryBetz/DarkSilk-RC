@@ -3,11 +3,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "pow.h"
+#include "proofs.h"
 
 #include "consensus/params.h"
 #include "chainparams.h"
 #include "main.h"
+#include "reward.h"
 #include "uint256.h"
 
 CBigNum bnProofOfStakeLimit(~uint256(0) >> 20); //PoS starting difficulty = 0.0002441

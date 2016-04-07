@@ -9,6 +9,7 @@
 #include <QStringList>
 
 #include "main.h"
+#include "reward.h"
 #include "net.h"
 
 class ClientModel;

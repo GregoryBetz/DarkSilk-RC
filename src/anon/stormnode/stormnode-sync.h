@@ -7,6 +7,7 @@
 
 #include "anon/stormnode/stormnode-payments.h"
 #include "main.h"
+#include "reward.h"
 
 static const int32_t STORMNODE_SYNC_INITIAL = 0;
 static const int32_t STORMNODE_SYNC_SPORKS = 1;

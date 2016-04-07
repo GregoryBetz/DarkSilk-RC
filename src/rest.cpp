@@ -12,6 +12,7 @@
 #include "primitives/transaction.h"
 #include "version.h"
 #include "main.h"
+#include "reward.h"
 
 using namespace std;
 using namespace json_spirit;

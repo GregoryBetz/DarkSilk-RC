@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include "main.h"
+#include "reward.h"
 #include "wallet/db.h"
 #include "init.h"
 #include "wallet/wallet.h"

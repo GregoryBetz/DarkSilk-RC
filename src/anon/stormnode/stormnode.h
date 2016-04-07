@@ -11,6 +11,7 @@
 #include "util.h"
 #include "base58.h"
 #include "main.h"
+#include "reward.h"
 #include "timedata.h"
 
 static const int STORMNODE_MIN_CONFIRMATIONS = 10;

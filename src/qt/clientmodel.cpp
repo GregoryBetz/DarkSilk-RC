@@ -13,6 +13,7 @@
 #include "chainparams.h"
 #include "alert.h"
 #include "main.h"
+#include "reward.h"
 #include "ui_interface.h"
 #include "anon/stormnode/stormnodeman.h"
 #include "anon/stormnode/stormnode-sync.h"

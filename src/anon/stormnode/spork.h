@@ -13,6 +13,7 @@
 #include "script/script.h"
 #include "base58.h"
 #include "main.h"
+#include "reward.h"
 
 using namespace std;
 using namespace boost;

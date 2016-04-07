@@ -6,6 +6,7 @@
 
 #include "rpc/rpcserver.h"
 #include "main.h"
+#include "reward.h"
 #include "wallet/db.h"
 #include "init.h"
 #include "anon/stormnode/activestormnode.h"

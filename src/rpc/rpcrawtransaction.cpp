@@ -13,6 +13,7 @@
 #include "txdb.h"
 #include "init.h"
 #include "main.h"
+#include "reward.h"
 #include "net.h"
 #include "keystore.h"
 #include "script/script.h"

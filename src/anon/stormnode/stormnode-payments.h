@@ -9,6 +9,7 @@
 
 #include "key.h"
 #include "main.h"
+#include "reward.h"
 #include "anon/stormnode/stormnode.h"
 
 using namespace std;

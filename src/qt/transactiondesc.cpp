@@ -5,6 +5,7 @@
 #include "guiutil.h"
 #include "base58.h"
 #include "main.h"
+#include "reward.h"
 #include "paymentserver.h"
 #include "transactionrecord.h"
 #include "timedata.h"

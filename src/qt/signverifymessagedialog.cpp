@@ -10,6 +10,7 @@
 #include "guiutil.h"
 #include "init.h"
 #include "main.h"
+#include "reward.h"
 #include "optionsmodel.h"
 #include "utilstrencodings.h"
 #include "walletmodel.h"

@@ -15,7 +15,7 @@
 #include "net.h"
 #include "txdb.h"
 #include "txmempool.h"
-#include "pow.h"
+#include "proofs.h"
 
 class CCoinsViewCache;
 class CTxMemPool;
@@ -138,13 +138,11 @@ bool LoadBlockIndex(bool fAllowNew=true);
 bool InitBlockIndex();
 void PrintBlockTree();
 
-
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 void ThreadImport(std::vector<boost::filesystem::path> vImportFiles);
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-CAmount GetProofOfWorkReward(CAmount nFees);
 
 bool IsConfirmedInNPrevBlocks(const CTxIndex& txindex, const CBlockIndex* pindexFrom, int nMaxDepth, int& nActualDepth);
 std::string GetWarnings(std::string strFor);
@@ -158,17 +156,12 @@ void ThreadStakeMiner(CWallet *pwallet);
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool ignoreFees = false);
 bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isSSTX=false);
 
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork = true);
-
 bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint256> &vtxhash);
 
 int GetInputAge(CTxIn& vin);
 
 /// Increase a node's misbehavior score.
 void Misbehaving(NodeId nodeid, int howmuch);
-
-CAmount GetStormnodePayment(int nHeight, CAmount blockValue);
-
 int GetInputAgeIX(uint256 nTXHash, CTxIn& vin);
 int GetIXConfirmations(uint256 nTXHash);
 

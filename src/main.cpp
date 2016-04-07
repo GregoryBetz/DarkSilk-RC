@@ -11,6 +11,7 @@
 #include <boost/thread.hpp>
 
 #include "main.h"
+#include "reward.h"
 #include "addrman.h"
 #include "alert.h"
 #include "chainparams.h"
@@ -21,7 +22,7 @@
 #include "init.h"
 #include "kernel.h"
 #include "txdb.h"
-#include "pow.h"
+#include "proofs.h"
 #include "ui_interface.h"
 #include "util.h"
 #include "utilmoneystr.h"
@@ -1677,45 +1678,12 @@ void static PruneOrphanBlocks()
     }
 }
 
-// miner's coin base reward
-CAmount GetProofOfWorkReward(CAmount nFees)
-{
-    if (pindexBest->nHeight == 0) {
-        CAmount nSubsidy = 4000000 * COIN; // 4,000,000 DarkSilk for 4 Phase Crowdfunding
-        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(nSubsidy), nSubsidy);
-        return nSubsidy + nFees;
-    }
-    else
-    {
-        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(Params().MiningReward()), Params().MiningReward());
-        return Params().MiningReward() + nFees;
-    }
-}
-
 // ppcoin: find last block index up to pindex
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
 {
     while (pindex && pindex->pprev && (pindex->IsProofOfStake() != fProofOfStake))
         pindex = pindex->pprev;
     return pindex;
-}
-
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork)
-{
-	CAmount nSubsidy;
-
-	if (fProofOfWork) {
-    		 nSubsidy = Params().MiningReward();
-	} else { nSubsidy = Params().StakingReward(); }
-
-    return nSubsidy + nFees;
-}
-
-CAmount GetStormnodePayment(int nHeight, CAmount blockValue)
-{
-    CAmount ret = blockValue * 1/5; //20%
-
-    return ret;
 }
 
 // Requires cs_main.

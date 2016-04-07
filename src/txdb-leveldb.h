@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "main.h"
+#include "reward.h"
 #include "streams.h"
 
 /// Create a new block index entry for a given block hash

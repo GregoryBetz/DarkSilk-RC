@@ -24,7 +24,11 @@
 #include <stdint.h>
 
 #include "serialize.h"
-#include "allocators.h"
+
+#include "support/pagelocker.h"
+#include "support/secure.h"
+#include "support/zeroafterfee.h"
+
 
 #define BEGIN(a)            ((char*)&(a))
 #define END(a)              ((char*)&((&(a))[1]))

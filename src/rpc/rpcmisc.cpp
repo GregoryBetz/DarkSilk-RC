@@ -16,6 +16,7 @@
 #include "clientversion.h"
 #include "init.h"
 #include "main.h"
+#include "reward.h"
 #include "net.h"
 #include "netbase.h"
 #include "timedata.h"

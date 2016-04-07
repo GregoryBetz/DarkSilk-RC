@@ -7,6 +7,7 @@
 
 #include "anon/stormnode/stormnode-budget.h"
 #include "main.h"
+#include "reward.h"
 #include "init.h"
 #include "anon/stormnode/stormnode.h"
 #include "anon/sandstorm/sandstorm.h"
