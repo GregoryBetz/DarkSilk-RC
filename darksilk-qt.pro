@@ -211,7 +211,8 @@ DEPENDPATH += . \
               src/secp256k1/src/java
 
 HEADERS +=  src/qt/darksilkgui.h \
-			src/prevector.h \
+	    src/walletinterface.h \
+	    src/prevector.h \
     	    src/scheduler.h \
             src/cryptkey.h \
             src/proofs.h \
@@ -229,8 +230,8 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/aboutdialog.h \
             src/qt/editaddressdialog.h \
             src/qt/darksilkaddressvalidator.h \
-			src/blindtext.h \
-			src/alert.h \
+            src/blindtext.h \
+	    src/alert.h \
             src/secure/allocators/pagelocker.h \
             src/secure/allocators/secure.h \
             src/secure/allocators/zeroafterfee.h \
@@ -380,10 +381,11 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/consensus/params.h
 
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
-            src/blindtext.cpp \
-			src/torcontrol.cpp \
-			src/rest.cpp \
-			src/scheduler.cpp \
+            src/walletinterface.cpp \
+	    src/blindtext.cpp \
+	    src/torcontrol.cpp \
+            src/rest.cpp \
+	    src/scheduler.cpp \
             src/cryptkey.cpp \
             src/proofs.cpp \
             src/reward.cpp \

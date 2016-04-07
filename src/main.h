@@ -108,19 +108,6 @@ class CWalletInterface;
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
 
-/** Register a wallet to receive updates from core */
-void RegisterWallet(CWalletInterface* pwalletIn);
-/** Unregister a wallet from core */
-void UnregisterWallet(CWalletInterface* pwalletIn);
-/** Unregister all wallets from core */
-void UnregisterAllValidationInterfaces();
-/** Push an updated transaction to all registered wallets old function*/
-void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fConnect = true);
-/** Push an updated transaction to all registered wallets new function*/
-void SyncWithWallets(const CTransaction& tx, const CBlockIndex *pindex, const CBlock* pblock = NULL);
-/** Ask wallets to resend their transactions */
-void ResendWalletTransactions(bool fForce = false);
-
 /** Register with a network node to receive its signals */
 void RegisterNodeSignals(CNodeSignals& nodeSignals);
 /** Unregister a network node */
@@ -462,19 +449,6 @@ public:
     }
     int GetDepthInMainChain() const;
 
-};
-
-class CWalletInterface {
-protected:
-    virtual void SyncTransaction(const CTransaction &tx, const CBlock *pblock, bool fConnect) =0;
-    virtual void EraseFromWallet(const uint256 &hash) =0;
-    virtual void SetBestChain(const CBlockLocator &locator) =0;
-    virtual bool UpdatedTransaction(const uint256 &hash) =0;
-    virtual void Inventory(const uint256 &hash) =0;
-    virtual void ResendWalletTransactions(bool fForce) =0;
-    friend void ::RegisterWallet(CWalletInterface*);
-    friend void ::UnregisterWallet(CWalletInterface*);
-    friend void ::UnregisterAllValidationInterfaces();
 };
 
 ///! The currently-connected chain of blocks.
