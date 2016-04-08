@@ -1893,17 +1893,11 @@ CAmount CWallet::GetNewMint() const
     return nTotal;
 }
 
-static bool CmpDepth(const CWalletTx* a, const CWalletTx* b) { return a->nTime > b->nTime; }
 
 bool CWallet::SelectCoinsMinConfByCoinAge(const CAmount& nTargetValue, unsigned int nSpendTime, int nConfMine, int nConfTheirs, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const
 {
     setCoinsRet.clear();
     nValueRet = 0;
-
-    // Maximap DP array size
-    static uint32_t nMaxDP = 0;
-    if(nMaxDP == 0)
-        nMaxDP = GetArg("-maxdp", 8 * 1024 * 1024);
  
     vector<pair<COutput, uint64_t> > mCoins;
     BOOST_FOREACH(const COutput& out, vCoins)
@@ -2158,8 +2152,16 @@ bool less_then_denom (const COutput& out1, const COutput& out2)
 
 bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpendTime, int nConfMine, int nConfTheirs, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const
 {
+	{ bool CmpDepth(CWalletTx* a, CWalletTx* b) { return a->nTime > b->nTime; } }
+
     setCoinsRet.clear();
     nValueRet = 0;
+
+    // Maximap DP array size
+    static uint32_t nMaxDP = 0;
+
+    if(nMaxDP == 0)
+        nMaxDP = GetArg("-maxdp", 8 * 1024 * 1024);
 
     // List of values less than target
     pair<CAmount, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
@@ -2175,7 +2177,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
        sortir = GetArg("-sortir", 0);
 
     switch(sortir) {
-		case 1:
+	   case 1:
 			sort(vCoins.begin(), vCoins.end(), CmpDepth);
 	    break;
 	  default:
@@ -2243,7 +2245,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
 		// Added by maxihatop
 		
 		uint16_t *dp;	// dynamic programming array
-		uint32_t dp_tgt = nTargetValue / MIN_TXOUT_AMOUNT;
+		uint32_t dp_tgt = nTargetValue / (0.00001*COIN);
   
 		if(dp_tgt < nMaxDP && (dp = (uint16_t*)calloc(dp_tgt + 1, sizeof(uint16_t))) != NULL) {
 			
@@ -2261,7 +2263,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
 			// Apply UTXOs to DP array, until exact sum will be found
 			for(uint16_t utxo_no = 0; utxo_no < max_utxo_qty && dp[dp_tgt] == 0; utxo_no++) {
 			
-			uint32_t offset = vValue[utxo_no].first / MIN_TXOUT_AMOUNT;
+			uint32_t offset = vValue[utxo_no].first / (0.00001*COIN);
 			
 			for(int32_t ndx = rlimit; ndx >= 0; ndx--)
          		if(dp[ndx]) {
@@ -2289,13 +2291,10 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
 		
 		uint16_t utxo_no = min_over_utxo - 1;
 		
-		if (fDebug && GetBoolArg("-printselectcoin"))
-			LogPrintf("SelectCoins() DP Added #%u: Val=%s\n", utxo_no, FormatMoney(vValue[utxo_no].first).c_str());
-      
 		setCoinsRet.insert(vValue[utxo_no].second);
 		nValueRet += vValue[utxo_no].first;
 		
-		min_over_sum -= vValue[utxo_no].first / MIN_TXOUT_AMOUNT;
+		min_over_sum -= vValue[utxo_no].first / (0.00001*COIN);
 		min_over_utxo = dp[min_over_sum];
     }
 
@@ -2303,7 +2302,6 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
 
 	if(nValueRet >= nTargetValue) {
 		//// debug print
-		if (fDebug && GetBoolArg("-printselectcoin"))
 			LogPrintf("SelectCoins() DP subset: Target=%s Found=%s Payback=%s Qty=%u\n",
 			
 			FormatMoney(nTargetValue).c_str(),
