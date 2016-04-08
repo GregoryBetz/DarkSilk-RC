@@ -10,6 +10,7 @@
 #include <boost/thread.hpp>
 
 #include <assert.h>
+#include <inttypes.h>
 
 #include "wallet/wallet.h"
 #include "base58.h"
@@ -1892,11 +1893,18 @@ CAmount CWallet::GetNewMint() const
     return nTotal;
 }
 
+static bool CmpDepth(const CWalletTx* a, const CWalletTx* b) { return a->nTime > b->nTime; }
+
 bool CWallet::SelectCoinsMinConfByCoinAge(const CAmount& nTargetValue, unsigned int nSpendTime, int nConfMine, int nConfTheirs, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const
 {
     setCoinsRet.clear();
     nValueRet = 0;
 
+    // Maximap DP array size
+    static uint32_t nMaxDP = 0;
+    if(nMaxDP == 0)
+        nMaxDP = GetArg("-maxdp", 8 * 1024 * 1024);
+ 
     vector<pair<COutput, uint64_t> > mCoins;
     BOOST_FOREACH(const COutput& out, vCoins)
     {
@@ -2160,7 +2168,21 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
     vector<pair<CAmount, pair<const CWalletTx*,unsigned int> > > vValue;
     CAmount nTotalLower = 0;
 
-    random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+    // random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+
+    static int sortir = -1;
+    if(sortir < 0)
+       sortir = GetArg("-sortir", 0);
+
+    switch(sortir) {
+		case 1:
+			sort(vCoins.begin(), vCoins.end(), CmpDepth);
+	    break;
+	  default:
+            random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+	    break;
+    }
+
 
     // move denoms down on the list
     sort(vCoins.begin(), vCoins.end(), less_then_denom);
@@ -2217,6 +2239,89 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
             return true;
         }
 
+		// If possible, solve subset sum by dynamic programming
+		// Added by maxihatop
+		
+		uint16_t *dp;	// dynamic programming array
+		uint32_t dp_tgt = nTargetValue / MIN_TXOUT_AMOUNT;
+  
+		if(dp_tgt < nMaxDP && (dp = (uint16_t*)calloc(dp_tgt + 1, sizeof(uint16_t))) != NULL) {
+			
+			dp[0] = 1; // Zero CENTs can be reached anyway
+			
+			uint32_t rlimit = 0; // Current Right Borer limit
+			uint16_t max_utxo_qty((1 << 16) - 2);
+    
+			if(vValue.size() < max_utxo_qty)
+ 				max_utxo_qty = vValue.size();
+     
+			uint32_t min_over_utxo =  0;
+     		uint32_t min_over_sum  = ~0;
+ 
+			// Apply UTXOs to DP array, until exact sum will be found
+			for(uint16_t utxo_no = 0; utxo_no < max_utxo_qty && dp[dp_tgt] == 0; utxo_no++) {
+			
+			uint32_t offset = vValue[utxo_no].first / MIN_TXOUT_AMOUNT;
+			
+			for(int32_t ndx = rlimit; ndx >= 0; ndx--)
+         		if(dp[ndx]) {
+					uint32_t nxt = ndx + offset;
+					
+					if(nxt <= dp_tgt) {
+						if(dp[nxt] == 0)
+							dp[nxt] = utxo_no + 1;
+					} else if(nxt < min_over_sum) {
+							  min_over_sum = nxt;
+							  min_over_utxo = utxo_no + 1;
+	    			}
+				} // if(dp[ndx])
+
+			rlimit += offset;
+			
+			if(rlimit >= dp_tgt)
+				rlimit = dp_tgt - 1;
+     } 
+ 
+     if(dp[dp_tgt] != 0)  // Found exactly sum without payback
+			min_over_utxo = dp[min_over_sum = dp_tgt];
+
+    while(min_over_sum) {
+		
+		uint16_t utxo_no = min_over_utxo - 1;
+		
+		if (fDebug && GetBoolArg("-printselectcoin"))
+			LogPrintf("SelectCoins() DP Added #%u: Val=%s\n", utxo_no, FormatMoney(vValue[utxo_no].first).c_str());
+      
+		setCoinsRet.insert(vValue[utxo_no].second);
+		nValueRet += vValue[utxo_no].first;
+		
+		min_over_sum -= vValue[utxo_no].first / MIN_TXOUT_AMOUNT;
+		min_over_utxo = dp[min_over_sum];
+    }
+
+    free(dp);
+
+	if(nValueRet >= nTargetValue) {
+		//// debug print
+		if (fDebug && GetBoolArg("-printselectcoin"))
+			LogPrintf("SelectCoins() DP subset: Target=%s Found=%s Payback=%s Qty=%u\n",
+			
+			FormatMoney(nTargetValue).c_str(),
+            FormatMoney(nValueRet).c_str(),
+	        FormatMoney(nValueRet - nTargetValue).c_str(),
+	        
+	        (unsigned)setCoinsRet.size()
+	        
+	        );
+		
+		return true; // sum found by DP
+    
+		} else {
+		
+		nValueRet = 0;
+		setCoinsRet.clear();
+		}
+	} // DP compute
 
         if (nTotalLower < nTargetValue)
         {
