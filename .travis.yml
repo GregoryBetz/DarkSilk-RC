@@ -12,7 +12,7 @@ install:
 script:
   - qmake -qt=qt5 "USE_QRCODE=1" "USE_NATIVE_I2P=1" darksilk-qt.pro
   - make
-  - qmake -qt=qt5 darksilkd.pro
+  - qmake -qt=qt5 darksilkd.pro && make
   - strip darksilkd
 
 deploy:
