@@ -2152,8 +2152,7 @@ bool less_then_denom (const COutput& out1, const COutput& out2)
 
 bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpendTime, int nConfMine, int nConfTheirs, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const
 {
-	{ bool CmpDepth(CWalletTx* a, CWalletTx* b) { return a->nTime > b->nTime; } }
-
+	
     setCoinsRet.clear();
     nValueRet = 0;
 
@@ -2170,13 +2169,13 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
     vector<pair<CAmount, pair<const CWalletTx*,unsigned int> > > vValue;
     CAmount nTotalLower = 0;
 
-    // random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+    random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
 
     static int sortir = -1;
     if(sortir < 0)
        sortir = GetArg("-sortir", 0);
 
-    switch(sortir) {
+    /*switch(sortir) {
 	   case 1:
 			sort(vCoins.begin(), vCoins.end(), CmpDepth);
 	    break;
@@ -2184,7 +2183,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, unsigned int nSpen
             random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
 	    break;
     }
-
+*/
 
     // move denoms down on the list
     sort(vCoins.begin(), vCoins.end(), less_then_denom);
