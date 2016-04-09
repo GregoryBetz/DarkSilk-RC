@@ -52,6 +52,10 @@
 #include "networking/i2p/i2p.h"
 #endif
 
+#if ENABLE_ZMQ
+#include "zmq/zmqnotificationinterface.h"
+#endif
+
 using namespace boost;
 using namespace std;
 
@@ -68,6 +72,10 @@ unsigned int nMinerSleep;
 bool fUseFastIndex;
 bool fOnlyTor = false;
 bool fMinimizeCoinAge;
+
+#if ENABLE_ZMQ
+static CZMQNotificationInterface* pzmqNotificationInterface = NULL;
+#endif
 
 #ifdef WIN32
 // Win32 LevelDB doesn't use filedescriptors, and the ones used for
@@ -218,6 +226,14 @@ void PrepareShutdown()
 #ifdef ENABLE_WALLET
     if (pwalletMain)
         bitdb.Flush(true);
+#endif
+#if ENABLE_ZMQ
+    if (pzmqNotificationInterface) {
+        UnregisterValidationInterface(pzmqNotificationInterface);
+        pzmqNotificationInterface->Shutdown();
+        delete pzmqNotificationInterface;
+        pzmqNotificationInterface = NULL;
+    }
 #endif
 #ifdef WIN32
     boost::filesystem::remove(GetPidFile());
@@ -384,6 +400,14 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
     strUsage += "  -loadblock=<file>      " + _("Imports blocks from external blk000?.dat file") + "\n";
     strUsage += "  -maxorphanblocksMiB=<n>   " + strprintf(_("Keep at most <n> MiB of unconnectable blocks in memory (default: %u)"), DEFAULT_MAX_ORPHAN_BLOCKS) + "\n";
 
+#if ENABLE_ZMQ
+    strUsage += "\n" + _("ZeroMQ notification options:") + "\n";
+    strUsage += "-zmqpubhashblock=<address>      " + strprintf(_("Enable publish hash block in <address>"));
+    strUsage += "-zmqpubhashtransaction=<address>" + strprintf(_("Enable publish hash transaction in <address>"));
+    strUsage += "-zmqpubrawblock=<address>       " + strprintf(_("Enable publish raw block in <address>"));
+    strUsage += "-zmqpubrawtransaction=<address> " + strprintf(_("Enable publish raw transaction in <address>"));
+#endif
+
     strUsage += "\n" + _("Block creation options:") + "\n";
     strUsage += "  -blockminsize=<n>      "   + _("Set minimum block size in bytes (default: 0)") + "\n";
     strUsage += "  -blockmaxsize=<n>      " + strprintf(_("Set maximum block size in bytes (default: %d)"), MAX_BLOCK_SIZE_GEN) + "\n";
@@ -395,6 +419,7 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
     strUsage += "  -rpcsslprivatekeyfile=<file.pem>         " + _("Server private key (default: server.pem)") + "\n";
     strUsage += "  -rpcsslciphers=<ciphers>                 " + _("Acceptable ciphers (default: TLSv1.2+HIGH:TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!3DES:@STRENGTH)") + "\n";
     strUsage += "  -litemode=<n>          " + _("Disable all Stormnode and Sandstorm related functionality (0-1, default: 0)") + "\n";
+
     strUsage += "\n" + _("Stormnode options:") + "\n";
     strUsage += "  -stormnode=<n>            " + _("Enable the client to act as a stormnode (0-1, default: 0)") + "\n";
     strUsage += "  -snconf=<file>             " + _("Specify stormnode configuration file (default: stormnode.conf)") + "\n";
@@ -402,7 +427,6 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
     strUsage += "  -stormnodeprivkey=<n>     " + _("Set the stormnode private key") + "\n";
     strUsage += "  -stormnodeaddr=<n>        " + _("Set external address:port to get to this stormnode (example: address:port)") + "\n";
     strUsage += "  -stormnodeminprotocol=<n> " + _("Ignore stormnodes less than version (example: 60700; default : 0)") + "\n";
-
     strUsage += "  -enablesandstorm=<n>          " + strprintf(_("Enable use of automated sandstorm for funds stored in this wallet (0-1, default: %u)"), fEnableSandstorm) + "\n";
     strUsage += "  -sandstormrounds=<n>          " + strprintf(_("Use N separate stormnodes to anonymize funds  (2-50, default: %u)"), nSandstormRounds) + "\n";
     strUsage += "  -anonymizedarksilkamount=<n> " + strprintf(_("Keep N DarkSilk anonymized (default: %u)"), nAnonymizeDarkSilkAmount) + "\n";
@@ -411,6 +435,7 @@ if (hmm == HMM_DARKSILKD || hmm == HMM_DARKSILK_QT)
     strUsage += "\n" + _("InstantX options:") + "\n";
     strUsage += "  -enableinstantx=<n>    " + strprintf(_("Enable instantx, show confirmations for locked transactions (0-1, default: %u)"), fEnableInstantX) + "\n";
     strUsage += "  -instantxdepth=<n>     " + strprintf(_("Show N confirmations for a successfully locked transaction (0-9999, default: %u)"), nInstantXDepth) + "\n"; 
+
     strUsage += _("Secure messaging options:") + "\n" +
         "  -nosmsg                                  " + _("Disable secure messaging.") + "\n" +
         "  -debugsmsg                               " + _("Log extra debug messages.") + "\n" +
@@ -963,6 +988,15 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     BOOST_FOREACH(string strDest, mapMultiArgs["-seednode"])
         AddOneShot(strDest);
+
+#if ENABLE_ZMQ
+    pzmqNotificationInterface = CZMQNotificationInterface::CreateWithArguments(mapArgs);
+
+    if (pzmqNotificationInterface) {
+        pzmqNotificationInterface->Initialize();
+        RegisterValidationInterface(pzmqNotificationInterface);
+    }
+#endif
 
     // ********************************************************* Step 7: load blockchain
 

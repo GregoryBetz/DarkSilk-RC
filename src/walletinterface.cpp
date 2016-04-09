@@ -34,7 +34,7 @@ void UnregisterAllValidationInterfaces() {
     g_signals.Broadcast.disconnect_all_slots();
     g_signals.Inventory.disconnect_all_slots();
     g_signals.SetBestChain.disconnect_all_slots();
-    g_signals.UpdatedTransaction.disconnect_all_slots();
+    // g_signals.UpdatedTransaction.disconnect_all_slots();
     g_signals.EraseTransaction.disconnect_all_slots();
     g_signals.SyncTransaction.disconnect_all_slots();
 }
