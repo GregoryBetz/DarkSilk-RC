@@ -293,15 +293,12 @@ public:
     CAmount GetDenominatedBalance(bool onlyDenom=true, bool onlyUnconfirmed=false, bool includeAlreadyAnonymized = true) const; 
  
     bool CreateTransaction(const std::vector<std::pair<CScript, CAmount> >& vecSend,
-                           CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int32_t& nChangePos, std::string& strFailReason, const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS, bool useIX=false, CAmount nFeePay=0);
+                           CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int32_t& nChangePos, std::string& strFailReason, const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS, bool useIX=false, CAmount nFeePay=0,
+                           const CWalletTx* wtxIn=NULL, const CWalletTx* wtxIn1=NULL, const CWalletTx* wtxIn2=NULL, const CWalletTx* wtxIn3=NULL, bool drkslkTx = false);
     bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue, std::string& sNarr,
                            CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS, bool useIX=false, CAmount nFeePay=0);
 
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, std::string strCommand="tx");
-
-    // Add data and input tx for darksilk marketplace/service calls
-    bool CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosRet,
-                           std::string& strFailReason, const CCoinControl *coinControl = NULL, bool sign = true, const CWalletTx* wtxIn=NULL, const CWalletTx* wtxIn1=NULL, const CWalletTx* wtxIn2=NULL, const CWalletTx* wtxIn3=NULL, bool drkslkTx = false);
 
     uint64_t GetStakeWeight() const;
     uint64_t GetStakeWeight2() const;
