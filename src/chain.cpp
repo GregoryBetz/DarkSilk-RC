@@ -410,14 +410,108 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
     }
 
+    // Block sizes vary wioth the demand for darksilk transaction services
+    CBlockUndo blockundo;
+    uint64_t nDRKSLKBlockTx = 0;
+    CAmount nDRKSLKRegenFees = 0;
+    CDiskTxPos pos(pindex->GetBlockPos(), GetSizeOfCompactSize(block.vtx.size()));
+    std::vector<std::pair<uint256, CDiskTxPos> > vPos;
+    vPos.reserve(block.vtx.size());
+    blockundo.vtxundo.reserve(block.vtx.size() - 1);
+    for (unsigned int i = 0; i < block.vtx.size(); i++)
+    {
+        const CTransaction &tx = block.vtx[i];
+        // Block sizes vary based on the opreturn value set when creating the service(user)
+        if(tx.nVersion == GetDarkSilkTxVersion())
+        {
+            nDRKSLKBlockTx++;
+            if(nDRKSLKBlockTx >= 5)
+            {
+                int nOut = GetDarkSilkDataOutput(tx);
+                if (nOut != -1)
+                    nDRKSLKRegenFees += tx.vout[nOut].nValue*2;
+            }
+        }
+        nInputs += tx.vin.size();
+        nSigOps += GetLegacySigOpCount(tx);
+        if (nSigOps > MAX_BLOCK_SIGOPS)
+            return state.DoS(100, error("ConnectBlock(): too many sigops"),
+                             REJECT_INVALID, "bad-blk-sigops");
+
+        if (!tx.IsCoinBase())
+        {
+            if (!view.HaveInputs(tx))
+                return state.DoS(100, error("ConnectBlock(): inputs missing/spent"),
+                                 REJECT_INVALID, "bad-txns-inputs-missingorspent");
+
+            if (fStrictPayToScriptHash)
+            {
+                // Add in sigops done by pay-to-script-hash inputs;
+                // this is to prevent a "rogue miner" from creating
+                // an incredibly-expensive-to-validate block.
+                nSigOps += GetP2SHSigOpCount(tx, view);
+                if (nSigOps > MAX_BLOCK_SIGOPS)
+                    return state.DoS(100, error("ConnectBlock(): too many sigops"),
+                                     REJECT_INVALID, "bad-blk-sigops");
+            }
+
+            nFees += view.GetValueIn(tx)-tx.GetValueOut();
+
+            std::vector<CScriptCheck> vChecks;
+            bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
+            if (!CheckInputs(tx, state, view, fScriptChecks, flags, fCacheResults, nScriptCheckThreads ? &vChecks : NULL))
+                return error("ConnectBlock(): CheckInputs on %s failed with %s",
+                    tx.GetHash().ToString(), FormatStateMessage(state));
+            // DARKSILK
+            if (!CheckDarkSilkInputs(tx, view, pindex->nHeight))
+                return error("ConnectBlock(): CheckDarkSilkInputs on %s failed",tx.GetHash().ToString());            
+            control.Add(vChecks);
+        }
+
+        CTxUndo undoDummy;
+        if (i > 0) {
+            blockundo.vtxundo.push_back(CTxUndo());
+        }
+        UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
+        vPos.push_back(std::make_pair(tx.GetHash(), pos));
+        pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
+    }
+
     // ppcoin: track money supply and mint amount info
     pindex->nMint = nValueOut - nValueIn + nFees;
     pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn;
     if (!txdb.WriteBlockIndex(CDiskBlockIndex(pindex)))
         return error("Connect() : WriteBlockIndex for pindex failed");
 
+    // DARKSILK Add dynamic block variability baseed on service demand
+    CAmount blockReward = nDRKSLKRegenFees + nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
+    if (block.vtx[0].GetValueOut() > blockReward)
+        return state.DoS(100,
+                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
+                               block.vtx[0].GetValueOut(), blockReward),
+                               REJECT_INVALID, "bad-cb-amount");
+
     if (fJustCheck)
         return true;
+
+    // Write undo information to disk
+    if (pindex->GetUndoPos().IsNull() || !pindex->IsValid(BLOCK_VALID_SCRIPTS))
+    {
+        if (pindex->GetUndoPos().IsNull()) {
+            CDiskBlockPos pos;
+            if (!FindUndoPos(state, pindex->nFile, pos, ::GetSerializeSize(blockundo, SER_DISK, CLIENT_VERSION) + 40))
+                return error("ConnectBlock(): FindUndoPos failed");
+            if (!UndoWriteToDisk(blockundo, pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart()))
+                return AbortNode(state, "Failed to write undo data");
+
+            // update nUndoPos in block index
+            pindex->nUndoPos = pos.nPos;
+            pindex->nStatus |= BLOCK_HAVE_UNDO;
+        }
+
+        pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
+        setDirtyBlockIndex.insert(pindex);
+    }
 
     // Write queued txindex changes
     for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)

@@ -893,11 +893,12 @@ CAmount GetMinFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree, 
 
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool ignoreFees)
 {
+    CTransaction txi;
     AssertLockHeld(cs_main);
     if (pfMissingInputs)
         *pfMissingInputs = false;
 
-    if (!CheckTransaction(tx, state))
+    if (!txi.CheckTransaction(tx, state))
         return error("AcceptToMemoryPool : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1260,8 +1261,8 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &t
                          bool* pfMissingInputs, bool fRejectInsaneFee, bool isSSTX)
 {
     AssertLockHeld(cs_main);
-
-    if (!CheckTransaction(tx, state))
+    CTransaction txi;
+    if (!txi.CheckTransaction(tx, state))
         return error("AcceptableInputs : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1625,7 +1626,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
     return false;
 }
 
-bool CheckSyscoinInputs(const CTransaction& tx, const CCoinsViewCache& inputs, int nHeight=0)
+bool CheckDarkSilkInputs(const CTransaction& tx, const CCoinsViewCache& inputs, int nHeight=0)
 {
     vector<vector<unsigned char> > vvchArgs;
     int op;
@@ -1633,9 +1634,9 @@ bool CheckSyscoinInputs(const CTransaction& tx, const CCoinsViewCache& inputs, i
     bool fJustCheck = true;
     if(nHeight == 0)
         nHeight = chainActive.Height();
-    if(tx.nVersion == GetSyscoinTxVersion())
+    if(tx.nVersion == GetDarkSilkTxVersion())
     {
-        if(tx.nVersion == SYSCOIN_TX_VERSION)
+        if(tx.nVersion == DARKSILK_TX_VERSION)
         {
             bool good = true;
             if(DecodeCertTx(tx, op, nOut, vvchArgs))
@@ -1646,9 +1647,9 @@ bool CheckSyscoinInputs(const CTransaction& tx, const CCoinsViewCache& inputs, i
             {
                 good = CheckEscrowInputs(tx, op, nOut, vvchArgs, inputs, fJustCheck, nHeight);      
             }
-            if(DecodeAliasTx(tx, op, nOut, vvchArgs))
+            if(DecodeAccountTx(tx, op, nOut, vvchArgs))
             {
-                good = CheckAliasInputs(tx, op, nOut, vvchArgs, inputs, fJustCheck, nHeight);
+                good = CheckAccountInputs(tx, op, nOut, vvchArgs, inputs, fJustCheck, nHeight);
             }
             if(DecodeOfferTx(tx, op, nOut, vvchArgs))
             {   
@@ -4548,197 +4549,6 @@ static int64_t nTimeFlush = 0;
 static int64_t nTimeChainState = 0;
 static int64_t nTimePostConnect = 0;
 */
-
-static int64_t nTimeCheck = 0;
-static int64_t nTimeForks = 0;
-static int64_t nTimeVerify = 0;
-static int64_t nTimeConnect = 0;
-static int64_t nTimeIndex = 0;
-static int64_t nTimeCallbacks = 0;
-static int64_t nTimeTotal = 0;
-
-bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, bool fJustCheck)
-{
-    const CChainParams& chainparams = Params();
-    AssertLockHeld(cs_main);
-
-    int64_t nTimeStart = GetTimeMicros();
-
-    // Check it again in case a previous version let a bad block in
-    if (!CheckBlock(block, state, !fJustCheck, !fJustCheck))
-        return false;
-
-    // verify that the view's current state corresponds to the previous block
-    uint256 hashPrevBlock = pindex->pprev == NULL ? uint256() : pindex->pprev->GetBlockHash();
-    assert(hashPrevBlock == view.GetBestBlock());
-
-    // Special case for the genesis block, skipping connection of its transactions
-    // (its coinbase is unspendable)
-    if (block.GetHash() == chainparams.GetConsensus().hashGenesisBlock) {
-        if (!fJustCheck)
-            view.SetBestBlock(pindex->GetBlockHash());
-        return true;
-    }
-
-    bool fScriptChecks = true;
-    if (fCheckpointsEnabled) {
-        CBlockIndex *pindexLastCheckpoint = Checkpoints::GetLastCheckpoint(chainparams.Checkpoints());
-        if (pindexLastCheckpoint && pindexLastCheckpoint->GetAncestor(pindex->nHeight) == pindex) {
-            // This block is an ancestor of a checkpoint: disable script checks
-            fScriptChecks = false;
-        }
-    }
-
-    int64_t nTime1 = GetTimeMicros(); nTimeCheck += nTime1 - nTimeStart;
-    LogPrint("bench", "    - Sanity checks: %.2fms [%.2fs]\n", 0.001 * (nTime1 - nTimeStart), nTimeCheck * 0.000001);
-
-    unsigned int flags = fStrictPayToScriptHash ? SCRIPT_VERIFY_P2SH : SCRIPT_VERIFY_NONE;
-
-    // Start enforcing the DERSIG (BIP66) rules, for block.nVersion=3 blocks,
-    // when 75% of the network has upgraded:
-    // DARKSILK getbaseversion
-    if (block.nVersion.GetBaseVersion() >= 3 && IsSuperMajority(3, pindex->pprev, chainparams.GetConsensus().nMajorityEnforceBlockUpgrade, chainparams.GetConsensus())) {
-        flags |= SCRIPT_VERIFY_DERSIG;
-    }
-
-    // Start enforcing CHECKLOCKTIMEVERIFY, (BIP65) for block.nVersion=4
-    // blocks, when 75% of the network has upgraded:
-    if (block.nVersion.GetBaseVersion() >= 4 && IsSuperMajority(4, pindex->pprev, chainparams.GetConsensus().nMajorityEnforceBlockUpgrade, chainparams.GetConsensus())) {
-        flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
-    }
-
-    int64_t nTime2 = GetTimeMicros(); nTimeForks += nTime2 - nTime1;
-    LogPrint("bench", "    - Fork checks: %.2fms [%.2fs]\n", 0.001 * (nTime2 - nTime1), nTimeForks * 0.000001);
-
-    CBlockUndo blockundo;
-
-    CCheckQueueControl<CScriptCheck> control(fScriptChecks && nScriptCheckThreads ? &scriptcheckqueue : NULL);
-
-    // Block sizes vary wioth the demand for darksilk transaction services
-    uint64_t nDRKSLKBlockTx = 0;
-    CAmount nDRKSLKRegenFees = 0;
-    CAmount nFees = 0;
-    int nInputs = 0;
-    unsigned int nSigOps = 0;
-    CDiskTxPos pos(pindex->GetBlockPos(), GetSizeOfCompactSize(block.vtx.size()));
-    std::vector<std::pair<uint256, CDiskTxPos> > vPos;
-    vPos.reserve(block.vtx.size());
-    blockundo.vtxundo.reserve(block.vtx.size() - 1);
-    for (unsigned int i = 0; i < block.vtx.size(); i++)
-    {
-        const CTransaction &tx = block.vtx[i];
-        // Block sizes vary based on the opreturn value set when creating the service(user)
-        if(tx.nVersion == GetDarkSilkTxVersion())
-        {
-            nDRKSLKBlockTx++;
-            if(nDRKSLKBlockTx >= 5)
-            {
-                int nOut = GetDarkSilkDataOutput(tx);
-                if (nOut != -1)
-                    nDRKSLKRegenFees += tx.vout[nOut].nValue*2;
-            }
-        }
-        nInputs += tx.vin.size();
-        nSigOps += GetLegacySigOpCount(tx);
-        if (nSigOps > MAX_BLOCK_SIGOPS)
-            return state.DoS(100, error("ConnectBlock(): too many sigops"),
-                             REJECT_INVALID, "bad-blk-sigops");
-
-        if (!tx.IsCoinBase())
-        {
-            if (!view.HaveInputs(tx))
-                return state.DoS(100, error("ConnectBlock(): inputs missing/spent"),
-                                 REJECT_INVALID, "bad-txns-inputs-missingorspent");
-
-            if (fStrictPayToScriptHash)
-            {
-                // Add in sigops done by pay-to-script-hash inputs;
-                // this is to prevent a "rogue miner" from creating
-                // an incredibly-expensive-to-validate block.
-                nSigOps += GetP2SHSigOpCount(tx, view);
-                if (nSigOps > MAX_BLOCK_SIGOPS)
-                    return state.DoS(100, error("ConnectBlock(): too many sigops"),
-                                     REJECT_INVALID, "bad-blk-sigops");
-            }
-
-            nFees += view.GetValueIn(tx)-tx.GetValueOut();
-
-            std::vector<CScriptCheck> vChecks;
-            bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
-            if (!CheckInputs(tx, state, view, fScriptChecks, flags, fCacheResults, nScriptCheckThreads ? &vChecks : NULL))
-                return error("ConnectBlock(): CheckInputs on %s failed with %s",
-                    tx.GetHash().ToString(), FormatStateMessage(state));
-            // DARKSILK
-            if (!CheckDarkSilkInputs(tx, view, pindex->nHeight))
-                return error("ConnectBlock(): CheckDarkSilkInputs on %s failed",tx.GetHash().ToString());            
-            control.Add(vChecks);
-        }
-
-        CTxUndo undoDummy;
-        if (i > 0) {
-            blockundo.vtxundo.push_back(CTxUndo());
-        }
-        UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
-        vPos.push_back(std::make_pair(tx.GetHash(), pos));
-        pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
-    }
-    int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
-    LogPrint("bench", "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs]\n", (unsigned)block.vtx.size(), 0.001 * (nTime3 - nTime2), 0.001 * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : 0.001 * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * 0.000001);
-
-    // DARKSILK Add dynamic block variability baseed on service demand
-    CAmount blockReward = nDRKSLKRegenFees + nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-    if (block.vtx[0].GetValueOut() > blockReward)
-        return state.DoS(100,
-                         error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
-                               block.vtx[0].GetValueOut(), blockReward),
-                               REJECT_INVALID, "bad-cb-amount");
-
-    if (!control.Wait())
-        return state.DoS(100, false);
-    int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
-    LogPrint("bench", "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs]\n", nInputs - 1, 0.001 * (nTime4 - nTime2), nInputs <= 1 ? 0 : 0.001 * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * 0.000001);
-
-    if (fJustCheck)
-        return true;
-
-    // Write undo information to disk
-    if (pindex->GetUndoPos().IsNull() || !pindex->IsValid(BLOCK_VALID_SCRIPTS))
-    {
-        if (pindex->GetUndoPos().IsNull()) {
-            CDiskBlockPos pos;
-            if (!FindUndoPos(state, pindex->nFile, pos, ::GetSerializeSize(blockundo, SER_DISK, CLIENT_VERSION) + 40))
-                return error("ConnectBlock(): FindUndoPos failed");
-            if (!UndoWriteToDisk(blockundo, pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart()))
-                return AbortNode(state, "Failed to write undo data");
-
-            // update nUndoPos in block index
-            pindex->nUndoPos = pos.nPos;
-            pindex->nStatus |= BLOCK_HAVE_UNDO;
-        }
-
-        pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
-        setDirtyBlockIndex.insert(pindex);
-    }
-
-    if (fTxIndex)
-        if (!pblocktree->WriteTxIndex(vPos))
-            return AbortNode(state, "Failed to write transaction index");
-
-    // add this block to the view's block chain
-    view.SetBestBlock(pindex->GetBlockHash());
-
-    int64_t nTime5 = GetTimeMicros(); nTimeIndex += nTime5 - nTime4;
-    LogPrint("bench", "    - Index writing: %.2fms [%.2fs]\n", 0.001 * (nTime5 - nTime4), nTimeIndex * 0.000001);
-
-    // Watch for changes to the previous coinbase transaction.
-    static uint256 hashPrevBestCoinBase;
-    GetMainSignals().UpdatedTransaction(hashPrevBestCoinBase);
-    hashPrevBestCoinBase = block.vtx[0].GetHash();
-    int64_t nTime6 = GetTimeMicros(); nTimeCallbacks += nTime6 - nTime5;
-    LogPrint("bench", "    - Callbacks: %.2fms [%.2fs]\n", 0.001 * (nTime6 - nTime5), nTimeCallbacks * 0.000001);
-
-    return true;
-}
 
 bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
 {
