@@ -14,6 +14,6 @@
 int CommandLineRPC(int argc, char *argv[]);
 
 json_spirit::Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams);
-json_spirit::Value ParseNonRFCJSONValue(cons std::string& strVal);
+//json_spirit::Value ParseNonRFCJSONValue(const std::string& strVal);
 
 #endif // DARKSILKRPC_CLIENT_H
