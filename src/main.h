@@ -177,6 +177,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction 
 bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isSSTX=false);
 
 CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork = true);
+bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
 
 bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint256> &vtxhash);
 
@@ -220,6 +221,8 @@ public:
     {
         SetNull();
     }
+
+    CDiskTxPos(const CDiskBlockPos, unsigned int);
 
     CDiskTxPos(unsigned int nFileIn, unsigned int nBlockPosIn, unsigned int nTxPosIn)
     {
