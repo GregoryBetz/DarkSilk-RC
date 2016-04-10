@@ -8,14 +8,9 @@ class CCoinControl
 {
 public:
     CTxDestination destChange;
+
     bool useSandStorm;
     bool useInstantX;
-    //! If false, allows unselected inputs, but requires all selected inputs be used
-    bool fAllowOtherInputs;
-    //! Includes watch only addresses which match the ISMINE_WATCH_SOLVABLE criteria
-    bool fAllowWatchOnly;
-    //! Minimum absolute fee (not per kilobyte)
-    CAmount nMinimumTotalFee;
 
     CCoinControl()
     {
@@ -25,12 +20,9 @@ public:
     void SetNull()
     {
         destChange = CNoDestination();
-        fAllowOtherInputs = false;
-        fAllowWatchOnly = false;
         setSelected.clear();
         useInstantX = false;
         useSandStorm = true;
-        nMinimumTotalFee = 0;
     }
     
     bool HasSelected() const
