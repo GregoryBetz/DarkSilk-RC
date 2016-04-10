@@ -41,7 +41,6 @@ class CAccountingEntry;
 class CCoinControl;
 class CWalletTx;
 class CReserveKey;
-class CRecipient;
 class COutput;
 class CWalletDB;
 
