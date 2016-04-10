@@ -347,7 +347,7 @@ public:
 		vchCert = b.vchCert;
 		bPrivate = b.bPrivate;
 		bOnlyAcceptBTC = b.bOnlyAcceptBTC;
-        vchAccountPeg = b.vchAccountPeg
+        vchAccountPeg = b.vchAccountPeg;
         return *this;
     }
 
@@ -362,9 +362,9 @@ public:
 	const std::vector<unsigned char> Serialize();
 };
 
-class COfferDB : public CDBWrapper {
+class COfferDB : public CLevelDBWrapper {
 public:
-	COfferDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "offers", nCacheSize, fMemory, fWipe) {}
+	COfferDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDBWrapper(GetDataDir() / "offers", nCacheSize, fMemory, fWipe) {}
 
 	bool WriteOffer(const std::vector<unsigned char>& name, std::vector<COffer>& vtxPos) {
 		return Write(make_pair(std::string("offeri"), name), vtxPos);
