@@ -124,6 +124,7 @@ struct CRecipient
 class CWallet : public CCryptoKeyStore, public CWalletInterface
 {
 private:
+    bool SelectCoinsForServices(const CAmount& nTargetValue, unsigned int nSpendTime, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl) const;
     bool SelectCoinsForStaking(const CAmount& nTargetValue, unsigned int nSpendTime, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const;
     bool SelectCoins(const CAmount& nTargetValue, unsigned int nSpendTime, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX) const;
     CWalletDB *pwalletdbEncryption;
@@ -155,8 +156,6 @@ public:
     ///      fFileBacked (immutable after instantiation)
     ///      strWalletFile (immutable after instantiation)
     mutable CCriticalSection cs_wallet;
-
-    bool SelectCoinsForServices(const CAmount& nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl) const;
 
     bool SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<CTxIn>& setCoinsRet, CAmount& nValueRet, int nSandstormRoundsMin, int nSandstormRoundsMax) const;
     bool SelectCoinsByDenominations(int nDenom, CAmount nValueMin, CAmount nValueMax, std::vector<CTxIn>& vCoinsRet, std::vector<COutput>& vCoinsRet2, CAmount& nValueRet, int nSandstormRoundsMin, int nSandstormRoundsMax);

@@ -2528,7 +2528,7 @@ bool CWallet::SelectCoinsCollateral(std::vector<CTxIn>& setCoinsRet, CAmount& nV
     return false;
 }
 
-bool CWallet::SelectCoinsForServices(const CAmount& nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl) const
+bool CWallet::SelectCoinsForServices(const CAmount& nTargetValue, unsigned int nSpendTime, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl) const
 {
     vector<COutput> vCoins;
     AvailableCoins(vCoins, true, coinControl);
@@ -2573,10 +2573,11 @@ bool CWallet::SelectCoinsForServices(const CAmount& nTargetValue, set<pair<const
             ++it;
     }
 
+    CAmount nTargetValueRet = nTargetValue - nValueFromPresetInputs;
     bool res = nTargetValue <= nValueFromPresetInputs ||
-        SelectCoinsMinConf(nTargetValue - nValueFromPresetInputs, 1, 10, vCoins, setCoinsRet, nValueRet) ||
-        SelectCoinsMinConf(nTargetValue - nValueFromPresetInputs, 1, 1, vCoins, setCoinsRet, nValueRet) ||
-        SelectCoinsMinConf(nTargetValue - nValueFromPresetInputs, 0, 1, vCoins, setCoinsRet, nValueRet);
+        SelectCoinsMinConf(nTargetValueRet, nSpendTime, 1, 10, vCoins, setCoinsRet, nValueRet) ||
+        SelectCoinsMinConf(nTargetValueRet, nSpendTime, 1, 1, vCoins, setCoinsRet, nValueRet) ||
+        SelectCoinsMinConf(nTargetValueRet, nSpendTime, 0, 1, vCoins, setCoinsRet, nValueRet);
 
     // because SelectCoinsMinConf clears setCoinsRet, we now add possible inputs to the coinset
     setCoinsRet.insert(setPresetCoins.begin(), setPresetCoins.end());
