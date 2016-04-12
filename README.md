@@ -36,7 +36,7 @@ What is DarkSilk?
 * Budget Proposal Fee: 100 DRKSLK, 20 confirmations (~20 minutes)
 * Total Coins: 90,000,000 DRKSLK (~105 years)
 * Min TX Fee: 0.00001 DRKSLK
-* Block Size: 20MB (20X Bitcoin Core)
+* Block Size: TBA
 
 
 DarkSilk is a new digital currency that enables instant payments to anyone, anywhere in the world. DarkSilk uses peer-to-peer technology over I2P/Tor/ClearNet to operate securly with no central authority (centralisation): managing transactions and issuing currency (DRKSLK) are carried out collectively by the DarkSilk network. DarkSilk is the name of open source software which enables the use of the currency DRKSLK.
