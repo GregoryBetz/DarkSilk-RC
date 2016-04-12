@@ -129,7 +129,7 @@ void WalletModel::pollBalanceChanged()
         cachedNumBlocks = nBestHeight;
         cachedSandstormRounds = nSandstormRounds;
 
-        fForceCheckBalanceChanged = true;
+        checkBalanceChanged();
         if(transactionTableModel)
             transactionTableModel->updateConfirmations();
     }
@@ -177,7 +177,8 @@ void WalletModel::updateTransaction(const QString &hash, int status)
         transactionTableModel->updateTransaction(hash, status);
 
     // Balance and number of transactions might have changed
-    checkBalanceChanged();
+    fForceCheckBalanceChanged = true;
+
 }
 
 void WalletModel::updateAddressBook(const QString &address, const QString &label, bool isMine, int status)
