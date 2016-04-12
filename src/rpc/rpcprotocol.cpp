@@ -18,8 +18,8 @@
 #include <stdint.h>
 
 #include "rpc/rpcprotocol.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 
 using namespace std;
 using namespace boost;

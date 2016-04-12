@@ -9,7 +9,8 @@
 #include <QStringList>
 
 #include "main.h"
-#include "net.h"
+#include "reward.h"
+#include "networking/net.h"
 
 class ClientModel;
 class PeerTablePriv;

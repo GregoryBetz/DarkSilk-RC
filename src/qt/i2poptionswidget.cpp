@@ -3,7 +3,7 @@
 #include "optionsmodel.h"
 #include "monitoreddatamapper.h"
 #include "showi2paddresses.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "clientmodel.h"
 
 I2POptionsWidget::I2POptionsWidget(QWidget *parent) :

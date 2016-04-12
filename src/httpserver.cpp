@@ -7,8 +7,8 @@
 
 #include "chainparams.h"
 #include "compat/compat.h"
-#include "util.h"
-#include "netbase.h"
+#include "elements/util/util.h"
+#include "networking/netbase.h"
 #include "rpc/rpcprotocol.h" // For HTTP status codes
 #include "sync.h"
 #include "ui_interface.h"

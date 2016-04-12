@@ -21,7 +21,11 @@
 
 #include <stdint.h>
 
-#include "allocators.h"
+
+#include "support/allocators/pagelocker.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfee.h"
+
 #include "version.h"
 
 class CScript;

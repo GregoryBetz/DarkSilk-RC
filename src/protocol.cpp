@@ -9,8 +9,8 @@
 #endif
 
 #include "protocol.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 
 static const char* ppszTypeName[] =
 {

@@ -4,7 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "init.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "base58.h"
 #include "cryptkey.h"
 #include "wallet/wallet.h"

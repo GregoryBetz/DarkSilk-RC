@@ -17,7 +17,7 @@
 
 #include "chainparams.h"
 #include "serialize.h"
-#include "netbase.h"
+#include "networking/netbase.h"
 
 /** Message header.
  * (4) message start.

@@ -7,11 +7,12 @@
 #include <boost/algorithm/string.hpp>
 #include "rpc/rpcserver.h"
 #include "streams.h"
-#include "utilstrencodings.h"
+#include "elements/util/utilstrencodings.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
 #include "version.h"
 #include "main.h"
+#include "reward.h"
 
 using namespace std;
 using namespace json_spirit;

@@ -5,8 +5,12 @@
 #include <vector>
 #include <map>
 
-#include "allocators.h" /* for SecureString */
-#include "anon/instantx/instantx.h"
+
+#include "support/allocators/pagelocker.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfee.h"
+ /* for SecureString */
+#include "instantx/instantx.h"
 #include "wallet/wallet.h"
 
 class OptionsModel;

@@ -12,10 +12,11 @@
 
 #include "chain.h"
 #include "coins.h"
-#include "net.h"
-#include "txdb.h"
+#include "networking/net.h"
+#include "elements/txdb/txdb.h"
+#include "script/script_error.h"
 #include "txmempool.h"
-#include "pow.h"
+#include "proofs.h"
 
 class CCoinsViewCache;
 class CTxMemPool;
@@ -103,23 +104,9 @@ static const uint64_t nMinDiskSpace = 52428800;
 
 class CTxDB;
 class CTxIndex;
-class CWalletInterface;
 
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
-
-/** Register a wallet to receive updates from core */
-void RegisterWallet(CWalletInterface* pwalletIn);
-/** Unregister a wallet from core */
-void UnregisterWallet(CWalletInterface* pwalletIn);
-/** Unregister all wallets from core */
-void UnregisterAllValidationInterfaces();
-/** Push an updated transaction to all registered wallets old function*/
-void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fConnect = true);
-/** Push an updated transaction to all registered wallets new function*/
-void SyncWithWallets(const CTransaction& tx, const CBlockIndex *pindex, const CBlock* pblock = NULL);
-/** Ask wallets to resend their transactions */
-void ResendWalletTransactions(bool fForce = false);
 
 /** Register with a network node to receive its signals */
 void RegisterNodeSignals(CNodeSignals& nodeSignals);
@@ -138,13 +125,11 @@ bool LoadBlockIndex(bool fAllowNew=true);
 bool InitBlockIndex();
 void PrintBlockTree();
 
-
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 void ThreadImport(std::vector<boost::filesystem::path> vImportFiles);
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-CAmount GetProofOfWorkReward(CAmount nFees);
 
 bool IsConfirmedInNPrevBlocks(const CTxIndex& txindex, const CBlockIndex* pindexFrom, int nMaxDepth, int& nActualDepth);
 std::string GetWarnings(std::string strFor);
@@ -158,17 +143,12 @@ void ThreadStakeMiner(CWallet *pwallet);
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool ignoreFees = false);
 bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isSSTX=false);
 
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork = true);
-
 bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint256> &vtxhash);
 
 int GetInputAge(CTxIn& vin);
 
 /// Increase a node's misbehavior score.
 void Misbehaving(NodeId nodeid, int howmuch);
-
-CAmount GetStormnodePayment(int nHeight, CAmount blockValue);
-
 int GetInputAgeIX(uint256 nTXHash, CTxIn& vin);
 int GetIXConfirmations(uint256 nTXHash);
 
@@ -469,19 +449,6 @@ public:
     }
     int GetDepthInMainChain() const;
 
-};
-
-class CWalletInterface {
-protected:
-    virtual void SyncTransaction(const CTransaction &tx, const CBlock *pblock, bool fConnect) =0;
-    virtual void EraseFromWallet(const uint256 &hash) =0;
-    virtual void SetBestChain(const CBlockLocator &locator) =0;
-    virtual bool UpdatedTransaction(const uint256 &hash) =0;
-    virtual void Inventory(const uint256 &hash) =0;
-    virtual void ResendWalletTransactions(bool fForce) =0;
-    friend void ::RegisterWallet(CWalletInterface*);
-    friend void ::UnregisterWallet(CWalletInterface*);
-    friend void ::UnregisterAllValidationInterfaces();
 };
 
 ///! The currently-connected chain of blocks.

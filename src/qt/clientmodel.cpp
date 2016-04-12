@@ -13,12 +13,13 @@
 #include "chainparams.h"
 #include "alert.h"
 #include "main.h"
+#include "reward.h"
 #include "ui_interface.h"
-#include "anon/stormnode/stormnodeman.h"
-#include "anon/stormnode/stormnode-sync.h"
+#include "stormnode/stormnodeman.h"
+#include "stormnode/stormnode-sync.h"
 
 #ifdef USE_NATIVE_I2P
-#include "i2p/i2p.h"
+#include "networking/i2p/i2p.h"
 #endif
 
 static const int64_t nClientStartupTime = GetTime();

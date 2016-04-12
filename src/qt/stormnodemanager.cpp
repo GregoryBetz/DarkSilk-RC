@@ -19,15 +19,15 @@
 #include "sync.h"
 #include "clientmodel.h"
 #include "walletmodel.h"
-#include "anon/stormnode/activestormnode.h"
-#include "anon/stormnode/stormnodeconfig.h"
-#include "anon/stormnode/stormnode.h"
-#include "anon/stormnode/stormnodeman.h"
+#include "stormnode/activestormnode.h"
+#include "stormnode/stormnodeconfig.h"
+#include "stormnode/stormnode.h"
+#include "stormnode/stormnodeman.h"
 #include "wallet/walletdb.h"
 #include "wallet/wallet.h"
 #include "init.h"
 #include "rpc/rpcserver.h"
-#include "anon/sandstorm/sandstorm.h"
+#include "sandstorm/sandstorm.h"
 
 using namespace json_spirit;
 using namespace std;

@@ -7,7 +7,7 @@
 
 #include "primitives/block.h"
 #include "chainparams.h"
-#include "pow.h"
+#include "proofs.h"
 
 bool CBlock::CheckBlockSignature() const
 {

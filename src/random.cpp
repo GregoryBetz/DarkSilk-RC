@@ -6,13 +6,13 @@
 
 #include "random.h"
 
-#include "cleanse.h"
+#include "support/cleanse.h"
 #ifdef WIN32
 #include "compat/compat.h" // for Windows API
 #endif
 #include "serialize.h"        // for begin_ptr(vec)
-#include "util.h"             // for LogPrint()
-#include "utilstrencodings.h" // for GetTime()
+#include "elements/util/util.h"             // for LogPrint()
+#include "elements/util/utilstrencodings.h" // for GetTime()
 
 #include <limits>
 

@@ -21,7 +21,11 @@
 #include "pubkey.h"
 #include "key.h"
 #include "script/script.h"
-#include "allocators.h"
+
+#include "support/allocators/pagelocker.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfee.h"
+
 
 /**
  * Encode a byte sequence as a base58-encoded string.

@@ -8,8 +8,8 @@
 #include <stdio.h>
 
 #include "sync.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 
 #ifdef DEBUG_LOCKCONTENTION
 void PrintLockContention(const char* pszName, const char* pszFile, int nLine)

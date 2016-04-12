@@ -24,8 +24,8 @@
 
 #include <algorithm>
 
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 #include "amount.h"
 #include "chainparams.h"
 #include "sync.h"
@@ -33,8 +33,12 @@
 #include "ui_interface.h"
 #include "uint256.h"
 #include "version.h"
-#include "netbase.h"
-#include "allocators.h"
+#include "networking/netbase.h"
+
+#include "support/allocators/pagelocker.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfee.h"
+
 
 #ifdef WIN32
 #ifdef _MSC_VER
@@ -387,6 +391,16 @@ bool WildcardMatch(const string& str, const string& mask)
     return WildcardMatch(str.c_str(), mask.c_str());
 }
 
+std::string HelpMessageGroup(const std::string &message) {
+    return std::string(message) + std::string("\n\n");
+}
+
+std::string HelpMessageOpt(const std::string &option, const std::string &message) {
+    return std::string(optIndent,' ') + std::string(option) +
+           std::string("\n") + std::string(msgIndent,' ') +
+           FormatParagraph(message, screenWidth - msgIndent, msgIndent) +
+           std::string("\n\n");
+}
 
 static std::string FormatException(std::exception* pex, const char* pszThread)
 {

@@ -6,6 +6,7 @@
 
 #include "rpc/rpcserver.h"
 #include "main.h"
+#include "reward.h"
 #include "kernel.h"
 #include "checkpoints.h"
 

@@ -14,6 +14,7 @@
 
 #include "clientmodel.h"
 #include "main.h"
+#include "reward.h"
 #include "wallet/wallet.h"
 #include "base58.h"
 

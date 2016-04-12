@@ -9,13 +9,14 @@
 #include "rpc/rpcserver.h"
 #include "alert.h"
 #include "main.h"
-#include "net.h"
-#include "netbase.h"
+#include "reward.h"
+#include "networking/net.h"
+#include "networking/netbase.h"
 #include "protocol.h"
 #include "sync.h"
 #include "timedata.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
 #include "key.h"
 
 using namespace json_spirit;

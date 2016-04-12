@@ -5,12 +5,13 @@
 #include "guiutil.h"
 #include "base58.h"
 #include "main.h"
+#include "reward.h"
 #include "paymentserver.h"
 #include "transactionrecord.h"
 #include "timedata.h"
 #include "ui_interface.h"
 #include "wallet/wallet.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 QString TransactionDesc::FormatTxStatus(const CWalletTx& wtx)
 {

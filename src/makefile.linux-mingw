@@ -97,6 +97,7 @@ OBJS= \
     obj/rpc/rpcsmessage.o \
     obj/timedata.o \
     obj/script/script.o \
+    obj/script/script_error.o \
     obj/sync.o \
     obj/txmempool.o \
     obj/util.o \

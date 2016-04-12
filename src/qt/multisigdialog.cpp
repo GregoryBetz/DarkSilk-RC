@@ -10,15 +10,16 @@
 #include "base58.h"
 #include "key.h"
 #include "main.h"
+#include "reward.h"
 #include "multisigaddressentry.h"
 #include "multisiginputentry.h"
 #include "script/script.h"
 #include "sendcoinsentry.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "wallet/wallet.h"
 #include "walletmodel.h"
 
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 MultisigDialog::MultisigDialog(QWidget *parent) : QWidget(parent), ui(new Ui::MultisigDialog), model(0)
 {

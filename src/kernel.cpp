@@ -6,8 +6,8 @@
 #include <boost/assign/list_of.hpp>
 
 #include "kernel.h"
-#include "txdb.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 using namespace std;
 

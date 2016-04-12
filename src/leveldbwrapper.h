@@ -12,7 +12,7 @@
 
 #include "serialize.h"
 #include "streams.h"
-#include "util.h"
+#include "elements/util/util.h"
 
 class leveldb_error : public std::runtime_error
 {

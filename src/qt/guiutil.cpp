@@ -19,7 +19,7 @@
 #include "darksilkaddressvalidator.h"
 #include "walletmodel.h"
 #include "darksilkunits.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "init.h"
 
 #ifdef WIN32

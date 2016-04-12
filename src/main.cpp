@@ -11,6 +11,7 @@
 #include <boost/thread.hpp>
 
 #include "main.h"
+#include "reward.h"
 #include "addrman.h"
 #include "alert.h"
 #include "chainparams.h"
@@ -20,21 +21,21 @@
 #include "wallet/db.h"
 #include "init.h"
 #include "kernel.h"
-#include "txdb.h"
-#include "pow.h"
+#include "elements/txdb/txdb.h"
+#include "proofs.h"
 #include "ui_interface.h"
-#include "util.h"
-#include "utilmoneystr.h"
-#include "utilstrencodings.h"
-#include "anon/instantx/instantx.h"
-#include "anon/sandstorm/sandstorm.h"
-#include "anon/stormnode/stormnodeman.h"
-#include "anon/stormnode/stormnode-budget.h"
-#include "anon/stormnode/stormnode-payments.h"
-#include "anon/stormnode/stormnode-sync.h"
-#include "anon/stormnode/spork.h"
+#include "elements/util/util.h"
+#include "elements/util/utilmoneystr.h"
+#include "elements/util/utilstrencodings.h"
+#include "instantx/instantx.h"
+#include "sandstorm/sandstorm.h"
+#include "stormnode/stormnodeman.h"
+#include "stormnode/stormnode-budget.h"
+#include "stormnode/stormnode-payments.h"
+#include "stormnode/stormnode-sync.h"
+#include "stormnode/spork.h"
 #include "smessage.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 using namespace std;
 using namespace boost;
@@ -204,75 +205,9 @@ namespace {
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// dispatching functions
-//
-
-// These functions dispatch to one or all registered wallets
-
-namespace {
-    struct CMainSignals {
-        // Notifies listeners of updated transaction data (passing hash, transaction, and optionally the block it is found in.
-        boost::signals2::signal<void (const CTransaction &, const CBlock *, bool)> SyncTransaction;
-        // Notifies listeners of updated transaction data (transaction, and optionally the block it is found in.
-        boost::signals2::signal<void (const CTransaction &, const CBlockIndex *pindex, const CBlock *)> SyncTransactionNew;
-        // Notifies listeners of an erased transaction (currently disabled, requires transaction replacement).
-        boost::signals2::signal<void (const uint256 &)> EraseTransaction;
-        // Notifies listeners of an updated transaction without new data (for now: a coinbase potentially becoming visible).
-        boost::signals2::signal<void (const uint256 &)> UpdatedTransaction;
-        // Notifies listeners of a new active block chain.
-        boost::signals2::signal<void (const CBlockLocator &)> SetBestChain;
-        // Notifies listeners about an inventory item being seen on the network.
-        boost::signals2::signal<void (const uint256 &)> Inventory;
-        // Tells listeners to broadcast their data.
-        boost::signals2::signal<void (bool)> Broadcast;
-    } g_signals;
-}
-
-void RegisterWallet(CWalletInterface* pwalletIn) {
-    g_signals.SyncTransaction.connect(boost::bind(&CWalletInterface::SyncTransaction, pwalletIn, _1, _2, _3));
-    g_signals.EraseTransaction.connect(boost::bind(&CWalletInterface::EraseFromWallet, pwalletIn, _1));
-    g_signals.UpdatedTransaction.connect(boost::bind(&CWalletInterface::UpdatedTransaction, pwalletIn, _1));
-    g_signals.SetBestChain.connect(boost::bind(&CWalletInterface::SetBestChain, pwalletIn, _1));
-    g_signals.Inventory.connect(boost::bind(&CWalletInterface::Inventory, pwalletIn, _1));
-    g_signals.Broadcast.connect(boost::bind(&CWalletInterface::ResendWalletTransactions, pwalletIn, _1));
-}
-
-void UnregisterWallet(CWalletInterface* pwalletIn) {
-    g_signals.Broadcast.disconnect(boost::bind(&CWalletInterface::ResendWalletTransactions, pwalletIn, _1));
-    g_signals.Inventory.disconnect(boost::bind(&CWalletInterface::Inventory, pwalletIn, _1));
-    g_signals.SetBestChain.disconnect(boost::bind(&CWalletInterface::SetBestChain, pwalletIn, _1));
-    g_signals.UpdatedTransaction.disconnect(boost::bind(&CWalletInterface::UpdatedTransaction, pwalletIn, _1));
-    g_signals.EraseTransaction.disconnect(boost::bind(&CWalletInterface::EraseFromWallet, pwalletIn, _1));
-    g_signals.SyncTransaction.disconnect(boost::bind(&CWalletInterface::SyncTransaction, pwalletIn, _1, _2, _3));
-}
-
-void UnregisterAllValidationInterfaces() {
-    g_signals.Broadcast.disconnect_all_slots();
-    g_signals.Inventory.disconnect_all_slots();
-    g_signals.SetBestChain.disconnect_all_slots();
-    g_signals.UpdatedTransaction.disconnect_all_slots();
-    g_signals.EraseTransaction.disconnect_all_slots();
-    g_signals.SyncTransaction.disconnect_all_slots();
-}
-
-//TODO (Amir): Remove after chainActive.
-void SyncWithWallets(const CTransaction &tx, const CBlock *pblock, bool fConnect) {
-    g_signals.SyncTransaction(tx, pblock, fConnect);
-}
-
-//New SyncWithWallets function.
-void SyncWithWallets(const CTransaction &tx, const CBlockIndex *pindex, const CBlock *pblock) {
-    g_signals.SyncTransactionNew(tx, pindex, pblock);
-}
-
-void ResendWalletTransactions(bool fForce) {
-    g_signals.Broadcast(fForce);
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
 //
 // Registration of network node signals.
+//
 //
 
 namespace {
@@ -1677,45 +1612,12 @@ void static PruneOrphanBlocks()
     }
 }
 
-// miner's coin base reward
-CAmount GetProofOfWorkReward(CAmount nFees)
-{
-    if (pindexBest->nHeight == 0) {
-        CAmount nSubsidy = 4000000 * COIN; // 4,000,000 DarkSilk for 4 Phase Crowdfunding
-        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(nSubsidy), nSubsidy);
-        return nSubsidy + nFees;
-    }
-    else
-    {
-        LogPrint("creation", "GetProofOfWorkReward() : create=%s nSubsidy=%d\n", FormatMoney(Params().MiningReward()), Params().MiningReward());
-        return Params().MiningReward() + nFees;
-    }
-}
-
 // ppcoin: find last block index up to pindex
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake)
 {
     while (pindex && pindex->pprev && (pindex->IsProofOfStake() != fProofOfStake))
         pindex = pindex->pprev;
     return pindex;
-}
-
-CAmount GetBlockValue(int nBits, int nHeight, const CAmount& nFees, bool fProofOfWork)
-{
-	CAmount nSubsidy;
-
-	if (fProofOfWork) {
-    		 nSubsidy = Params().MiningReward();
-	} else { nSubsidy = Params().StakingReward(); }
-
-    return nSubsidy + nFees;
-}
-
-CAmount GetStormnodePayment(int nHeight, CAmount blockValue)
-{
-    CAmount ret = blockValue * 1/5; //20%
-
-    return ret;
 }
 
 // Requires cs_main.
@@ -2608,7 +2510,7 @@ void static ProcessGetData(CNode* pfrom)
             }
 
             // Track requests for our stuff.
-            g_signals.Inventory(inv.hash);
+            GetMainSignals().Inventory(inv.hash);
 
             if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK )
                 break;
@@ -2871,7 +2773,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             }
 
             // Track requests for our stuff
-            g_signals.Inventory(inv.hash);
+            GetMainSignals().Inventory(inv.hash);
         }
     }
 
@@ -3629,7 +3531,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // transactions become unconfirmed and spams other nodes.
         if (!fReindex && !fImporting && !IsInitialBlockDownload())
         {
-            g_signals.Broadcast();
+            GetMainSignals().Broadcast();
         }
 */
         //
@@ -4217,7 +4119,7 @@ bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode) {
         // Update best block in wallet (so we can detect restored wallets).
         //TODO (Amir): put back when chainActive is implemented.
         //if (mode != FLUSH_STATE_IF_NEEDED) {
-        //    g_signals.SetBestChain(chainActive.GetLocator());
+        //    GetMainSignals().SetBestChain(chainActive.GetLocator());
         //}
         nLastWrite = GetTimeMicros();
     }
@@ -4538,7 +4440,7 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
         CCoinsViewCache view(pcoinsTip);
         CInv inv(MSG_BLOCK, pindexNew->GetBlockHash());
         bool rv = ConnectBlock(*pblock, state, pindexNew, view);
-        g_signals.BlockChecked(*pblock, state);
+        GetMainSignals().BlockChecked(*pblock, state);
         if (!rv) {
             if (state.IsInvalid())
                 InvalidBlockFound(pindexNew, state);
@@ -4649,7 +4551,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     if ((pindexNew->nHeight % 20160) == 0 || (!fIsInitialDownload && (pindexNew->nHeight % 144) == 0))
     {
         const CBlockLocator locator(pindexNew);
-        g_signals.SetBestChain(locator);
+        GetMainSignals().SetBestChain(locator);
     }
 
     // New best block
@@ -4760,7 +4662,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     {
         // Notify UI to display prev block's coinbase if it was ours
         static uint256 hashPrevBestCoinBase;
-        g_signals.UpdatedTransaction(hashPrevBestCoinBase);
+        GetMainSignals().UpdatedTransaction(hashPrevBestCoinBase);
         hashPrevBestCoinBase = vtx[0].GetHash();
     }
 

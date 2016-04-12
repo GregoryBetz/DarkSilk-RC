@@ -7,8 +7,9 @@
 #include "multisiginputentry.h"
 #include "ui_multisiginputentry.h"
 #include "main.h"
+#include "reward.h"
 #include "script/script.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "wallet/wallet.h"
 #include "walletmodel.h"
 

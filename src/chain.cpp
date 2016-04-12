@@ -8,9 +8,9 @@
 #include "chain.h"
 #include "wallet/wallet.h"
 #include "checkpoints.h"
-#include "anon/stormnode/spork.h"
+#include "stormnode/spork.h"
 #include "kernel.h"
-#include "txdb-leveldb.h"
+#include "elements/txdb/txdb-leveldb.h"
 
 #ifdef ENABLE_WALLET
 

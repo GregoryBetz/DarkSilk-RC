@@ -8,7 +8,7 @@
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
 
-#include "net.h"
+#include "networking/net.h"
 #include "wallet/db.h"
 #include "wallet/wallet.h"
 #include "base58.h"

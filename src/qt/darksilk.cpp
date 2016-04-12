@@ -22,7 +22,7 @@
 #include "guiutil.h"
 #include "guiconstants.h"
 #include "init.h"
-#include "util.h"
+#include "elements/util/util.h"
 #include "wallet/wallet.h"
 #include "ui_interface.h"
 #include "paymentserver.h"

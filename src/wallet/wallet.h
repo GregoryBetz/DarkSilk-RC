@@ -15,15 +15,19 @@
 #include "primitives/transaction.h"
 #include "crypter.h"
 #include "main.h"
+#include "reward.h"
 #include "key.h"
 #include "keystore.h"
 #include "script/script.h"
 #include "ui_interface.h"
-#include "util.h"
-#include "utilstrencodings.h"
-#include "anon/stealth/stealth.h"
+#include "walletinterface.h"
+#include "elements/util/util.h"
+#include "elements/util/utilstrencodings.h"
+#include "stealth/stealth.h"
 
 const CAmount MIN_TX_FEE = 10000; // 0.00001 DRKSLK Minimum Transaction Fee
+// Minimum Transaction Fee of 0.00001 DRKSLK, Fees smaller than this are considered zero fee (for transaction creation)
+static const double MIN_FEE = 0.00001;
 /// Fees smaller than this (in satoshi) are considered zero fee (for relaying)
 const CAmount MIN_RELAY_TX_FEE = MIN_TX_FEE;
 //! -keypool default
