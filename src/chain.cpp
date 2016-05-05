@@ -847,8 +847,9 @@ bool CBlock::CheckBlock(CValidationState& state, bool fCheckPOW, bool fCheckMerk
     }
 
     // Check transactions
+    CTransaction txi;
     BOOST_FOREACH(CTransaction& tx, vtx){
-        if (!CheckTransaction(tx, state))
+        if (!txi.CheckTransaction(tx, state))
             return DoS(tx.nDoS, error("CheckBlock() : CheckTransaction failed"));
 
         // ppcoin: check transaction timestamp
