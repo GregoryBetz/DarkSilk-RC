@@ -2794,7 +2794,7 @@ bool CWallet::ConvertList(std::vector<CTxIn> vCoins, std::vector<CAmount>& vecAm
     return true;
 }
 
-bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int32_t& nChangePos, std::string& strFailReason, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX, CAmount nFeePay, const CWalletTx* wtxInOffer, const CWalletTx* wtxInCert, const CWalletTx* wtxInAccount, const CWalletTx* wtxInEscrow, bool drkslkTx)
+bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, int32_t& nChangePos, std::string& strFailReason, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX, CAmount nFeePay, const CWalletTx* wtxInOffer, const CWalletTx* wtxInCert, const CWalletTx* wtxInAccount, const CWalletTx* wtxInEscrow, bool darksilkTx)
 {
     if(useIX && nFeePay < CENT) nFeePay = CENT;
     CAmount nValue = 0;
@@ -2862,7 +2862,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend, 
     }
 
     // SERVICES: set darksilk tx version if its a darksilk service/marketplace call
-    if(drkslkTx)
+    if(darksilkTx)
         wtxNew.nVersion = GetDarkSilkTxVersion();
 
     wtxNew.fTimeReceivedIsTxTime = true;//TODO (AA): put this back??

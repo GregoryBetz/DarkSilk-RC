@@ -351,14 +351,14 @@ static const CRPCCommand vRPCCommands[] =
     { "smsgbuckets",            &smsgbuckets,            false,     false,     false },
 
     // use the blockchain to build your reputation and establish a trusted identity
-    { "aliasnew",               &aliasnew,               false,     false,     true },
-    { "aliasupdate",            &aliasupdate,            false,     false,     true },
-    { "aliaslist",              &aliaslist,              false,     false,     true },
-    { "aliasaffiliates",        &aliasaffiliates,        false,     false,     true },
-    { "aliasinfo",              &aliasinfo,              false,     false,     true },
-    { "aliashistory",           &aliashistory,           false,     false,     true },
-    { "aliasfilter",            &aliasfilter,            false,     false,     true },
-    { "aliasscan",              &aliasscan,              false,     false,     true },
+    { "accountnew",             &accountnew,             false,     false,     true },
+    { "accountupdate",          &accountupdate,          false,     false,     true },
+    { "accountlist",            &accountlist,            false,     false,     true },
+    { "accountaffiliates",      &accountaffiliates,      false,     false,     true },
+    { "accountinfo",            &accountinfo,            false,     false,     true },
+    { "accounthistory",         &accounthistory,         false,     false,     true },
+    { "accountfilter",          &accountfilter,          false,     false,     true },
+    { "accountscan",            &accountscan,            false,     false,     true },
     { "generatepublickey",      &generatepublickey,      false,     false,     true },
 
     // use the blockchain as a distributed marketplace

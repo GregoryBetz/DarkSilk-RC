@@ -435,7 +435,7 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
 }
 
 // Create Marketplace/Service transaactions
-void SendMoneyDarkSilk(const vector<CRecipient> &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxOfferIn=NULL,  const CWalletTx* wtxCertIn=NULL, const CWalletTx* wtxAliasIn=NULL, const CWalletTx* wtxEscrowIn=NULL, bool darksilkTx=true)
+void SendMoneyDarkSilk(const std::vector<std::pair<CScript, CAmount> > vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx &wtxNew, const CWalletTx* wtxOfferIn=NULL,  const CWalletTx* wtxCertIn=NULL, const CWalletTx* wtxAccountIn=NULL, const CWalletTx* wtxEscrowIn=NULL, bool darksilkTx=true)
 {
     CAmount curBalance = pwalletMain->GetBalance();
 
@@ -449,9 +449,11 @@ void SendMoneyDarkSilk(const vector<CRecipient> &vecSend, CAmount nValue, bool f
     // Create and send the transaction
     CReserveKey reservekey(pwalletMain);
     CAmount nFeeRequired;
+    const CCoinControl* coinControl = NULL;
+    AvailableCoinsType coin_type;
     std::string strError;
-    int nChangePosRet = -1;
-    if (!pwalletMain->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePosRet, strError, NULL, true, wtxOfferIn, wtxCertIn, wtxAccountIn, wtxEscrowIn, darksilkTx)) {
+    int32_t nChangePos = -1;
+    if (!pwalletMain->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePos, strError, coinControl, ALL_COINS, false, wtxOfferIn, wtxCertIn, wtxAccountIn, wtxEscrowIn, darksilkTx)) {
         if (!fSubtractFeeFromAmount && nValue + nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw runtime_error(strError);
@@ -460,7 +462,6 @@ void SendMoneyDarkSilk(const vector<CRecipient> &vecSend, CAmount nValue, bool f
     vector<vector<unsigned char> > vvch;
     int op, nOut;
     bool fJustCheck = true;
-    CCoinsViewCache inputs(pcoinsTip);
     if(DecodeAccountTx(wtxNew, op, nOut, vvch))
     {
         if(!CheckAccountInputs(wtxNew, op, nOut, vvch, inputs, fJustCheck, chainActive.Tip()->nHeight))
