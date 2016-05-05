@@ -42,6 +42,7 @@
 class uint256;
 
 static const int LISTING_DEFAULT_DURATION = 7 * 24 * 60 * 60; // One Week
+static const bool DEFAULT_LOGTHREADNAMES = false;
 
 #define BEGIN(a)            ((char*)&(a))
 #define END(a)              ((char*)&((&(a))[1]))
@@ -141,6 +142,7 @@ extern bool fCommandLine;
 extern std::string strMiscWarning;
 extern bool fLogIPs;
 extern bool fLogTimestamps;
+extern bool fLogThreadNames;
 extern volatile bool fReopenDebugLog;
 
 
@@ -427,6 +429,7 @@ inline void SetThreadPriority(int nPriority)
 #endif
 
 void RenameThread(const char* name);
+std::string GetThreadName();
 
 inline uint32_t ByteReverse(uint32_t value)
 {

@@ -1527,14 +1527,13 @@ int CBudgetProposal::GetTotalPaymentCount()
     return (GetBlockEndCycle() - GetBlockStartCycle()) / GetBudgetPaymentCycleBlocks();
 }
 
-int CBudgetProposal::GetRemainingPaymentCount()
+int CBudgetProposal::GetRemainingPaymentCount(int nBlockHeight)
 {
-    int nBlockHeight = nBlockStart;
     int nPayments = 0;
     // printf("-> Budget Name : %s\n", strProposalName.c_str());
     // printf("------- nBlockStart : %d\n", nBlockStart);
     // printf("------- nBlockEnd : %d\n", nBlockEnd);
-    while(nBlockHeight + GetBudgetPaymentCycleBlocks() < nBlockEnd)
+    while(nBlockHeight + GetBudgetPaymentCycleBlocks() < GetBlockEndCycle())
     {
         // printf("------- P : %d %d - %d < %d - %d\n", nBlockHeight, nPayments, nBlockHeight + GetBudgetPaymentCycleBlocks(), nBlockEnd, nBlockHeight + GetBudgetPaymentCycleBlocks() < nBlockEnd);
         nBlockHeight += GetBudgetPaymentCycleBlocks();

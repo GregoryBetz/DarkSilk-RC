@@ -66,6 +66,7 @@ unsigned int nMinerSleep;
 bool fUseFastIndex;
 bool fOnlyTor = false;
 bool fMinimizeCoinAge;
+bool fLogThreadnames;
 
 #ifdef WIN32
 // Win32 LevelDB doesn't use filedescriptors, and the ones used for
@@ -345,6 +346,7 @@ std::string HelpMessage()
     if (GetBoolArg("-help-debug", false))
     {
     strUsage += "  -fuzzmessagestest=<n>  " + _("Randomly fuzz 1 of every <n> network messages") + "\n";
+    strUsage += "  -logthreadnames        " + _("Add thread names to debug messages (default: %u)");
     }
 
     strUsage += "  -testnet               " + _("Use the test network") + "\n";
@@ -627,6 +629,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     fServer = GetBoolArg("-server", false);
     fPrintToConsole = GetBoolArg("-printtoconsole", false);
     fPrintToDebugLog = GetBoolArg("-printtodebuglog", true) && !fPrintToConsole;
+    fLogThreadnames = GetBoolArg("-logthreadnames", DEFAULT_LOGTHREADNAMES);
     fLogTimestamps = GetBoolArg("-logtimestamps", true);
 #ifdef ENABLE_WALLET
     bool fDisableWallet = GetBoolArg("-disablewallet", false);

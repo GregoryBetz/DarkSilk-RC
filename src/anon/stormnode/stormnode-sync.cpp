@@ -139,17 +139,21 @@ void CStormnodeSync::GetNextAsset()
             RequestedStormnodeAssets = STORMNODE_SYNC_SPORKS;
             break;
         case(STORMNODE_SYNC_SPORKS):
+            lastStormnodeList = GetTime();
             RequestedStormnodeAssets = STORMNODE_SYNC_LIST;
             break;
         case(STORMNODE_SYNC_LIST):
+            lastStormnodeWinner = GetTime();
             RequestedStormnodeAssets = STORMNODE_SYNC_SNW;
             break;
         case(STORMNODE_SYNC_SNW):
+            lastBudgetItem = GetTime();
             RequestedStormnodeAssets = STORMNODE_SYNC_BUDGET;
             break;
         case(STORMNODE_SYNC_BUDGET):
             LogPrintf("CStormnodeSync::GetNextAsset - Sync has finished\n");
             RequestedStormnodeAssets = STORMNODE_SYNC_FINISHED;
+            //uiInterface.NotifyAdditionalDataSyncProgressChanged(1);
             break;
     }
     RequestedStormnodeAttempt = 0;
@@ -228,11 +232,14 @@ void CStormnodeSync::Process()
 
     if(tick++ % STORMNODE_SYNC_TIMEOUT != 0) return;
 
+    // the current number of stormnodes on the network
+    int nSnCount = snodeman.CountEnabled();
+
     if(IsSynced()) {
         /* 
             Resync if we lose all stormnodes from sleep/wake or failure to sync originally
         */
-        if(snodeman.CountEnabled() == 0) {
+        if(nSnCount == 0) {
             Reset();
         } else
             return;
