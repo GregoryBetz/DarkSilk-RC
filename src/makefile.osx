@@ -178,6 +178,7 @@ ifeq (${USE_WALLET}, 1)
     obj/wallet/rpcdump.o \
     obj/wallet/rpcwallet.o \
     obj/wallet/wallet.o \
+    obj/wallet/wallet_ismine.o \
     obj/wallet/walletdb.o
 endif
 

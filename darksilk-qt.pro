@@ -263,6 +263,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/univalue.h \
             src/univalue_escapes.h \
             src/wallet/walletdb.h \
+            src/wallet/wallet_ismine.h \
             src/script/script.h \
             src/script/script_error.h \
             src/init.h \
@@ -441,6 +442,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/base58.cpp \
             src/wallet/db.cpp \
             src/wallet/walletdb.cpp \
+            src/wallet/wallet_ismine.cpp \
             src/qt/clientmodel.cpp \
             src/qt/guiutil.cpp \
             src/qt/transactionrecord.cpp \
