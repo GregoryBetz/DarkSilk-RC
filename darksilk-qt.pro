@@ -268,6 +268,12 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/init.h \
             src/mruset.h \
             src/consensus/validation.h \
+            src/services/account.h \
+            src/services/cert.h \
+            src/services/escrow.h \
+            src/services/message.h \
+            src/services/messagecrypter.h \
+            src/services/offer.h \
             src/json/json_spirit_writer_template.h \
             src/json/json_spirit_writer.h \
             src/json/json_spirit_value.h \
@@ -422,6 +428,12 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/init.cpp \
             src/net.cpp \
             src/checkpoints.cpp \
+            src/services/account.cpp \
+            src/services/cert.cpp \
+            src/services/escrow.cpp \
+            src/services/message.cpp \
+            src/services/messagecrypter.cpp \
+            src/services/offer.cpp \
             src/qt/multisiginputentry.cpp \
             src/qt/multisigaddressentry.cpp \
             src/qt/multisigdialog.cpp \
