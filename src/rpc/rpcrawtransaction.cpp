@@ -14,6 +14,7 @@
 #include "init.h"
 #include "main.h"
 #include "net.h"
+#include "policy/policy.h"
 #include "keystore.h"
 #include "script/script.h"
 #include "script/script_error.h"

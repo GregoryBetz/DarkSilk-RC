@@ -84,6 +84,7 @@ OBJS= \
     obj/main.o \
     obj/net.o \
     obj/protocol.o \
+    obj/policy/policy.o \
     obj/random.o \
     obj/rpc/rpcclient.o \
     obj/rpc/rpcprotocol.o \

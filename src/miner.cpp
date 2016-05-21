@@ -6,6 +6,7 @@
 
 #include "miner.h"
 #include "consensus/consensus.h"
+#include "policy/policy.h"
 #include "primitives/block.h"
 #include "txdb.h"
 #include "kernel.h"

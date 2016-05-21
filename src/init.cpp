@@ -19,6 +19,7 @@
 #include "sanity.h"
 #include "net.h"
 #include "key.h"
+#include "policy/policy.h"
 #include "pubkey.h"
 #include "rpc/rpcserver.h"
 #include "script/standard.h"

@@ -8,6 +8,7 @@
 #include "main.h"
 #include "kernel.h"
 #include "checkpoints.h"
+#include "policy/policy.h"
 
 using namespace json_spirit;
 using namespace std;

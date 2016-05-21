@@ -31,6 +31,7 @@
 #include "anon/stormnode/stormnode.h"
 #include "anon/stormnode/stormnode-budget.h"
 #include "anon/stormnode/stormnode-payments.h"
+#include "policy/policy.h"
 #include "chainparams.h"
 #include "smessage.h"
 #include "txdb-leveldb.h"
