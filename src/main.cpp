@@ -15,6 +15,7 @@
 #include "alert.h"
 #include "chainparams.h"
 #include "checkpoints.h"
+#include "consensus/consensus.h"
 #include "consensus/params.h"
 #include "consensus/validation.h"
 #include "wallet/db.h"
