@@ -435,7 +435,7 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
 }
 
 // Create Marketplace/Service transaactions
-void SendMoneyDarkSilk(const std::vector<std::pair<CScript, CAmount> > vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx &wtxNew, const CWalletTx* wtxOfferIn=NULL,  const CWalletTx* wtxCertIn=NULL, const CWalletTx* wtxAccountIn=NULL, const CWalletTx* wtxEscrowIn=NULL, bool darksilkTx=true)
+void SendMoneyForServices(const std::vector<std::pair<CScript, CAmount> > vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx &wtxNew, const CWalletTx* wtxOfferIn=NULL,  const CWalletTx* wtxCertIn=NULL, const CWalletTx* wtxAccountIn=NULL, const CWalletTx* wtxEscrowIn=NULL, bool darksilkTx=true)
 {
     CAmount curBalance = pwalletMain->GetBalance();
 
@@ -450,16 +450,16 @@ void SendMoneyDarkSilk(const std::vector<std::pair<CScript, CAmount> > vecSend, 
     CReserveKey reservekey(pwalletMain);
     CAmount nFeeRequired;
     const CCoinControl* coinControl = NULL;
-    AvailableCoinsType coin_type;
     std::string strError;
     int32_t nChangePos = -1;
-    if (!pwalletMain->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePos, strError, coinControl, ALL_COINS, false, wtxOfferIn, wtxCertIn, wtxAccountIn, wtxEscrowIn, darksilkTx)) {
+    if (!pwalletMain->CreateTransaction(vecSend, wtxNew, reservekey, nFeeRequired, nChangePos, strError, coinControl, ALL_COINS, false, nValue, wtxOfferIn, wtxCertIn, wtxAccountIn, wtxEscrowIn, darksilkTx)) {
         if (!fSubtractFeeFromAmount && nValue + nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
         throw runtime_error(strError);
     }
     // run a check on the inputs without putting them into the db, just to ensure it will go into the mempool without issues and cause wallet annoyance
     vector<vector<unsigned char> > vvch;
+    const CCoinsViewCache& inputs = NULL;
     int op, nOut;
     bool fJustCheck = true;
     if(DecodeAccountTx(wtxNew, op, nOut, vvch))

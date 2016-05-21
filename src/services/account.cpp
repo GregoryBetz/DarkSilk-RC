@@ -37,7 +37,7 @@ CCertDB *pcertdb = NULL;
 CEscrowDB *pescrowdb = NULL;
 CMessageDB *pmessagedb = NULL;
 
-extern void SendMoneyDarkSilk(const std::vector<std::pair<CScript, CAmount> > &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInOffer=NULL, const CWalletTx* wtxInCert=NULL, const CWalletTx* wtxInAccount=NULL, const CWalletTx* wtxInEscrow=NULL, bool darksilkTx=true);
+extern void SendMoneyForServices(const std::vector<std::pair<CScript, CAmount> > &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInOffer=NULL, const CWalletTx* wtxInCert=NULL, const CWalletTx* wtxInAccount=NULL, const CWalletTx* wtxInEscrow=NULL, bool darksilkTx=true);
 
 bool IsCompressedOrUncompressedPubKey(const vector<unsigned char> &vchPubKey) {
     if (vchPubKey.size() < 33) {
@@ -982,7 +982,7 @@ UniValue accountnew(const UniValue& params, bool fHelp) {
 	CreateFeeRecipient(scriptData, data, fee);
 	vecSend.push_back(fee);
 	// send the tranasction
-	SendMoneyDarkSilk(vecSend, recipient.nAmount + fee.nAmount, false, wtx);
+	SendMoneyForServices(vecSend, recipient.nAmount + fee.nAmount, false, wtx);
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
 	res.push_back(HexStr(vchPubKey));
@@ -1091,7 +1091,7 @@ UniValue accountupdate(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInCert=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxIn, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxIn, wtxInEscrow);
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
 	return res;

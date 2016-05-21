@@ -25,7 +25,7 @@
 
 using namespace std;
 
-extern void SendMoneyDarkSilk(const std::vector<std::pair<CScript, CAmount> > &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInOffer=NULL, const CWalletTx* wtxInCert=NULL, const CWalletTx* wtxInAccount=NULL, const CWalletTx* wtxInEscrow=NULL, bool darksilkTx=true);
+extern void SendMoneyForServices(const std::vector<std::pair<CScript, CAmount> > &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInOffer=NULL, const CWalletTx* wtxInCert=NULL, const CWalletTx* wtxInAccount=NULL, const CWalletTx* wtxInEscrow=NULL, bool darksilkTx=true);
 
 bool EncryptMessage(const vector<unsigned char> &vchPubKey, const vector<unsigned char> &vchMessage, string &strCipherText)
 {
@@ -502,7 +502,7 @@ UniValue certnew(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
 	const CWalletTx * wtxInCert=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxInAccount, wtxInEscrow);
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
 	res.push_back(HexStr(vchRand));
@@ -594,7 +594,7 @@ UniValue certupdate(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxIn, wtxInAccount, wtxInEscrow);	
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxIn, wtxInAccount, wtxInEscrow);	
  	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
 	return res;
@@ -720,7 +720,7 @@ UniValue certtransfer(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxIn, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxIn, wtxInAccount, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());

@@ -28,7 +28,7 @@
 using namespace std;
 
 extern void SendMoney(const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew);
-extern void SendMoneyDarkSilk(const std::vector<std::pair<CScript, CAmount> > &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInOffer=NULL, const CWalletTx* wtxInCert=NULL, const CWalletTx* wtxInAccount=NULL, const CWalletTx* wtxInEscrow=NULL, bool darksilkTx=true);
+extern void SendMoneyForServices(const std::vector<std::pair<CScript, CAmount> > &vecSend, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew, const CWalletTx* wtxInOffer=NULL, const CWalletTx* wtxInCert=NULL, const CWalletTx* wtxInAccount=NULL, const CWalletTx* wtxInEscrow=NULL, bool darksilkTx=true);
 
 bool DisconnectAccount(const CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs );
 bool DisconnectOffer(const CBlockIndex *pindex, const CTransaction &tx, int op, vector<vector<unsigned char> > &vvchArgs );
@@ -1239,7 +1239,7 @@ UniValue offernew(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxCertIn, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxCertIn, wtxInAccount, wtxInEscrow);
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
 	res.push_back(HexStr(vchRand));
@@ -1386,7 +1386,7 @@ UniValue offernew_nocheck(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxCertIn, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxCertIn, wtxInAccount, wtxInEscrow);
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
 	res.push_back(HexStr(vchRand));
@@ -1553,7 +1553,7 @@ UniValue offerlink(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInCert=NULL;
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxAccountIn, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxAccountIn, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -1719,7 +1719,7 @@ UniValue offerlink_nocheck(const UniValue& params, bool fHelp)
 	const CWalletTx * wtxInCert=NULL;
 	const CWalletTx * wtxInOffer=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxAccountIn, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxInOffer, wtxInCert, wtxAccountIn, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -1821,7 +1821,7 @@ UniValue offeraddwhitelist(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInCert=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxInCert, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxInCert, wtxInAccount, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -1901,7 +1901,7 @@ UniValue offerremovewhitelist(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
 	const CWalletTx * wtxInCert=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxInCert, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxInCert, wtxInAccount, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -1975,7 +1975,7 @@ UniValue offerclearwhitelist(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInCert=NULL;
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxInCert, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxInCert, wtxInAccount, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -2241,7 +2241,7 @@ UniValue offerupdate(const UniValue& params, bool fHelp) {
 	vecSend.push_back(fee);
 	const CWalletTx * wtxInAccount=NULL;
 	const CWalletTx * wtxInEscrow=NULL;
-	SendMoneyDarkSilk(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxCertIn, wtxInAccount, wtxInEscrow);
+	SendMoneyForServices(vecSend, recipient.nAmount+fee.nAmount, false, wtx, wtxIn, wtxCertIn, wtxInAccount, wtxInEscrow);
 
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -2845,7 +2845,7 @@ UniValue offeraccept(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInCert=NULL;
 	// if making a purchase and we are using an account from the whitelist of the offer, we may need to prove that we own that account so in that case we attach an input from the account
 	// if purchasing an escrow, we adjust the height to figure out pricing of the accept so we may also attach escrow inputs to the tx
-	SendMoneyDarkSilk(vecSend, paymentRecipient.nAmount+fee.nAmount, false, wtx, wtxOfferIn, wtxInCert, wtxAccountIn, wtxEscrowIn);
+	SendMoneyForServices(vecSend, paymentRecipient.nAmount+fee.nAmount, false, wtx, wtxOfferIn, wtxInCert, wtxAccountIn, wtxEscrowIn);
 	
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
@@ -3164,7 +3164,7 @@ UniValue offeraccept_nocheck(const UniValue& params, bool fHelp) {
 	const CWalletTx * wtxInCert=NULL;
 	// if making a purchase and we are using an account from the whitelist of the offer, we may need to prove that we own that account so in that case we attach an input from the account
 	// if purchasing an escrow, we adjust the height to figure out pricing of the accept so we may also attach escrow inputs to the tx
-	SendMoneyDarkSilk(vecSend, paymentRecipient.nAmount+fee.nAmount, false, wtx, wtxOfferIn, wtxInCert, wtxAccountIn, wtxEscrowIn);
+	SendMoneyForServices(vecSend, paymentRecipient.nAmount+fee.nAmount, false, wtx, wtxOfferIn, wtxInCert, wtxAccountIn, wtxEscrowIn);
 	
 	UniValue res(UniValue::VARR);
 	res.push_back(wtx.GetHash().GetHex());
