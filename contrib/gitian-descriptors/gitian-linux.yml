@@ -19,7 +19,7 @@ packages:
 - "bsdmainutils"
 reference_datetime: "2015-05-25 00:00:00"
 remotes:
-- "url": "https://github.com/SCDeveloper/DarkSilk-Release-Candidate.git"
+- "url": "https://github.com/SilkNetwork/DarkSilk-Core.git"
   "dir": "darksilk"
 files:
 - "darksilk-deps-linux32-gitian.zip"

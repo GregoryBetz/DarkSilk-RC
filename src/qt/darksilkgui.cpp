@@ -209,11 +209,10 @@ DarkSilkGUI::DarkSilkGUI(QWidget *parent):
     frameBlocksLayout->addStretch();
     frameBlocksLayout->addWidget(labelBlocksIcon);
     frameBlocksLayout->addStretch();
-    
+    toolbar->addWidget(frameBlocks);
 
     if (GetBoolArg("-staking", true)) {
         QTimer *timerStakingIcon = new QTimer(labelStakingIcon);
-
         connect(timerStakingIcon, SIGNAL(timeout()), this, SLOT(updateStakingIcon()));
         timerStakingIcon->start(30 * 1000);
         updateStakingIcon();
@@ -379,7 +378,6 @@ void DarkSilkGUI::createActions()
     connect(multisigAction, SIGNAL(triggered()), this, SLOT(gotoMultiSigPage()));
     connect(messageAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(messageAction, SIGNAL(triggered()), this, SLOT(gotoMessagePage()));
-
     connect(stormnodeManagerAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(stormnodeManagerAction, SIGNAL(triggered()), this, SLOT(gotoStormnodeManagerPage()));
 
@@ -587,7 +585,6 @@ void DarkSilkGUI::setClientModel(ClientModel *clientModel)
     }
 
     this->clientModel = clientModel;
-
     if(clientModel) 
     {
         // Replace some strings and icons, when using the testnet
@@ -848,6 +845,7 @@ void DarkSilkGUI::setNumBlocks(int count)
         return;
     }
 
+    bool fShowStatusBar = false;
     QString tooltip;
 
     QDateTime lastBlockDate = clientModel->getLastBlockDate();
@@ -858,14 +856,18 @@ void DarkSilkGUI::setNumBlocks(int count)
     tooltip = tr("Processed %1 blocks of transaction history.").arg(count);
 
     // Set icon state: spinning if catching up, tick otherwise
-    if(secs < 25 * 60) {
+    if(secs < 25 * 60) 
+    {
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
-
         labelBlocksIcon->setPixmap(QIcon(fUseBlackTheme ? ":/icons/black/synced" : ":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+
         overviewPage->showOutOfSyncWarning(false);
+
         progressBarLabel->setVisible(false);
         progressBar->setVisible(false);
-    } else {
+    } 
+    else 
+    {
         // Represent time from last generated block in human readable text
         QString timeBehindText;
         const int HOUR_IN_SECONDS = 60 * 60;
@@ -882,7 +884,6 @@ void DarkSilkGUI::setNumBlocks(int count)
         } else {
             int years = secs / YEAR_IN_SECONDS;
             int remainder = secs % YEAR_IN_SECONDS;
-
             timeBehindText = tr("%1 and %2").arg(tr("%n year(s)", "", years)).arg(tr("%n week(s)", "", remainder / WEEK_IN_SECONDS));
         }
 
@@ -893,17 +894,14 @@ void DarkSilkGUI::setNumBlocks(int count)
         progressBar->setMaximum(totalSecs);
         progressBar->setValue(totalSecs - secs);
         progressBar->setVisible(true);
-        //fShowStatusBar = true;
+        fShowStatusBar = true;
 
         tooltip = tr("Catching up...") + QString("<br>") + tooltip;
 
         labelBlocksIcon->setMovie(syncIconMovie);
 
         if(count != prevBlocks) 
-        {
             syncIconMovie->jumpToNextFrame();
-        }
-
         prevBlocks = count;
 
         overviewPage->showOutOfSyncWarning(true);
@@ -921,7 +919,7 @@ void DarkSilkGUI::setNumBlocks(int count)
     progressBarLabel->setToolTip(tooltip);
     progressBar->setToolTip(tooltip);
 
-    statusBar()->setVisible(true);
+    statusBar()->setVisible(fShowStatusBar);
 }
 
 void DarkSilkGUI::message(const QString &title, const QString &message, bool modal, unsigned int style, bool *ret) 
@@ -1008,28 +1006,25 @@ void DarkSilkGUI::changeEvent(QEvent *e)
 #endif
 }
 
-void DarkSilkGUI::closeEvent(QCloseEvent *event) 
+void DarkSilkGUI::closeEvent(QCloseEvent *event)
 {
+    if(clientModel)
+    {
 #ifndef Q_OS_MAC // Ignored on Mac
-    if(clientModel&& clientModel->getOptionsModel())
-         {
-        if(!clientModel->getOptionsModel()->getMinimizeOnClose()) 
+        if(!clientModel->getOptionsModel()->getMinimizeToTray() &&
+           !clientModel->getOptionsModel()->getMinimizeOnClose())
         {
             qApp->quit();
         }
-    }
-
 #endif
-
+    }
     QMainWindow::closeEvent(event);
 }
 
 void DarkSilkGUI::askFee(CAmount nFeeRequired, bool *payFee) 
 {
     if (!clientModel || !clientModel->getOptionsModel()) 
-    {
         return;
-    }
 
     QString strMessage = tr("This transaction is over the size limit. You can still send it for a fee of %1, "
                             "which goes to the nodes that process your transaction and helps to support the network. "
@@ -1038,48 +1033,41 @@ void DarkSilkGUI::askFee(CAmount nFeeRequired, bool *payFee)
     QMessageBox::StandardButton retval = QMessageBox::question(
             this, tr("Confirm transaction fee"), strMessage,
             QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Yes);
-
     *payFee = (retval == QMessageBox::Yes);
 }
 
 void DarkSilkGUI::incomingTransaction(const QModelIndex & parent, int start, int end) 
 {
-    if(!walletModel || !clientModel) 
-    {
+    if(!walletModel || !clientModel)
         return;
-    }
-
     TransactionTableModel *ttm = walletModel->getTransactionTableModel();
     qint64 amount = ttm->index(start, TransactionTableModel::Amount, parent)
                     .data(Qt::EditRole).toULongLong();
-
-    if(!clientModel->inInitialBlockDownload()) {
+    if(!clientModel->inInitialBlockDownload())
+    {
         // On new transaction, make an info balloon
         // Unless the initial block download is in progress, to prevent balloon-spam
         QString date = ttm->index(start, TransactionTableModel::Date, parent)
-                       .data().toString();
-
+                        .data().toString();
         QString type = ttm->index(start, TransactionTableModel::Type, parent)
-                       .data().toString();
-
+                        .data().toString();
         QString address = ttm->index(start, TransactionTableModel::ToAddress, parent)
-                          .data().toString();
-
+                        .data().toString();
         QIcon icon = qvariant_cast<QIcon>(ttm->index(start,
-                                          TransactionTableModel::ToAddress, parent)
-                                          .data(Qt::DecorationRole));
+                            TransactionTableModel::ToAddress, parent)
+                        .data(Qt::DecorationRole));
 
         notificator->notify(Notificator::Information,
-                            (amount) < 0 ? tr("Sent transaction") :
-                            tr("Incoming transaction"),
-                            tr("Date: %1\n"
-                               "Amount: %2\n"
-                               "Type: %3\n"
-                               "Address: %4\n")
-                            .arg(date)
-                            .arg(DarkSilkUnits::formatWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), amount, true))
-                            .arg(type)
-                            .arg(address), icon);
+                            (amount)<0 ? tr("Sent transaction") :
+                                         tr("Incoming transaction"),
+                              tr("Date: %1\n"
+                                 "Amount: %2\n"
+                                 "Type: %3\n"
+                                 "Address: %4\n")
+                              .arg(date)
+                              .arg(DarkSilkUnits::formatWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), amount, true))
+                              .arg(type)
+                              .arg(address), icon);
     }
 }
 
@@ -1411,23 +1399,18 @@ void DarkSilkGUI::toggleHidden()
     showNormalIfMinimized(true);
 }
 
-void DarkSilkGUI::updateWeight() 
+void DarkSilkGUI::updateWeight()
 {
-    if (!pwalletMain) {
+    if (!pwalletMain)
         return;
-    }
 
     TRY_LOCK(cs_main, lockMain);
-
-    if (!lockMain) {
+    if (!lockMain)
         return;
-    }
 
     TRY_LOCK(pwalletMain->cs_wallet, lockWallet);
-
-    if (!lockWallet) {
+    if (!lockWallet)
         return;
-    }
 
     nWeight = pwalletMain->GetStakeWeight();
 }

@@ -65,7 +65,7 @@ CStormnode::CStormnode()
     addr = CService();
     pubkey = CPubKey();
     pubkey2 = CPubKey();
-    sig = std::vector<unsigned char>();
+    vchSig = std::vector<unsigned char>();
     activeState = STORMNODE_ENABLED;
     sigTime = GetAdjustedTime();
     lastPing = CStormnodePing();
@@ -87,7 +87,7 @@ CStormnode::CStormnode(const CStormnode& other)
     addr = other.addr;
     pubkey = other.pubkey;
     pubkey2 = other.pubkey2;
-    sig = other.sig;
+    vchSig = other.vchSig;
     activeState = other.activeState;
     sigTime = other.sigTime;
     lastPing = other.lastPing;
@@ -109,7 +109,7 @@ CStormnode::CStormnode(const CStormnodeBroadcast& snb)
     addr = snb.addr;
     pubkey = snb.pubkey;
     pubkey2 = snb.pubkey2;
-    sig = snb.sig;
+    vchSig = snb.vchSig;
     activeState = STORMNODE_ENABLED;
     sigTime = snb.sigTime;
     lastPing = snb.lastPing;
@@ -132,7 +132,7 @@ bool CStormnode::UpdateFromNewBroadcast(CStormnodeBroadcast& snb)
     if(snb.sigTime > sigTime) {
         pubkey2 = snb.pubkey2;
         sigTime = snb.sigTime;
-        sig = snb.sig;
+        vchSig = snb.vchSig;
         protocolVersion = snb.protocolVersion;
         addr = snb.addr;
         lastTimeChecked = 0;
@@ -301,7 +301,7 @@ CStormnodeBroadcast::CStormnodeBroadcast()
     addr = CService();
     pubkey = CPubKey();
     pubkey2 = CPubKey();
-    sig = std::vector<unsigned char>();
+    vchSig = std::vector<unsigned char>();
     activeState = STORMNODE_ENABLED;
     sigTime = GetAdjustedTime();
     lastPing = CStormnodePing();
@@ -321,7 +321,7 @@ CStormnodeBroadcast::CStormnodeBroadcast(CService newAddr, CTxIn newVin, CPubKey
     addr = newAddr;
     pubkey = newPubkey;
     pubkey2 = newPubkey2;
-    sig = std::vector<unsigned char>();
+    vchSig = std::vector<unsigned char>();
     activeState = STORMNODE_ENABLED;
     sigTime = GetAdjustedTime();
     lastPing = CStormnodePing();
@@ -341,7 +341,7 @@ CStormnodeBroadcast::CStormnodeBroadcast(const CStormnode& sn)
     addr = sn.addr;
     pubkey = sn.pubkey;
     pubkey2 = sn.pubkey2;
-    sig = sn.sig;
+    vchSig = sn.vchSig;
     activeState = sn.activeState;
     sigTime = sn.sigTime;
     lastPing = sn.lastPing;
@@ -359,7 +359,7 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
 {
     // make sure signature isn't in the future (past is OK)
     if (sigTime > GetAdjustedTime() + 60 * 60) {
-        LogPrintf("snb - Signature rejected, too far into the future %s\n", vin.ToString());
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Signature rejected, too far into the future %s\n", vin.ToString());
         nDos = 1;
         return false;
     }
@@ -369,7 +369,7 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     std::string strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
     if(protocolVersion < stormnodePayments.GetMinStormnodePaymentsProto()) {
-        LogPrintf("snb - ignoring outdated Stormnode %s protocol version %d\n", vin.ToString(), protocolVersion);
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - ignoring outdated Stormnode %s protocol version %d\n", vin.ToString(), protocolVersion);
         return false;
     }
 
@@ -377,7 +377,7 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     pubkeyScript = GetScriptForDestination(pubkey.GetID());
 
     if(pubkeyScript.size() != 25) {
-        LogPrintf("snb - pubkey the wrong size\n");
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - pubkey the wrong size\n");
         nDos = 100;
         return false;
     }
@@ -386,19 +386,19 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     pubkeyScript2 = GetScriptForDestination(pubkey2.GetID());
 
     if(pubkeyScript2.size() != 25) {
-        LogPrintf("snb - pubkey2 the wrong size\n");
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - pubkey2 the wrong size\n");
         nDos = 100;
         return false;
     }
 
     if(!vin.scriptSig.empty()) {
-        LogPrintf("snb - Ignore Not Empty ScriptSig %s\n",vin.ToString());
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Ignore Not Empty ScriptSig %s\n",vin.ToString());
         return false;
     }
 
     std::string errorMessage = "";
-    if(!sandStormSigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
-        LogPrintf("snb - Got bad Stormnode address signature\n");
+    if(!sandStormSigner.VerifyMessage(pubkey, vchSig, strMessage, errorMessage)){
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Got bad Stormnode address signature\n");
         nDos = 100;
         return false;
     }
@@ -415,7 +415,7 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     else {
         // this broadcast older than we have, it's bad. 
         if(psn->sigTime > sigTime) {
-            LogPrintf("snb - Bad sigTime %d for Stormnode %20s %105s (existing broadcast is at %d)\n",
+            LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Bad sigTime %d for Stormnode %20s %105s (existing broadcast is at %d)\n",
                           sigTime, addr.ToString(), vin.ToString(), psn->sigTime);
             return false;
         }
@@ -427,7 +427,7 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     //   after that they just need to match
     if(psn->pubkey == pubkey && !psn->IsBroadcastedWithin(STORMNODE_MIN_SNB_SECONDS)) {
         //take the newest entry
-        LogPrintf("snb - Got updated entry for %s\n", addr.ToString());
+        LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Got updated entry for %s\n", addr.ToString());
         if(psn->UpdateFromNewBroadcast((*this))){
             psn->Check();
             if(psn->IsEnabled()) Relay();
@@ -478,10 +478,10 @@ bool CStormnodeBroadcast::CheckInputsAndAdd(int& nDoS)
         }
     }
 
-    LogPrint("stormnode", "snb - Accepted Stormnode entry\n");
+    LogPrint("stormnode", "CStormnodeBroadcast::CheckInputsAndAdd - Accepted Stormnode entry\n");
 
     if(GetInputAge(vin) < STORMNODE_MIN_CONFIRMATIONS){
-        LogPrintf("snb - Input must have at least %d confirmations\n", STORMNODE_MIN_CONFIRMATIONS);
+        LogPrintf("CStormnodeBroadcast::CheckInputsAndAdd - Input must have at least %d confirmations\n", STORMNODE_MIN_CONFIRMATIONS);
         // maybe we miss few blocks, let this snb to be checked again later
         snodeman.mapSeenStormnodeBroadcast.erase(GetHash());
         stormnodeSync.mapSeenSyncSNB.erase(GetHash());
@@ -503,14 +503,14 @@ bool CStormnodeBroadcast::CheckInputsAndAdd(int& nDoS)
             CBlockIndex* pConfIndex = chainActive[pSNIndex->nHeight + STORMNODE_MIN_CONFIRMATIONS - 1]; // block where tx got STORMNODE_MIN_CONFIRMATIONS
             if(pConfIndex->GetBlockTime() > sigTime)
             {
-                LogPrintf("mnb - Bad sigTime %d for Masternode %20s %105s (%i conf block is at %d)\n",
+                LogPrintf("CStormnodeBroadcast::CheckInputsAndAdd - Bad sigTime %d for Masternode %20s %105s (%i conf block is at %d)\n",
                           sigTime, addr.ToString(), vin.ToString(), MASTERNODE_MIN_CONFIRMATIONS, pConfIndex->GetBlockTime());
                 return false;
             }
         }
     }*/
 
-    LogPrintf("snb - Got NEW Stormnode entry - %s - %s - %s - %lli \n", GetHash().ToString(), addr.ToString(), vin.ToString(), sigTime);
+    LogPrintf("CStormnodeBroadcast::CheckInputsAndAdd - Got NEW Stormnode entry - %s - %s - %s - %lli \n", GetHash().ToString(), addr.ToString(), vin.ToString(), sigTime);
     CStormnode sn(*this);
     snodeman.Add(sn);
 
@@ -543,12 +543,12 @@ bool CStormnodeBroadcast::Sign(CKey& keyCollateralAddress)
 
     std::string strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
-    if(!sandStormSigner.SignMessage(strMessage, errorMessage, sig, keyCollateralAddress)) {
+    if(!sandStormSigner.SignMessage(strMessage, errorMessage, vchSig, keyCollateralAddress)) {
         LogPrintf("CStormnodeBroadcast::Sign() - Error: %s\n", errorMessage);
         return false;
     }
 
-    if(!sandStormSigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)) {
+    if(!sandStormSigner.VerifyMessage(pubkey, vchSig, strMessage, errorMessage)) {
         LogPrintf("CStormnodeBroadcast::Sign() - Error: %s\n", errorMessage);
         return false;
     }

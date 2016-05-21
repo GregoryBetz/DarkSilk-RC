@@ -23,6 +23,7 @@
 #include "script/interpreter.h"
 #include "script/standard.h"
 #include "script/script_error.h"
+#include "prevector.h"
 
 class CKeyStore;
 class CTransaction;
@@ -380,8 +381,7 @@ private:
     int64_t m_value;
 };
 
-
-
+typedef prevector<28, unsigned char> CScriptBase;
 
 /** Serialized script, used inside transaction inputs and outputs */
 class CScript : public std::vector<unsigned char>

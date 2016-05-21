@@ -106,6 +106,7 @@ bool fCommandLine = false;
 string strMiscWarning;
 bool fLogIPs = false;
 bool fLogTimestamps = false;
+bool fLogThreadNames = DEFAULT_LOGTHREADNAMES;
 volatile bool fReopenDebugLog = false;
 string strBudgetMode = "";
 
@@ -150,8 +151,7 @@ public:
             delete ppmutexOpenSSL[i];
         OPENSSL_free(ppmutexOpenSSL);
     }
-}
-instance_of_cinit;
+}instance_of_cinit;
 
 // LogPrintf() has been broken a couple of times now
 // by well-meaning people adding mutexes in the most straightforward way.
@@ -216,9 +216,35 @@ bool LogAcceptCategory(const char* category)
     return true;
 }
 
+/**
+ * fStartedNewLine is a state variable held by the calling context that will
+ * suppress printing of the thread name when multiple calls are made that don't
+ * end in a newline. Initialize it to true, and hold it, in the calling context.
+ */
+static std::string LogThreadNameStr(const std::string &str, bool *fStartedNewLine)
+{
+    string strThreadLogged;
+
+    if (!fLogThreadNames)
+        return str;
+
+    std::string strThreadName = GetThreadName();
+
+    if (*fStartedNewLine)
+        strThreadLogged = strprintf("%16s | %s", strThreadName.c_str(), str.c_str());
+    else
+        strThreadLogged = str;
+
+    return strThreadLogged;
+}
+
 int LogPrintStr(const std::string &str)
 {
     int ret = 0; // Returns total number of characters written
+    static bool fStartedNewLine = true;
+
+    std::string strThreadLogged = LogThreadNameStr(str, &fStartedNewLine);
+
     if (fPrintToConsole)
     {
         // print to console
@@ -786,6 +812,21 @@ void RenameThread(const char* name)
     // Prevent warnings for unused parameters...
     (void)name;
 #endif
+}
+
+std::string GetThreadName()
+{
+    char name[16];
+#if defined(PR_GET_NAME)
+    // Only the first 15 characters are used (16 - NUL terminator)
+    ::prctl(PR_GET_NAME, name, 0, 0, 0);
+#elif defined(MAC_OSX)
+    pthread_getname_np(pthread_self(), name, 16);
+// #elif (defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__))
+// #else
+    // no get_name here
+#endif
+    return std::string(name);
 }
 
 std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)

@@ -161,7 +161,7 @@ login again:
 $ ssh debian@localhost -p 22222
 
 $ git clone https://github.com/devrandom/gitian-builder.git
-$ git clone https://github.com/SCDeveloper/DarkSilk-Release-Candidate.git darksilk
+$ git clone https://github.com/SilkNetwork/DarkSilk-Core.git darksilk
 
 $ cd gitian-builder
 
