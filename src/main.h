@@ -13,6 +13,7 @@
 #include "chain.h"
 #include "coins.h"
 #include "net.h"
+#include "consensus/consensus.h"
 #include "script/standard.h"
 #include "script/script_error.h"
 #include "txdb.h"
@@ -49,8 +50,6 @@ static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const unsigned int DEFAULT_BLOCK_PRIORITY_SIZE = 50000;
 // The maximum size for transactions we're willing to relay/mine
 static const unsigned int MAX_STANDARD_TX_SIZE = MAX_BLOCK_SIZE_GEN/5;
-// The maximum allowed number of signature check operations in a block (network rule)
-static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 // Maxiumum number of signature check operations in an IsStandard() P2SH script
 static const unsigned int MAX_P2SH_SIGOPS = 15;
 // The maximum number of sigops we're willing to relay/mine in a single tx
@@ -336,13 +335,6 @@ public:
 
 };
 
-/** Check for standard transaction types
-    @param[in] mapInputs    Map of previous transactions that have outputs we're spending
-    @return True if all inputs (scriptSigs) use only standard transaction forms
-    @see CTransaction::FetchInputs
-*/
-bool AreInputsStandard(const CTransaction& tx, const MapPrevTx& mapInputs);
-
 /** Count ECDSA signature operations the old-fashioned (pre-0.6) way
     @return number of sigops this transaction's outputs will produce when spent
     @see CTransaction::FetchInputs
@@ -357,10 +349,6 @@ unsigned int GetLegacySigOpCount(const CTransaction& tx);
  */
 unsigned int GetP2SHSigOpCount(const CTransaction& tx, const MapPrevTx& mapInputs);
 
-/** Check for standard transaction types
-    @return True if all outputs (scriptPubKeys) use only standard transaction forms
-*/
-bool IsStandardTx(const CTransaction& tx, std::string& reason);
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight = 0, int64_t nBlockTime = 0);
 
