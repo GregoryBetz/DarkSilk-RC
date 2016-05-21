@@ -2,6 +2,7 @@
 
 #include "transactionrecord.h"
 #include "base58.h"
+#include "consensus/consensus.h"
 #include "timedata.h"
 #include "wallet/wallet.h"
 #include "anon/sandstorm/sandstorm.h"

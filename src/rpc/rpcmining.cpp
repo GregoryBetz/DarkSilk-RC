@@ -9,6 +9,7 @@
 #include "rpc/rpcserver.h"
 #include "base58.h"
 #include "chainparams.h"
+#include "consensus/consensus.h"
 #include "main.h"
 #include "wallet/db.h"
 #include "txdb.h"

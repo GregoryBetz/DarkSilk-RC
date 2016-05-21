@@ -15,6 +15,7 @@
 #include "base58.h"
 #include "checkpoints.h"
 #include "coincontrol.h"
+#include "consensus/consensus.h"
 #include "kernel.h"
 #include "net.h"
 #include "anon/stormnode/stormnode-budget.h"

@@ -4,6 +4,7 @@
 #include "darksilkunits.h"
 #include "guiutil.h"
 #include "base58.h"
+#include "consensus/consensus.h"
 #include "main.h"
 #include "paymentserver.h"
 #include "transactionrecord.h"

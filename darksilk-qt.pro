@@ -374,6 +374,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/multisigdialog.h \
             src/memusage.h \
             src/consensus/params.h \
+            src/consensus/consensus.h \
             src/prevector.h
 
 SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \

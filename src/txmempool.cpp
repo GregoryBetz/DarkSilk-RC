@@ -6,6 +6,7 @@
 
 #include "txmempool.h"
 #include "memusage.h"
+#include "consensus/consensus.h"
 
 using namespace std;
 
