@@ -23,6 +23,7 @@ class CCoinsViewCache;
 class CTxMemPool;
 class CValidationState;
 class CWallet;
+class CScriptCheck;
 
 struct CNodeStateStats;
 
@@ -306,6 +307,8 @@ public:
     //   @return    Returns true if all inputs are in txdb or mapTestPool
     bool FetchInputs(CTransaction& tx, CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool,
                      bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
+
+    static const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS;
 
     /// Sanity check previous transactions, then, if all checks succeed,
     /// mark them as spent by this transaction.

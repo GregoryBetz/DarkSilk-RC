@@ -1673,6 +1673,110 @@ bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint2
     return true;
 }
 
+namespace Consensus {
+bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight)
+{
+        // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
+        // for an attacker to attempt to split the network.
+        if (!inputs.HaveInputs(tx))
+            return state.Invalid(false, 0, "", "Inputs unavailable");
+
+        CAmount nValueIn = 0;
+        CAmount nFees = 0;
+        for (unsigned int i = 0; i < tx.vin.size(); i++)
+        {
+            const COutPoint &prevout = tx.vin[i].prevout;
+            const CCoins *coins = inputs.AccessCoins(prevout.hash);
+            assert(coins);
+
+            // If prev is coinbase, check that it's matured
+            if (coins->IsCoinBase()) {
+                if (nSpendHeight - coins->nHeight < COINBASE_MATURITY)
+                    return state.Invalid(false,
+                        REJECT_INVALID, "bad-txns-premature-spend-of-coinbase",
+                        strprintf("tried to spend coinbase at depth %d", nSpendHeight - coins->nHeight));
+            }
+
+            // Check for negative or overflow input values
+            nValueIn += coins->vout[prevout.n].nValue;
+            if (!MoneyRange(coins->vout[prevout.n].nValue) || !MoneyRange(nValueIn))
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
+
+        }
+
+        if (nValueIn < tx.GetValueOut())
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-belowout", false,
+                strprintf("value in (%s) < value out (%s)", FormatMoney(nValueIn), FormatMoney(tx.GetValueOut())));
+
+        // Tally transaction fees
+        CAmount nTxFee = nValueIn - tx.GetValueOut();
+        if (nTxFee < 0)
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-negative");
+        nFees += nTxFee;
+        if (!MoneyRange(nFees))
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
+    return true;
+}
+}// namespace Consensus
+
+bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks)
+{
+    if (!tx.IsCoinBase())
+    {
+        if (!Consensus::CheckTxInputs(tx, state, inputs, GetSpendHeight(inputs)))
+            return false;
+
+        if (pvChecks)
+            pvChecks->reserve(tx.vin.size());
+
+        // The first loop above does all the inexpensive checks.
+        // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
+        // Helps prevent CPU exhaustion attacks.
+
+        // Skip ECDSA signature verification when connecting blocks
+        // before the last block chain checkpoint. This is safe because block merkle hashes are
+        // still computed and checked, and any change will be caught at the next checkpoint.
+        if (fScriptChecks) {
+            for (unsigned int i = 0; i < tx.vin.size(); i++) {
+                const COutPoint &prevout = tx.vin[i].prevout;
+                const CCoins* coins = inputs.AccessCoins(prevout.hash);
+                assert(coins);
+
+                // Verify signature
+                CScriptCheck check(*coins, tx, i, flags, cacheStore);
+                if (pvChecks) {
+                    pvChecks->push_back(CScriptCheck());
+                    check.swap(pvChecks->back());
+                } else if (!check()) {
+                    if (flags & STANDARD_NOT_MANDATORY_VERIFY_FLAGS) {
+                        // Check whether the failure was caused by a
+                        // non-mandatory script verification check, such as
+                        // non-standard DER encodings or non-null dummy
+                        // arguments; if so, don't trigger DoS protection to
+                        // avoid splitting the network between upgraded and
+                        // non-upgraded nodes.
+                        CScriptCheck check2(*coins, tx, i,
+                                flags & ~STANDARD_NOT_MANDATORY_VERIFY_FLAGS, cacheStore);
+                        if (check2())
+                            return state.Invalid(false, REJECT_NONSTANDARD, strprintf("non-mandatory-script-verify-flag (%s)", ScriptErrorString(check.GetScriptError())));
+                    }
+                    // Failures of other flags indicate a transaction that is
+                    // invalid in new blocks, e.g. a invalid P2SH. We DoS ban
+                    // such nodes as they are not following the protocol. That
+                    // said during an upgrade careful thought should be taken
+                    // as to the correct behavior - we may want to continue
+                    // peering with non-upgraded nodes even after a soft-fork
+                    // super-majority vote has passed.
+                    return state.DoS(100,false, REJECT_INVALID, strprintf("mandatory-script-verify-flag-failed (%s)", ScriptErrorString(check.GetScriptError())));
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+
 // ppcoin: total coin age spent in transaction, in the unit of coin-days.
 // Only those coins meeting minimum age requirement counts. As those
 // transactions not in main chain are not currently indexed so we

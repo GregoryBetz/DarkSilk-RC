@@ -43,7 +43,7 @@ static const unsigned int MAX_OP_RETURN_RELAY = 40;   // bytes (+1 for OP_RETURN
  * Failing one of these tests may trigger a DoS ban - see CheckInputs() for
  * details.
  */
-static const unsigned int MANDATORY_SCRIPT_VERIFY_FLAGS = SCRIPT_VERIFY_P2SH;
+//static const unsigned int MANDATORY_SCRIPT_VERIFY_FLAGS = SCRIPT_VERIFY_P2SH;
 
 enum txnouttype
 {
