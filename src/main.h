@@ -23,6 +23,7 @@ class CCoinsViewCache;
 class CTxMemPool;
 class CValidationState;
 class CWallet;
+class CScriptCheck;
 
 struct CNodeStateStats;
 
@@ -307,6 +308,8 @@ public:
     bool FetchInputs(CTransaction& tx, CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool,
                      bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
 
+    static const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS;
+
     /// Sanity check previous transactions, then, if all checks succeed,
     /// mark them as spent by this transaction.
     //    @param[in] inputs   Previous transactions (from FetchInputs)
@@ -319,6 +322,15 @@ public:
     bool ConnectInputs(CTransaction& tx, CTxDB& txdb, MapPrevTx inputs,
                        std::map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx,
                        const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, unsigned int flags = STANDARD_SCRIPT_VERIFY_FLAGS, bool fValidateSig = true);
+
+    /**
+ * Check whether all inputs of this transaction are valid (no double spends, scripts & sigs, amounts)
+ * This does not modify the UTXO set. If pvChecks is not NULL, script checks are pushed onto it
+ * instead of being performed inline.
+ */
+bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &view, bool fScriptChecks,
+                 unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks = NULL);
+
 
     bool GetCoinAge(CTransaction& tx, CTxDB& txdb, const CBlockIndex* pindexPrev, uint64_t& nCoinAge) const;
 

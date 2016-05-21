@@ -367,11 +367,11 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
         if (fDependsWait)
             waitingOnDependants.push_back(&it->second);
         //TODO (Amir): Put these lines back.  needed for chainActive.
-        //else {
+        else {
             //CValidationState state; CTxUndo undo;
-            //assert(CheckInputs(tx, state, mempoolDuplicate, false, 0, false, NULL));
+            assert(CheckInputs(tx, state, mempoolDuplicate, false, 0, false, NULL));
             //UpdateCoins(tx, state, mempoolDuplicate, undo, 1000000);
-        //}
+        }
     }
     unsigned int stepsSinceLastRemove = 0;
     while (!waitingOnDependants.empty()) {
