@@ -81,7 +81,7 @@ install dependencies:
 
 build darksilkd from git:
 
-    $ git clone https://github.com/SilkNetwork/DarkSilk.git darksilk
+    $ git clone https://github.com/SilkNetwork/DarkSilk-Core.git darksilk
     $ cd darksilk/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && make && cd .. && sudo make -f makefile.unix USE_UPNP=1
    
 install and run darksilkd daemon:
@@ -108,7 +108,7 @@ update and install dependencies:
 
 build darksilk-qt from git:
 
-    $ git clone https://github.com/SilkNetwork/DarkSilk.git darksilk
+    $ git clone https://github.com/SilkNetwork/DarkSilk-Core.git darksilk
     $ cd darksilk && qmake -qt=qt5 "USE_QRCODE=1" "USE_NATIVE_I2P=1" && make
  
 running the darksilk Qt wallet:

@@ -514,11 +514,11 @@ void MultisigDialog::on_sendTransactionButton_clicked()
             return;
     }
 
-    CMerkleTx cmt;
+    CValidationState state;
     // Send the transaction to the local node
     //   CTxDB txdb("r");
-    if(!cmt.AcceptToMemoryPool(false))
-    return;
+    if(!AcceptToMemoryPool(mempool, state, tx, false, NULL))
+        return;
     SyncWithWallets(tx, NULL, true);
     //(CInv(MSG_TX, txHash), tx);
     RelayTransaction(tx);

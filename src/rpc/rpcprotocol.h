@@ -4,24 +4,24 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "compat/compat.h"
+
 #ifndef DARKSILKRPC_PROTOCOL_H
 #define DARKSILKRPC_PROTOCOL_H
 
+#include "compat/compat.h"
+#include <list>
+#include <map>
+#include <stdint.h>
+#include <string>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
-#include <list>
-#include <map>
-#include <stdint.h>
-#include <string>
-
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_utils.h"
 #include "json/json_spirit_writer_template.h"
-
-#include "compat/compat.h"
 
 // HTTP status codes
 enum HTTPStatusCode
