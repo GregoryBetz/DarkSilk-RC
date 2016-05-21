@@ -345,8 +345,6 @@ public:
         return !(a == b);
     }
 
-    bool CheckTransaction(const CTransaction& tx, CValidationState &state);
-
     std::string ToString() const;
 };
 

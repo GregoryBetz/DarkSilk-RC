@@ -364,6 +364,9 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const MapPrevTx& mapInput
 */
 bool IsStandardTx(const CTransaction& tx, std::string& reason);
 
+/** Context-independent validity checks */
+bool CheckTransaction(const CTransaction& tx, CValidationState &state);
+
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight = 0, int64_t nBlockTime = 0);
 
 /// Functions for disk access for blocks

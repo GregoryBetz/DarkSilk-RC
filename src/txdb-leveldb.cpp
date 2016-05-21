@@ -529,7 +529,7 @@ bool CTxDB::LoadBlockIndex()
                                         LogPrintf("LoadBlockIndex(): *** cannot read spending transaction of %s:%i from disk\n", hashTx.ToString(), nOutput);
                                         pindexFork = pindex->pprev;
                                     }
-                                    else if (!txSpend.CheckTransaction(tx, state))
+                                    else if (!CheckTransaction(tx, state))
                                     {
                                         LogPrintf("LoadBlockIndex(): *** spending transaction of %s:%i is invalid\n", hashTx.ToString(), nOutput);
                                         pindexFork = pindex->pprev;

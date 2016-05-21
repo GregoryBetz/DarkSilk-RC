@@ -812,6 +812,94 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const MapPrevTx& inputs)
     return nSigOps;
 }
 
+bool CheckTransaction(const CTransaction& tx, CValidationState &state)
+{
+    // Basic checks that don't depend on any context
+    if (tx.vin.empty())
+        return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
+    if (tx.vout.empty())
+        return state.DoS(10, false, REJECT_INVALID, "bad-txns-vout-empty");
+    // Size limits
+    if (::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE)
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-oversize");
+
+    // Check for negative or overflow output values
+    CAmount nValueOut = 0;
+    BOOST_FOREACH(const CTxOut& txout, tx.vout)
+    {
+        if (txout.nValue < 0)
+            return state.DoS(100, false, REJECT_INVALID, "txout.nValue negative");
+        if (txout.nValue > MAX_MONEY)
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-vout-toolarge");
+        nValueOut += txout.nValue;
+        if (!MoneyRange(nValueOut))
+            return state.DoS(100, false, REJECT_INVALID, "txout total out of range");
+    }
+
+    // Check for duplicate inputs
+    set<COutPoint> vInOutPoints;
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    {
+        if (vInOutPoints.count(txin.prevout))
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
+        vInOutPoints.insert(txin.prevout);
+    }
+
+    if (tx.IsCoinBase())
+    {
+        if (tx.vin[0].scriptSig.size() < 2 || tx.vin[0].scriptSig.size() > 100)
+            return state.DoS(100, false, REJECT_INVALID, "bad-cb-length");
+    }
+    else
+    {
+        BOOST_FOREACH(const CTxIn& txin, tx.vin)
+            if (txin.prevout.IsNull())
+                return state.DoS(10,false, REJECT_INVALID, "bad-txns-prevout-null");
+    }
+
+    // Service/Marketplace Transaction Structure Check
+    if (tx.nVersion != DARKSILK_TX_VERSION)
+        return true;
+
+    vector<vector<unsigned char> > vvch;
+    int op;
+    int nOut;
+    string err = "";
+    bool found = false;
+    if(DecodeOfferTx(tx, op, nOut, vvch)) {
+        found = true;
+        switch (op) {       
+            case OP_OFFER_ACCEPT:
+                if (vvch[1].size() > MAX_NAME_LENGTH)
+                    err = error("offeraccept tx with accept GUID too big");
+                if (vvch[2].size() > MAX_ENCRYPTED_VALUE_LENGTH)
+                    return error("offeraccept message field too big");
+                break;
+            default:
+                break;
+        
+        }
+    }
+   if(DecodeCertTx(tx, op, nOut, vvch)
+    || DecodeAccountTx(tx, op, nOut, vvch)
+    || DecodeMessageTx(tx, op, nOut, vvch)
+    || DecodeEscrowTx(tx, op, nOut, vvch)) 
+   {
+       found = true;
+   }
+   if(!found)
+   {
+       err = error("Unknown darksilk transaction type!");
+   }
+    if (vvch.size() > 0 && vvch[0].size() > MAX_NAME_LENGTH)
+        err = error("DRKSLK tx with GUID too big");
+    if(err != "")
+    {
+        return state.DoS(10,error(err.c_str()));
+    }
+    return true;
+}
+
 int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 {
     AssertLockHeld(cs_main);
@@ -893,12 +981,11 @@ CAmount GetMinFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree, 
 
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, CTransaction &tx, bool fLimitFree, bool* pfMissingInputs, bool ignoreFees)
 {
-    CTransaction txi;
     AssertLockHeld(cs_main);
     if (pfMissingInputs)
         *pfMissingInputs = false;
 
-    if (!txi.CheckTransaction(tx, state))
+    if (!CheckTransaction(tx, state))
         return error("AcceptToMemoryPool : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1261,8 +1348,7 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &t
                          bool* pfMissingInputs, bool fRejectInsaneFee, bool isSSTX)
 {
     AssertLockHeld(cs_main);
-    CTransaction txi;
-    if (!txi.CheckTransaction(tx, state))
+    if (!CheckTransaction(tx, state))
         return error("AcceptableInputs : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1626,7 +1712,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
     return false;
 }
 
-bool CheckDarkSilkInputs(const CTransaction& tx, const CCoinsViewCache& inputs, int nHeight=0)
+bool CheckSInputs(const CTransaction& tx, const CCoinsViewCache& inputs, int nHeight=0)
 {
     vector<vector<unsigned char> > vvchArgs;
     int op;
