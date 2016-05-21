@@ -13,9 +13,8 @@
 #include "uint256.h"
 #include "serialize.h"
 #include "utilmoneystr.h"
-#include "script/interpreter.h"
-#include "script/standard.h"
 #include "script/script.h"
+#include "policy/policy.h"
 #include "timedata.h"
 
 class CValidationInterface;

@@ -17,6 +17,8 @@ class CCoinsViewCache;
 
 // Default for -blockprioritysize, maximum space for zero/low-fee transactions
 static const unsigned int DEFAULT_BLOCK_PRIORITY_SIZE = 50000;
+// The maximum size for mined blocks (50% OF MAX_BLOCK_SIZE)
+static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 // The maximum size for transactions we're willing to relay/mine
 static const unsigned int MAX_STANDARD_TX_SIZE = MAX_BLOCK_SIZE_GEN/5;
 // Maxiumum number of signature check operations in an IsStandard() P2SH script
@@ -29,7 +31,7 @@ static const unsigned int MAX_TX_SIGOPS = MAX_BLOCK_SIGOPS/5;
  * with. However scripts violating these flags may still be present in valid
  * blocks and we must accept those blocks.
  */
-static const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VERIFY_FLAGS |
+static const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = SCRIPT_VERIFY_P2SH |
                                                          SCRIPT_VERIFY_DERSIG |
                                                          SCRIPT_VERIFY_STRICTENC |
                                                          SCRIPT_VERIFY_MINIMALDATA |
@@ -40,7 +42,7 @@ static const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VERIFY
                                                          SCRIPT_VERIFY_LOW_S;
 
 /** For convenience, standard but not mandatory verify flags. */
-static const unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~MANDATORY_SCRIPT_VERIFY_FLAGS;
+static const unsigned int STANDARD_NOT_MANDATORY_VERIFY_FLAGS = STANDARD_SCRIPT_VERIFY_FLAGS & ~SCRIPT_VERIFY_P2SH;
 
 /** Used as the flags parameter to CheckFinalTx() in non-consensus code */
 static const unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_MEDIAN_TIME_PAST;

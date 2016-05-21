@@ -45,8 +45,6 @@ static const CAmount STATIC_POW_REWARD = COIN * 1; //TODO (Amir): Change to 1.25
 static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
 // Timeout in seconds before considering a block download peer unresponsive.
 static const unsigned int BLOCK_DOWNLOAD_TIMEOUT = 60;
-// The maximum size for mined blocks (50% OF MAX_BLOCK_SIZE)
-static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 // The maximum number of orphan transactions kept in memory
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 // Default for -maxorphanblocksmib, maximum memory used by orphan blocks
