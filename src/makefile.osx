@@ -149,6 +149,7 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
+    obj/rest.o \
     obj/compat/glibc_sanity.o \
     obj/compat/glibcxx_sanity.o \
     obj/crypto/argon2/argon2.o \

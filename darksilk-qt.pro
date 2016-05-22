@@ -375,7 +375,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/consensus/params.h \
             src/prevector.h
 
-SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
+SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/blindtext.cpp \
             src/cryptkey.cpp \
             src/anon/stormnode/activestormnode.cpp \

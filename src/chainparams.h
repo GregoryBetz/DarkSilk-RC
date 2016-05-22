@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "consensus/params.h"
 #include "bignum.h"
 #include "uint256.h"
 
@@ -67,6 +68,7 @@ public:
     int GetDefaultPort() const { return nDefaultPort; }
     const CBigNum& ProofOfWorkLimit() const { return bnProofOfWorkLimit; }
     int SubsidyHalvingInterval() const { return nSubsidyHalvingInterval; }
+    const Consensus::Params& GetConsensus() const { return consensus; }
     virtual const CBlock& GenesisBlock() const = 0;
     virtual bool RequireRPCPassword() const { return true; }
     const string& DataDir() const { return strDataDir; }
@@ -85,6 +87,7 @@ public:
 protected:
     CChainParams() {};
 
+    Consensus::Params consensus;
     uint256 hashGenesisBlock;
     MessageStartChars pchMessageStart;
     // Raw pub key bytes for the broadcast alert signing key.
