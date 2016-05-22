@@ -9,6 +9,7 @@
 #include "transactionrecord.h"
 #include "timedata.h"
 #include "ui_interface.h"
+#include "consensus/consensus.h"
 #include "wallet/wallet.h"
 #include "txdb-leveldb.h"
 

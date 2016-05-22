@@ -4,6 +4,7 @@
 #include "base58.h"
 #include "timedata.h"
 #include "wallet/wallet.h"
+#include "consensus/consensus.h"
 #include "anon/sandstorm/sandstorm.h"
 #include "anon/instantx/instantx.h"
 

@@ -24,6 +24,7 @@
 #include "wallet/walletdb.h"
 #include "crypter.h"
 #include "key.h"
+#include "consensus/consensus.h"
 #include "anon/stormnode/spork.h"
 #include "anon/sandstorm/sandstorm.h"
 #include "anon/instantx/instantx.h"
