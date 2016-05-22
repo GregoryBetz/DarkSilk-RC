@@ -117,7 +117,16 @@ public:
         strSandstormPoolDummyAddress = "DDCxTmWLPytjnEAMd3TCGaryJStEx5caSm"; //private key = MpBeYuuA7c47bqa6ubmBnP8P7hkpmJTSUgwejC8AehSPwsXmkZHD
         strStormnodePaymentsPubKey = "";
         nFirstPOSBlock = 101;
+
+		nStormnodeCollateral = 10000;
+		nStormnodeStartBlock = 420;
         nStartStormnodePayments = 1446335999; //Wed, 31 Oct 2015 23:59:59 GMT
+        
+		nSandstormCollateral = (0.01*COIN);
+		nSandstormPoolMax = (9999.99*COIN);
+		
+		nPoWBlockSpacing = 60;
+		nPoSBlockSpacing = 40;
     }
 
     virtual const CBlock& GenesisBlock() const { return genesis; }
@@ -178,8 +187,16 @@ public:
         strStormnodePaymentsPubKey = "";
         strSandstormPoolDummyAddress = "DDCxTmWLPytjnEAMd3TCGaryJStEx5caSm"; //private key = MpBeYuuA7c47bqa6ubmBnP8P7hkpmJTSUgwejC8AehSPwsXmkZHD
         nFirstPOSBlock = 101;
+        
+		nStormnodeCollateral = 10000;
+		nStormnodeStartBlock = 100;
         nStartStormnodePayments = 1446335999; //Wed, 31 Oct 2015 23:59:59 GMT
-    }
+        
+		nSandstormCollateral = (0.01*COIN);
+		nSandstormPoolMax = (9999.99*COIN);
+		
+		nPoWBlockSpacing = 60;
+		nPoSBlockSpacing = 40;    }
 
     virtual Network NetworkID() const { return CChainParams::TESTNET; }
 };
