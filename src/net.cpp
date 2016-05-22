@@ -24,6 +24,7 @@
 #include "addrman.h"
 #include "chainparams.h"
 #include "clientversion.h"
+#include "consensus/consensus.h"
 #include "primitives/transaction.h"
 #include "ui_interface.h"
 #include "utilstrencodings.h"
