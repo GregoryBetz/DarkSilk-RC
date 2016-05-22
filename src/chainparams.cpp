@@ -126,7 +126,7 @@ public:
 		nSandstormPoolMax = (9999.99*COIN);
 		
 		nPoWBlockSpacing = 60;
-		nPoSBlockSpacing = 40;
+		nPoSBlockSpacing = 64;
     }
 
     virtual const CBlock& GenesisBlock() const { return genesis; }
@@ -196,7 +196,7 @@ public:
 		nSandstormPoolMax = (9999.99*COIN);
 		
 		nPoWBlockSpacing = 60;
-		nPoSBlockSpacing = 40;    }
+		nPoSBlockSpacing = 64;    }
 
     virtual Network NetworkID() const { return CChainParams::TESTNET; }
 };
