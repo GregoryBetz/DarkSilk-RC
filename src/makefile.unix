@@ -187,6 +187,7 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
+    obj/rest.o \
     obj/cryptkey.o \
     obj/blindtext.o \
     obj/rpc/rpcblindtext.o \
