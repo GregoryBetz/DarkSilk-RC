@@ -18,9 +18,6 @@
 class CValidationInterface;
 class CValidationState;
 
-/// The maximum allowed size for a serialized block, in bytes (network rule)
-static const unsigned int MAX_BLOCK_SIZE = 20000000; // 20MB Maximum Block Size (50x Bitcoin Core)
-
 using namespace std;
 
 /// An outpoint - a combination of a transaction hash and an index n into its vout

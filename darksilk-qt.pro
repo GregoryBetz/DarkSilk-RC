@@ -269,6 +269,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/script/script_error.h \
             src/init.h \
             src/mruset.h \
+            src/consensus/consensus.h \
             src/consensus/validation.h \
             src/json/json_spirit_writer_template.h \
             src/json/json_spirit_writer.h \
