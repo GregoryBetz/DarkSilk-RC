@@ -146,6 +146,7 @@ OBJS= \
     obj/util.o \
     obj/utilstrencodings.o \
     obj/utilmoneystr.o \
+    obj/utiltime.o \
     obj/hash.o \
     obj/noui.o \
     obj/kernel.o \
@@ -186,6 +187,7 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
+    obj/rest.o \
     obj/cryptkey.o \
     obj/blindtext.o \
     obj/rpc/rpcblindtext.o \
