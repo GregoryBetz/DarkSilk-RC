@@ -12,6 +12,8 @@
 #include "consensus/params.h"
 #include "bignum.h"
 #include "uint256.h"
+#include "util.h"
+#include "amount.h"
 
 using namespace std;
 
@@ -83,11 +85,23 @@ public:
     int64_t StartStormnodePayments() const { return nStartStormnodePayments; }
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     std::string SandstormPoolDummyAddress() const { return strSandstormPoolDummyAddress; }
+	CAmount NodeCollateral() const { return nStormnodeCollateral; }
+	int64_t NodeStartBlock() const { return nStormnodeStartBlock; }
+	CAmount SandstormCollateral() const { return nSandstormCollateral; }
+	CAmount SandstormPoolMax() const { return nSandstormPoolMax; }
+	int64_t PoWSpacing() const { return nPoWBlockSpacing; }
+	int64_t StakeSpacing() const { return nPoSBlockSpacing; }
 
 protected:
     CChainParams() {};
 
     Consensus::Params consensus;
+    CAmount nStormnodeCollateral;
+    int64_t nStormnodeStartBlock;
+    CAmount nSandstormCollateral;
+    CAmount nSandstormPoolMax;
+    int64_t nPoWBlockSpacing;
+    int64_t nPoSBlockSpacing; 
     uint256 hashGenesisBlock;
     MessageStartChars pchMessageStart;
     // Raw pub key bytes for the broadcast alert signing key.
