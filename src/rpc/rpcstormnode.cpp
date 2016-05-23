@@ -648,7 +648,7 @@ Value stormnodebroadcast(const Array& params, bool fHelp)
     if (fHelp  ||
         (strCommand != "create-alias" && strCommand != "create-all" && strCommand != "decode" && strCommand != "relay"))
         throw runtime_error(
-                "masternodebroadcast \"command\"... ( \"passphrase\" )\n"
+                "stormnodebroadcast \"command\"... ( \"passphrase\" )\n"
                 "Set of commands to create and relay stormnode broadcast messages\n"
                 "\nArguments:\n"
                 "1. \"command\"        (string or set of strings, required) The command to execute\n"
@@ -814,7 +814,7 @@ Value stormnodebroadcast(const Array& params, bool fHelp)
                 resultObj.push_back(Pair("vchSig", EncodeBase64(&snb.vchSig[0], snb.vchSig.size())));
                 resultObj.push_back(Pair("sigTime", snb.sigTime));
                 resultObj.push_back(Pair("protocolVersion", snb.protocolVersion));
-                resultObj.push_back(Pair("nLastDsq", snb.nLastSsq));
+                resultObj.push_back(Pair("nLastSsq", snb.nLastSsq));
 
                 Object lastPingObj;
                 lastPingObj.push_back(Pair("vin", snb.lastPing.vin.ToString()));

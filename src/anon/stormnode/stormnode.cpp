@@ -416,7 +416,7 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
 
         // this broadcast is older or equal than the one that we already have - it's bad and should never happen
         // unless someone is doing something fishy
-        // (mapSeenMasternodeBroadcast in CMasternodeMan::ProcessMessage should filter legit duplicates) 
+        // (mapSeenStormnodeBroadcast in CStormnodeMan::ProcessMessage should filter legit duplicates) 
         if(psn->sigTime > sigTime) {
             LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Bad sigTime %d for Stormnode %20s %105s (existing broadcast is at %d)\n",
                           sigTime, addr.ToString(), vin.ToString(), psn->sigTime);

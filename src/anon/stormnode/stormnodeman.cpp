@@ -687,41 +687,13 @@ void CStormnodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataS
         CStormnodeBroadcast snb;
         vRecv >> snb;
 
-        if(mapSeenStormnodeBroadcast.count(snb.GetHash())) { //seen
-            stormnodeSync.AddedStormnodeList(snb.GetHash());
-            return;
-        }
-        mapSeenStormnodeBroadcast.insert(make_pair(snb.GetHash(), snb));
-
         int nDoS = 0;
-        if(!snb.CheckAndUpdate(nDoS)){
 
-            if(nDoS > 0)
-                Misbehaving(pfrom->GetId(), nDoS);
-
-            //failed
-            return;
-        }
-
-        // make sure the vout that was signed is related to the transaction that spawned the Stormnode
-        //  - this is expensive, so it's only done once per Stormnode
-        if(!sandStormSigner.IsVinAssociatedWithPubkey(snb.vin, snb.pubkey)) {
-            LogPrintf("snb - Got mismatched pubkey and vin\n");
-            Misbehaving(pfrom->GetId(), 33);
-            return;
-        }
-
-        // make sure it's still unspent
-        //  - this is checked later by .check() in many places and by ThreadCheckSandStormPool()
-        if(snb.CheckInputsAndAdd(nDoS)) {
-            // use this as a peer
+        if (CheckSnbAndUpdateStormnodeList(snb, nDoS)) {
+            // use announced stormnode as a peer
             addrman.Add(CAddress(snb.addr), pfrom->addr, 2*60*60);
-            stormnodeSync.AddedStormnodeList(snb.GetHash());
         } else {
-            LogPrintf("snb - Rejected Stormnode entry %s\n", snb.addr.ToString());
-
-            if (nDoS > 0)
-                Misbehaving(pfrom->GetId(), nDoS);
+            if (nDoS > 0) Misbehaving(pfrom->GetId(), nDoS);
         }
     }
 
