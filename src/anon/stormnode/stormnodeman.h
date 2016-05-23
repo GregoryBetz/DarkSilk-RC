@@ -141,6 +141,11 @@ public:
 
     void Remove(CTxIn vin);
 
+    /// Update stormnode list and maps using provided CStormnodeBroadcast
+    void UpdateStormnodeList(CStormnodeBroadcast snb);
+    /// Perform complete check and only then update list and maps
+    bool CheckSnbAndUpdateStormnodeList(CStormnodeBroadcast snb, int& nDos);
+
 };
 
 #endif

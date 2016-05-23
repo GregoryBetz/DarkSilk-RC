@@ -118,11 +118,20 @@ void CActiveStormnode::ManageStatus()
                 return;
             }
 
-            if(!Register(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyStormnode, pubKeyStormnode, errorMessage)) {
+            CStormnodeBroadcast snb;
+            if(!CreateBroadcast(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyStormnode, pubKeyStormnode, errorMessage, snb)) {
                 notCapableReason = "Error on Register: " + errorMessage;
                 LogPrintf("Register::ManageStatus() - %s\n", notCapableReason);
                 return;
             }
+
+            // update to stormnode list
+            LogPrintf("CActiveStormnode::ManageStatus() - Update Stormnode List\n");
+            snodeman.UpdateStormnodeList(snb);
+
+            // send to all peers
+            LogPrintf("CActiveStormnode::ManageStatus() - Relay broadcast vin = %s\n", vin.ToString());
+            snb.Relay();
 
             LogPrintf("CActiveStormnode::ManageStatus() - Is capable Stormnode!\n");
             status = ACTIVE_STORMNODE_STARTED;
@@ -208,7 +217,7 @@ bool CActiveStormnode::SendStormnodePing(std::string& errorMessage) {
 
 }
 
-bool CActiveStormnode::Register(std::string strService, std::string strKeyStormnode, std::string strTxHash, std::string strOutputIndex, std::string& errorMessage) {
+bool CActiveStormnode::CreateBroadcast(std::string strService, std::string strKeyStormnode, std::string strTxHash, std::string strOutputIndex, std::string& errorMessage, CStormnodeBroadcast &snb, bool fOffline) {
     CTxIn vin;
     CPubKey pubKeyCollateralAddress;
     CKey keyCollateralAddress;
@@ -216,22 +225,22 @@ bool CActiveStormnode::Register(std::string strService, std::string strKeyStormn
     CKey keyStormnode;
 
     //need correct blocks to send ping
-    if(!stormnodeSync.IsBlockchainSynced()) {
-        errorMessage = GetStatus();
-        LogPrintf("CActiveStormnode::Register() - %s\n", errorMessage);
+    if(!fOffline && !stormnodeSync.IsBlockchainSynced()) {
+        errorMessage = "Sync in progress. Must wait until sync is complete to start Stormnode";
+        LogPrintf("CActiveStormnode::CreateBroadcast() - %s\n", errorMessage);
         return false;
     }
 
     if(!sandStormSigner.SetKey(strKeyStormnode, errorMessage, keyStormnode, pubKeyStormnode))
     {
         errorMessage = strprintf("Can't find keys for stormnode %s - %s", strService, errorMessage);
-        LogPrintf("CActiveStormnode::Register() - %s\n", errorMessage);
+        LogPrintf("CActiveStormnode::CreateBroadcast() - %s\n", errorMessage);
         return false;
     }
 
     if(!GetStormNodeVin(vin, pubKeyCollateralAddress, keyCollateralAddress, strTxHash, strOutputIndex)) {
         errorMessage = strprintf("Could not allocate vin %s:%s for stormnode %s", strTxHash, strOutputIndex, strService);
-        LogPrintf("CActiveStormnode::Register() - %s\n", errorMessage);
+        LogPrintf("CActiveStormnode::CreateBroadcast() - %s\n", errorMessage);
         return false;
     }
 
@@ -239,54 +248,42 @@ bool CActiveStormnode::Register(std::string strService, std::string strKeyStormn
     if(Params().NetworkID() == CChainParams::MAIN) {
         if(service.GetPort() != 31000) {
             errorMessage = strprintf("Invalid port %u for stormnode %s - only 31000 is supported on mainnet.", service.GetPort(), strService);
-            LogPrintf("CActiveStormnode::Register() - %s\n", errorMessage);
+            LogPrintf("CActiveStormnode::CreateBroadcast() - %s\n", errorMessage);
             return false;
         }
     } else if(service.GetPort() == 31000) {
         errorMessage = strprintf("Invalid port %u for stormnode %s - 31000 is only supported on mainnet.", service.GetPort(), strService);
-        LogPrintf("CActiveStormnode::Register() - %s\n", errorMessage);
+        LogPrintf("CActiveStormnode::CreateBroadcast() - %s\n", errorMessage);
         return false;
     }
 
     addrman.Add(CAddress(service), CNetAddr("127.0.0.1"), 2*60*60);
 
-    return Register(vin, CService(strService, true), keyCollateralAddress, pubKeyCollateralAddress, keyStormnode, pubKeyStormnode, errorMessage);
+    return CreateBroadcast(vin, CService(strService, true), keyCollateralAddress, pubKeyCollateralAddress, keyStormnode, pubKeyStormnode, errorMessage, snb);
 }
 
 
-bool CActiveStormnode::Register(CTxIn vin, CService service, CKey keyCollateralAddress, CPubKey pubKeyCollateralAddress, CKey keyStormnode, CPubKey pubKeyStormnode, std::string &errorMessage) {
-    CStormnodeBroadcast snb;
+bool CActiveStormnode::CreateBroadcast(CTxIn vin, CService service, CKey keyCollateralAddress, CPubKey pubKeyCollateralAddress, CKey keyStormnode, CPubKey pubKeyStormnode, std::string &errorMessage, CStormnodeBroadcast &snb) {
+    // wait for reindex and/or import to finish
+    if (fImporting || fReindex) return false;
+
     CStormnodePing snp(vin);
     if(!snp.Sign(keyStormnode, pubKeyStormnode)){
         errorMessage = strprintf("Failed to sign ping, vin: %s", vin.ToString());
-        LogPrintf("CActiveStormnode::Register() -  %s\n", errorMessage);
+        LogPrintf("CActiveStormnode::CreateBroadcast() -  %s\n", errorMessage);
+        snb = CStormnodeBroadcast();
         return false;
     }
     snodeman.mapSeenStormnodePing.insert(make_pair(snp.GetHash(), snp));
 
-    LogPrintf("CActiveStormnode::Register() - Adding to Stormnode list\n    service: %s\n    vin: %s\n", service.ToString(), vin.ToString());
     snb = CStormnodeBroadcast(service, vin, pubKeyCollateralAddress, pubKeyStormnode, PROTOCOL_VERSION);
     snb.lastPing = snp;
     if(!snb.Sign(keyCollateralAddress)){
         errorMessage = strprintf("Failed to sign broadcast, vin: %s", vin.ToString());
-        LogPrintf("CActiveStormnode::Register() - %s\n", errorMessage);
+        LogPrintf("CActiveStormnode::CreateBroadcast() - %s\n", errorMessage);
+        snb = CStormnodeBroadcast();
         return false;
     }
-    snodeman.mapSeenStormnodeBroadcast.insert(make_pair(snb.GetHash(), snb));
-    stormnodeSync.AddedStormnodeList(snb.GetHash());
-
-    CStormnode* psn = snodeman.Find(vin);
-    if(psn == NULL)
-    {
-        CStormnode sn(snb);
-        snodeman.Add(sn);
-    } else {
-        psn->UpdateFromNewBroadcast(snb);
-    }
-
-    //send to all peers
-    LogPrintf("CActiveStormnode::Register() - RelayElectionEntry vin = %s\n", vin.ToString());
-    snb.Relay();
 
     return true;
 }
@@ -296,6 +293,9 @@ bool CActiveStormnode::GetStormNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secret
 }
 
 bool CActiveStormnode::GetStormNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secretKey, std::string strTxHash, std::string strOutputIndex) {
+    // wait for reindex and/or import to finish
+    if (fImporting || fReindex) return false;
+
     // Find possible candidates
     TRY_LOCK(pwalletMain->cs_wallet, fWallet);
     if(!fWallet) return false;
@@ -338,6 +338,8 @@ bool CActiveStormnode::GetStormNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secret
 
 // Extract Stormnode vin information from output
 bool CActiveStormnode::GetVinFromOutput(COutput out, CTxIn& vin, CPubKey& pubkey, CKey& secretKey) {
+    // wait for reindex and/or import to finish
+    if (fImporting || fReindex) return false;
 
     CScript pubScript;
 

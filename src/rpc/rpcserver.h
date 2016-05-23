@@ -249,6 +249,7 @@ extern json_spirit::Value sandstorm(const json_spirit::Array& params, bool fHelp
 extern json_spirit::Value spork(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getpoolinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value stormnode(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value stormnodebroadcast(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snbudget(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snbudgetvoteraw(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value snfinalbudget(const json_spirit::Array& params, bool fHelp);

@@ -280,11 +280,15 @@ Value stormnode(const Array& params, bool fHelp)
             if(sne.getAlias() == alias) {
                 found = true;
                 std::string errorMessage;
+                CStormnodeBroadcast snb;
 
-                bool result = activeStormnode.Register(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage);
+                bool result = activeStormnode.CreateBroadcast(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage, snb);
 
                 statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-                if(!result) {
+                if(result) {
+                    snodeman.UpdateStormnodeList(snb);
+                    snb.Relay();
+                } else {
                     statusObj.push_back(Pair("errorMessage", errorMessage));
                 }
                 break;
@@ -337,11 +341,12 @@ Value stormnode(const Array& params, bool fHelp)
 
             CTxIn vin = CTxIn(uint256(sne.getTxHash()), uint32_t(atoi(sne.getOutputIndex().c_str())));
             CStormnode *psn = snodeman.Find(vin);
+            CStormnodeBroadcast snb;
 
             if(strCommand == "start-missing" && psn) continue;
             if(strCommand == "start-disabled" && psn && psn->IsEnabled()) continue;
 
-            bool result = activeStormnode.Register(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage);
+            bool result = activeStormnode.CreateBroadcast(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage, snb);
 
             Object statusObj;
             statusObj.push_back(Pair("alias", sne.getAlias()));
@@ -349,6 +354,8 @@ Value stormnode(const Array& params, bool fHelp)
 
             if(result) {
                 successful++;
+                snodeman.UpdateStormnodeList(snb);
+                snb.Relay();
             } else {
                 failed++;
                 statusObj.push_back(Pair("errorMessage", errorMessage));
@@ -613,4 +620,274 @@ Value stormnodelist(const Array& params, bool fHelp)
     }
     return obj;
 
+}
+
+bool DecodeHexVecSnb(std::vector<CStormnodeBroadcast>& vecSnb, std::string strHexSnb) {
+
+    if (!IsHex(strHexSnb))
+        return false;
+
+    vector<unsigned char> snbData(ParseHex(strHexSnb));
+    CDataStream ssData(snbData, SER_NETWORK, PROTOCOL_VERSION);
+    try {
+        ssData >> vecSnb;
+    }
+    catch (const std::exception&) {
+        return false;
+    }
+
+    return true;
+}
+
+Value stormnodebroadcast(const Array& params, bool fHelp)
+{
+    string strCommand;
+    if (params.size() >= 1)
+        strCommand = params[0].get_str();
+
+    if (fHelp  ||
+        (strCommand != "create-alias" && strCommand != "create-all" && strCommand != "decode" && strCommand != "relay"))
+        throw runtime_error(
+                "masternodebroadcast \"command\"... ( \"passphrase\" )\n"
+                "Set of commands to create and relay stormnode broadcast messages\n"
+                "\nArguments:\n"
+                "1. \"command\"        (string or set of strings, required) The command to execute\n"
+                "2. \"passphrase\"     (string, optional) The wallet passphrase\n"
+                "\nAvailable commands:\n"
+                "  create-alias  - Create single remote stormnode broadcast message by assigned alias configured in stormnode.conf\n"
+                "  create-all    - Create remote stormnode broadcast messages for all stormnodes configured in stormnode.conf\n"
+                "  decode        - Decode stormnode broadcast message\n"
+                "  relay         - Relay stormnode broadcast message to the network\n"
+                + HelpRequiringPassphrase());
+
+    if (strCommand == "create-alias")
+    {
+        // wait for reindex and/or import to finish
+        if (fImporting || fReindex)
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Wait for reindex and/or import to finish");
+
+        if (params.size() < 2)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Command needs at least 2 parameters");
+
+        std::string alias = params[1].get_str();
+
+        if(pwalletMain->IsLocked()) {
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
+
+            if (params.size() == 3){
+                strWalletPass = params[2].get_str().c_str();
+            } else {
+                throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Your wallet is locked, passphrase is required");
+            }
+
+            if(!pwalletMain->Unlock(strWalletPass)){
+                throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "The wallet passphrase entered was incorrect");
+            }
+        }
+
+        bool found = false;
+
+        Object statusObj;
+        std::vector<CStormnodeBroadcast> vecSnb;
+
+        statusObj.push_back(Pair("alias", alias));
+
+        BOOST_FOREACH(CStormnodeConfig::CStormnodeEntry sne, stormnodeConfig.getEntries()) {
+            if(sne.getAlias() == alias) {
+                found = true;
+                std::string errorMessage;
+                CStormnodeBroadcast snb;
+
+                bool result = activeStormnode.CreateBroadcast(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage, snb, true);
+
+                statusObj.push_back(Pair("result", result ? "successful" : "failed"));
+                if(result) {
+                    vecSnb.push_back(snb);
+                    CDataStream ssVecSnb(SER_NETWORK, PROTOCOL_VERSION);
+                    ssVecSnb << vecSnb;
+                    statusObj.push_back(Pair("hex", HexStr(ssVecSnb.begin(), ssVecSnb.end())));
+                } else {
+                    statusObj.push_back(Pair("errorMessage", errorMessage));
+                }
+                break;
+            }
+        }
+
+        if(!found) {
+            statusObj.push_back(Pair("result", "not found"));
+            statusObj.push_back(Pair("errorMessage", "Could not find alias in config. Verify with list-conf."));
+        }
+
+        pwalletMain->Lock();
+        return statusObj;
+
+    }
+
+    if (strCommand == "create-all")
+    {
+        // wait for reindex and/or import to finish
+        if (fImporting || fReindex)
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Wait for reindex and/or import to finish");
+
+        if(pwalletMain->IsLocked()) {
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
+
+            if (params.size() == 2){
+                strWalletPass = params[1].get_str().c_str();
+            } else {
+                throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Your wallet is locked, passphrase is required");
+            }
+
+            if(!pwalletMain->Unlock(strWalletPass)){
+                throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "The wallet passphrase entered was incorrect");
+            }
+        }
+
+        std::vector<CStormnodeConfig::CStormnodeEntry> snEntries;
+        snEntries = stormnodeConfig.getEntries();
+
+        int successful = 0;
+        int failed = 0;
+
+        Object resultsObj;
+        std::vector<CStormnodeBroadcast> vecSnb;
+
+        BOOST_FOREACH(CStormnodeConfig::CStormnodeEntry sne, stormnodeConfig.getEntries()) {
+            std::string errorMessage;
+
+            CTxIn vin = CTxIn(uint256(sne.getTxHash()), uint32_t(atoi(sne.getOutputIndex().c_str())));
+            CStormnodeBroadcast snb;
+
+            bool result = activeStormnode.CreateBroadcast(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage, snb, true);
+
+            Object statusObj;
+            statusObj.push_back(Pair("alias", sne.getAlias()));
+            statusObj.push_back(Pair("result", result ? "successful" : "failed"));
+
+            if(result) {
+                successful++;
+                vecSnb.push_back(snb);
+            } else {
+                failed++;
+                statusObj.push_back(Pair("errorMessage", errorMessage));
+            }
+
+            resultsObj.push_back(Pair("status", statusObj));
+        }
+        pwalletMain->Lock();
+
+        CDataStream ssVecSnb(SER_NETWORK, PROTOCOL_VERSION);
+        ssVecSnb << vecSnb;
+        Object returnObj;
+        returnObj.push_back(Pair("overall", strprintf("Successfully created broadcast messages for %d stormnodes, failed to create %d, total %d", successful, failed, successful + failed)));
+        returnObj.push_back(Pair("detail", resultsObj));
+        returnObj.push_back(Pair("hex", HexStr(ssVecSnb.begin(), ssVecSnb.end())));
+
+        return returnObj;
+    }
+
+    if (strCommand == "decode")
+    {
+        if (params.size() != 2)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Correct usage is 'stormnodebroadcast decode \"hexstring\"'");
+
+        int successful = 0;
+        int failed = 0;
+
+        std::vector<CStormnodeBroadcast> vecSnb;
+        Object returnObj;
+
+        if (!DecodeHexVecSnb(vecSnb, params[1].get_str()))
+            throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Stormnode broadcast message decode failed");
+
+        BOOST_FOREACH(CStormnodeBroadcast& snb, vecSnb) {
+            Object resultObj;
+
+            if(snb.VerifySignature()) {
+                successful++;
+                resultObj.push_back(Pair("vin", snb.vin.ToString()));
+                resultObj.push_back(Pair("addr", snb.addr.ToString()));
+                resultObj.push_back(Pair("pubkey", CDarkSilkAddress(snb.pubkey.GetID()).ToString()));
+                resultObj.push_back(Pair("pubkey2", CDarkSilkAddress(snb.pubkey2.GetID()).ToString()));
+                resultObj.push_back(Pair("vchSig", EncodeBase64(&snb.vchSig[0], snb.vchSig.size())));
+                resultObj.push_back(Pair("sigTime", snb.sigTime));
+                resultObj.push_back(Pair("protocolVersion", snb.protocolVersion));
+                resultObj.push_back(Pair("nLastDsq", snb.nLastSsq));
+
+                Object lastPingObj;
+                lastPingObj.push_back(Pair("vin", snb.lastPing.vin.ToString()));
+                lastPingObj.push_back(Pair("blockHash", snb.lastPing.blockHash.ToString()));
+                lastPingObj.push_back(Pair("sigTime", snb.lastPing.sigTime));
+                lastPingObj.push_back(Pair("vchSig", EncodeBase64(&snb.lastPing.vchSig[0], snb.lastPing.vchSig.size())));
+
+                resultObj.push_back(Pair("lastPing", lastPingObj));
+            } else {
+                failed++;
+                resultObj.push_back(Pair("errorMessage", "Stormnode broadcast signature verification failed"));
+            }
+
+            returnObj.push_back(Pair(snb.GetHash().ToString(), resultObj));
+        }
+
+        returnObj.push_back(Pair("overall", strprintf("Successfully decoded broadcast messages for %d stormnodes, failed to decode %d, total %d", successful, failed, successful + failed)));
+
+        return returnObj;
+    }
+
+    if (strCommand == "relay")
+    {
+        if (params.size() < 2 || params.size() > 3)
+            throw JSONRPCError(RPC_INVALID_PARAMETER,   "stormnodebroadcast relay \"hexstring\" ( fast )\n"
+                                                        "\nArguments:\n"
+                                                        "1. \"hex\"      (string, required) Broadcast messages hex string\n"
+                                                        "2. fast       (string, optional) If none, using safe method\n");
+
+        int successful = 0;
+        int failed = 0;
+        bool fSafe = params.size() == 2;
+
+        std::vector<CStormnodeBroadcast> vecSnb;
+        Object returnObj;
+
+        if (!DecodeHexVecSnb(vecSnb, params[1].get_str()))
+            throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Stormnode broadcast message decode failed");
+
+        // verify all signatures first, bailout if any of them broken
+        BOOST_FOREACH(CStormnodeBroadcast& snb, vecSnb) {
+            Object resultObj;
+
+            resultObj.push_back(Pair("vin", snb.vin.ToString()));
+            resultObj.push_back(Pair("addr", snb.addr.ToString()));
+
+            int nDos = 0;
+            bool fResult;
+            if (snb.VerifySignature()) {
+                if (fSafe) {
+                    fResult = snodeman.CheckSnbAndUpdateStormnodeList(snb, nDos);
+                } else {
+                    snodeman.UpdateStormnodeList(snb);
+                    snb.Relay();
+                    fResult = true;
+                }
+            } else fResult = false;
+
+            if(fResult) {
+                successful++;
+                resultObj.push_back(Pair(snb.GetHash().ToString(), "successful"));
+            } else {
+                failed++;
+                resultObj.push_back(Pair("errorMessage", "Stormnode broadcast signature verification failed"));
+            }
+
+            returnObj.push_back(Pair(snb.GetHash().ToString(), resultObj));
+        }
+
+        returnObj.push_back(Pair("overall", strprintf("Successfully relayed broadcast messages for %d stormnodes, failed to relay %d, total %d", successful, failed, successful + failed)));
+
+        return returnObj;
+    }
+
+    return Value::null;
 }

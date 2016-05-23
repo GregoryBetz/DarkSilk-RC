@@ -833,3 +833,57 @@ std::string CStormnodeMan::ToString() const
 
     return info.str();
 }
+
+void CStormnodeMan::UpdateStormnodeList(CStormnodeBroadcast snb) {
+    mapSeenStormnodePing.insert(make_pair(snb.lastPing.GetHash(), snb.lastPing));
+    mapSeenStormnodeBroadcast.insert(make_pair(snb.GetHash(), snb));
+    stormnodeSync.AddedStormnodeList(snb.GetHash());
+
+    LogPrintf("CStormnodeMan::UpdateStormnodeList() - addr: %s\n    vin: %s\n", snb.addr.ToString(), snb.vin.ToString());
+
+    CStormnode* psn = Find(snb.vin);
+    if(psn == NULL)
+    {
+        CStormnode sn(snb);
+        Add(sn);
+    } else {
+        psn->UpdateFromNewBroadcast(snb);
+    }
+}
+
+bool CStormnodeMan::CheckSnbAndUpdateStormnodeList(CStormnodeBroadcast snb, int& nDos) {
+    nDos = 0;
+    LogPrint("stormnode", "CStormnodeMan::CheckSnbAndUpdateStormnodeList - Stormnode broadcast, vin: %s\n", snb.vin.ToString());
+
+    if(mapSeenStormnodeBroadcast.count(snb.GetHash())) { //seen
+        stormnodeSync.AddedStormnodeList(snb.GetHash());
+        return true;
+    }
+    mapSeenStormnodeBroadcast.insert(make_pair(snb.GetHash(), snb));
+
+    LogPrint("stormnode", "CStormnodeMan::CheckSnbAndUpdateStormnodeList - Stormnode broadcast, vin: %s new\n", snb.vin.ToString());
+
+    if(!snb.CheckAndUpdate(nDos)){
+        LogPrint("stormnode", "CStormnodeMan::CheckSnbAndUpdateStormnodeList - Stormnode broadcast, vin: %s CheckAndUpdate failed\n", snb.vin.ToString());
+        return false;
+    }
+
+    // make sure the vout that was signed is related to the transaction that spawned the Stormnode
+    //  - this is expensive, so it's only done once per Masternode
+    if(!sandStormSigner.IsVinAssociatedWithPubkey(snb.vin, snb.pubkey)) {
+        LogPrintf("CStormnodeMan::CheckSnbAndUpdateStormnodeList - Got mismatched pubkey and vin\n");
+        nDos = 33;
+        return false;
+    }
+
+    // make sure it's still unspent
+    //  - this is checked later by .check() in many places and by ThreadCheckDarkSendPool()
+    if(snb.CheckInputsAndAdd(nDos)) {
+        stormnodeSync.AddedStormnodeList(snb.GetHash());
+    } else {
+        LogPrintf("CStormnodeMan::CheckSnbAndUpdateStormnodeList - Rejected Stormnode entry %s\n", snb.addr.ToString());
+        return false;
+    }
+
+    return true;
+}
