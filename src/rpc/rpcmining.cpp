@@ -16,6 +16,7 @@
 #include "miner.h"
 #include "kernel.h"
 #include "txdb-leveldb.h"
+#include "consensus/consensus.h"
 #include "anon/stormnode/stormnode-sync.h"
 
 using namespace json_spirit;

@@ -25,6 +25,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
+#include "consensus/consensus.h"
 #include "anon/instantx/instantx.h"
 #include "anon/sandstorm/sandstorm.h"
 #include "anon/stormnode/stormnodeman.h"
