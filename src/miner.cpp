@@ -8,6 +8,7 @@
 #include "primitives/block.h"
 #include "txdb.h"
 #include "kernel.h"
+#include "consensus/consensus.h"
 #include "anon/stormnode/stormnodeman.h"
 #include "anon/stormnode/stormnode-payments.h"
 #include "anon/stormnode/spork.h"
@@ -662,31 +663,34 @@ void static PoWMiner(CWallet *pwallet)
                 }
                 ++pblock->nNonce;
 
-                // Meter hashes/sec
-                static int64_t nHashCounter;
-                if (nHPSTimerStart == 0)
+				// Meter hashes/sec
+				static int64_t nHashCounter;
+				if (nHPSTimerStart == 0)
+				{
+					nHPSTimerStart = GetTimeMillis();
+					nHashCounter = 0;
+				}
+				else
+                nHashCounter += nHashesDone;
+				if (GetTimeMillis() - nHPSTimerStart > 4000)
+				{
+                static CCriticalSection cs;
                 {
-                    nHPSTimerStart = GetTime();
-                    nHashCounter = 0;
-                }
-                else
-                    ++nHashCounter;// += nHashesDone;
-
-                if ((GetTime() - nHPSTimerStart) % 4 == 0)
-                {
-                    static CCriticalSection cs;
+                    LOCK(cs);
+                    if (GetTimeMillis() - nHPSTimerStart > 4000)
                     {
-                        LOCK(cs);
-                        int64_t nDelta = GetTime() - nHPSTimerStart;
-                        if(nDelta > 0)
-                            dHashesPerSec = 32768 * nHashCounter / (GetTime() - nHPSTimerStart);
-                            //nHPSTimerStart = GetTimeMillis();
-                            //nHashCounter = 0;
-                            //nHashesDone = 0;
-                            LogPrintf("hashmeter %6.0f hash/s\n", dHashesPerSec);
-
+                        dHashesPerSec = 1000.0 * nHashCounter / (GetTimeMillis() - nHPSTimerStart);
+                        nHPSTimerStart = GetTimeMillis();
+                        nHashCounter = 0;
+                        static int64_t nLogTime;
+                        if (GetTime() - nLogTime > 30 * 60)
+                        {
+                            nLogTime = GetTime();
+                            LogPrintf("hashmeter %6.0f khash/s\n", dHashesPerSec/1000.0);
+                        }
                     }
                 }
+            }
 
                 // Check for stop or if block needs to be rebuilt
                 boost::this_thread::interruption_point();
