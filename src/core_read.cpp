@@ -15,7 +15,7 @@
 #include "script/script.h"
 #include "serialize.h"
 #include "streams.h"
-#include "univalue.h"
+#include <univalue.h>
 #include "util.h"
 #include "utilstrencodings.h"
 #include "version.h"

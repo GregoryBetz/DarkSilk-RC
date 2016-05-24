@@ -106,7 +106,6 @@ OBJS= \
     obj/alert.o \
     obj/allocators.o \
     obj/cleanse.o \
-    obj/gen.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \

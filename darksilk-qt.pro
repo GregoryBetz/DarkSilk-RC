@@ -420,7 +420,6 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/version.cpp \
             src/sync.cpp \
             src/txmempool.cpp \
-            src/gen.cpp \
             src/random.cpp \
             src/util.cpp \
             src/utiltime.cpp \
