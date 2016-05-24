@@ -10,6 +10,7 @@
 #include "primitives/block.h"
 #include "txdb.h"
 #include "kernel.h"
+#include "consensus/consensus.h"
 #include "anon/stormnode/stormnodeman.h"
 #include "anon/stormnode/stormnode-payments.h"
 #include "anon/stormnode/spork.h"

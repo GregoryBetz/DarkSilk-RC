@@ -313,18 +313,6 @@ bool CheckSig(vector<unsigned char> vchSig, const vector<unsigned char> &vchPubK
     return true;
 }
 
-unsigned int HaveKeys(const vector<valtype>& pubkeys, const CKeyStore& keystore)
-{
-    unsigned int nResult = 0;
-    BOOST_FOREACH(const valtype& pubkey, pubkeys)
-    {
-        CKeyID keyID = CPubKey(pubkey).GetID();
-        if (keystore.HaveKey(keyID))
-            ++nResult;
-    }
-    return nResult;
-}
-
 class CKeyStoreIsMineVisitor : public boost::static_visitor<bool>
 {
 private:

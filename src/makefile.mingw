@@ -99,6 +99,7 @@ OBJS= \
     obj/util.o \
     obj/utilstrencodings.o \
     obj/utilmoneystr.o \
+    obj/utiltime.o \
     obj/hash.o \
     obj/noui.o \
     obj/kernel.o \
@@ -139,6 +140,7 @@ OBJS= \
     obj/undo.o \
     obj/uint256.o \
     obj/txdb.o \
+    obj/rest.o \
     obj/compat/glibc_sanity.o \
     obj/compat/glibcxx_sanity.o \
     obj/crypto/argon2/argon2.o \
@@ -163,6 +165,7 @@ ifeq (${USE_WALLET}, 1)
     obj/wallet/rpcdump.o \
     obj/wallet/rpcwallet.o \
     obj/wallet/wallet.o \
+    obj/wallet/wallet_ismine.o \
     obj/wallet/walletdb.o
 endif
 
