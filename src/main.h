@@ -14,6 +14,7 @@
 #include "coins.h"
 #include "net.h"
 #include "script/script_error.h"
+#include "consensus/consensus.h"
 #include "txdb.h"
 #include "txmempool.h"
 
@@ -24,16 +25,6 @@ class CWallet;
 
 struct CNodeStateStats;
 
-// Collateral Amount Locked for Stormnodes
-static const CAmount STORMNODE_COLLATERAL = 10000;
-// Main Stormnode Payments Start Block
-static const int STORMNODE_PAYMENT_START = 420;
-// Testnet Stormnode Payment Start Block
-static const int TESTNET_STORMNODE_PAYMENT_START = 100;
-// Sandstorm Collateral Payment
-static const CAmount SANDSTORM_COLLATERAL = (0.01*COIN);
-// Sandstorm Pool Max Amount
-static const CAmount SANDSTORM_POOL_MAX = (9999.99*COIN);
 // Static Proof-of-Stake Reward of 0.01 DRKSLK
 static const CAmount STATIC_POS_REWARD = COIN * 0.01;
 // Static Proof-of-Work Reward of 1.0 DRKSLK
@@ -48,8 +39,6 @@ static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const unsigned int DEFAULT_BLOCK_PRIORITY_SIZE = 50000;
 // The maximum size for transactions we're willing to relay/mine
 static const unsigned int MAX_STANDARD_TX_SIZE = MAX_BLOCK_SIZE_GEN/5;
-// The maximum allowed number of signature check operations in a block (network rule)
-static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 // Maxiumum number of signature check operations in an IsStandard() P2SH script
 static const unsigned int MAX_P2SH_SIGOPS = 15;
 // The maximum number of sigops we're willing to relay/mine in a single tx
@@ -60,10 +49,6 @@ static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const unsigned int DEFAULT_MAX_ORPHAN_BLOCKS = 512;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov 5th 00:53:20 1985 UTC
-// Target timing between Proof-of-Work blocks
-static const unsigned int POW_TARGET_SPACING = 1 * 60; // 60 seconds
-// Target timing between Proof-of-Stake blocks
-static const unsigned int POS_TARGET_SPACING = 1 * 64; // 64 seconds
 // Time to wait (in seconds) between writing blockchain state to disk.
 static const unsigned int DATABASE_WRITE_INTERVAL = 3600;
 // Maximum length of "REJECT" messages

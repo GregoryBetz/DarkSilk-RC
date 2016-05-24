@@ -16,6 +16,7 @@
 #include "miner.h"
 #include "kernel.h"
 #include "txdb-leveldb.h"
+#include "consensus/consensus.h"
 #include "anon/stormnode/stormnode-sync.h"
 
 using namespace json_spirit;
@@ -124,7 +125,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
 
     uint64_t nNetworkWeight = GetPoSKernelPS();
     bool staking = nLastCoinStakeSearchInterval && nWeight;
-    uint64_t nExpectedTime = staking ? (POS_TARGET_SPACING * nNetworkWeight / nWeight) : 0;
+    uint64_t nExpectedTime = staking ? (Params().StakeSpacing() * nNetworkWeight / nWeight) : 0;
 
     Object obj;
 

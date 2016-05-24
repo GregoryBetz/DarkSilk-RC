@@ -273,6 +273,7 @@ static const CRPCCommand vRPCCommands[] =
     { "spork",                  &spork,                  true,      true,      false },
     { "getpoolinfo",            &getpoolinfo,            true,      true,      false },
     { "stormnode",              &stormnode,              true,      true,      false },
+    { "stormnodebroadcast",     &stormnodebroadcast,     true,      true,      false },
     { "snbudget",               &snbudget,               true,      true,      false },
     { "snbudgetvoteraw",        &snbudgetvoteraw,        true,      true,      false },
     { "snfinalbudget",          &snfinalbudget,          true,      true,      false }, 
@@ -906,6 +907,10 @@ void ServiceConnection(AcceptedConnection *conn)
         if (strURI != "/") {
             conn->stream() << HTTPReply(HTTP_NOT_FOUND, "", false) << std::flush;
             break;
+	// Process via HTTP REST API
+        } else if (strURI.substr(0, 6) == "/rest/") {
+            if (!HTTPReq_REST(conn, strURI, mapHeaders, fRun))
+                break;
         }
 
         // Check authorization

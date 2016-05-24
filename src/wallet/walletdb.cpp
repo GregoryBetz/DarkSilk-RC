@@ -13,6 +13,7 @@
 #include "serialize.h"
 #include "sync.h"
 #include "wallet/wallet.h"
+#include "utiltime.h"
 
 using namespace std;
 using namespace boost;

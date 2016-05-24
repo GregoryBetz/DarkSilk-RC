@@ -183,8 +183,9 @@ void StormnodeManager::on_startButton_clicked()
     BOOST_FOREACH(CStormnodeConfig::CStormnodeEntry sne, stormnodeConfig.getEntries()) {
         if(sne.getAlias() == sAlias) {
             std::string errorMessage;
+            CStormnodeBroadcast snb;
 
-            bool result = activeStormnode.Register(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage);
+            bool result = activeStormnode.CreateBroadcast(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage, snb);
  
             if(result) {
                 statusObj += "<br>Successfully started Stormnode." ;
@@ -218,10 +219,11 @@ void StormnodeManager::on_startAllButton_clicked()
         total++;
 
         std::string errorMessage;
+        CStormnodeBroadcast snb;
         //std::string strDonateAddress = sne.getDonationAddress();
         //std::string strDonationPercentage = sne.getDonationPercentage();
 
-        bool result = activeStormnode.Register(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage);
+        bool result = activeStormnode.CreateBroadcast(sne.getIp(), sne.getPrivKey(), sne.getTxHash(), sne.getOutputIndex(), errorMessage, snb);
 
         if(result) {
             successful++;

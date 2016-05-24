@@ -20,6 +20,7 @@
 #include "rpc/rpcprotocol.h"
 #include "util.h"
 #include "utilstrencodings.h"
+#include "utiltime.h"
 
 using namespace std;
 using namespace boost;

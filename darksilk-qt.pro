@@ -242,6 +242,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/sync.h \
             src/random.h \
             src/util.h \
+            src/utiltime.h \
             src/utilstrencodings.h \
             src/utilmoneystr.h \
             src/hash.h \
@@ -268,6 +269,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/script/script_error.h \
             src/init.h \
             src/mruset.h \
+            src/consensus/consensus.h \
             src/consensus/validation.h \
             src/services/account.h \
             src/services/cert.h \
@@ -380,7 +382,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/consensus/params.h \
             src/prevector.h
 
-SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
+SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/blindtext.cpp \
             src/cryptkey.cpp \
             src/anon/stormnode/activestormnode.cpp \
@@ -415,6 +417,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/univalue_write.cpp \
             src/random.cpp \
             src/util.cpp \
+            src/utiltime.cpp \
             src/utilstrencodings.cpp \
             src/utilmoneystr.cpp \
             src/hash.cpp \

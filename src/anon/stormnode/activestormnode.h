@@ -9,6 +9,7 @@
 #include "sync.h"
 #include "key.h"
 #include "wallet/wallet.h"
+#include "anon/stormnode/stormnode.h"
 
 static const int  ACTIVE_STORMNODE_INITIAL = 0; // initial state
 static const int  ACTIVE_STORMNODE_SYNC_IN_PROCESS = 1;
@@ -26,8 +27,8 @@ private:
     /// Ping Stormnode
     bool SendStormnodePing(std::string& errorMessage);
 
-    /// Register any Stormnode
-    bool Register(CTxIn vin, CService service, CKey key, CPubKey pubKey, CKey keyStormnode, CPubKey pubKeyStormnode, std::string &retErrorMessage);
+    /// Create Stormnode broadcast; needs to be  relayed manually after that
+    bool CreateBroadcast(CTxIn vin, CService service, CKey key, CPubKey pubKey, CKey keyStormnode, CPubKey pubKeyStormnode, std::string &retErrorMessage, CStormnodeBroadcast &snb);
 
     /// Get 10000 DRKSLK input that can be used for the Stormnode
     bool GetStormNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secretKey, std::string strTxHash, std::string strOutputIndex);
@@ -54,8 +55,8 @@ public:
     void ManageStatus();
     std::string GetStatus();
 
-    /// Register remote Stormnode
-    bool Register(std::string strService, std::string strKey, std::string strTxHash, std::string strOutputIndex, std::string& errorMessage);
+    /// Create Stormnode broadcast; needs to be  relayed manually after that
+    bool CreateBroadcast(std::string strService, std::string strKey, std::string strTxHash, std::string strOutputIndex, std::string& errorMessage, CStormnodeBroadcast &snb, bool fOffline = false);
 
     /// Get 10,000 DRKSLK input that can be used for the Stormnode
     bool GetStormNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secretKey);
