@@ -94,6 +94,7 @@ OBJS= \
     obj/script/script_error.o \
     obj/script/sign.o \
     obj/script/standard.o \
+    obj/script/sigcache.o \
     obj/sync.o \
     obj/txmempool.o \
     obj/util.o \

@@ -269,6 +269,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/script/script_error.h \
             src/script/sign.h \
             src/script/standard.h \
+            src/script/sigcache.h \
             src/init.h \
             src/mruset.h \
             src/consensus/validation.h \
@@ -426,6 +427,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp \
             src/script/script_error.cpp \
             src/script/sign.cpp \
             src/script/standard.cpp \
+            src/script/sigcache.cpp \
             src/main.cpp \
             src/miner.cpp \
             src/init.cpp \
