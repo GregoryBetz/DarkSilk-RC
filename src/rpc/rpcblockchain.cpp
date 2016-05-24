@@ -9,6 +9,7 @@
 #include "kernel.h"
 #include "checkpoints.h"
 #include "policy/policy.h"
+#include "utiltime.h"
 
 using namespace json_spirit;
 using namespace std;
@@ -371,7 +372,7 @@ Value getcheckpoint(const Array& params, bool fHelp)
 
     result.push_back(Pair("synccheckpoint", pindexCheckpoint->GetBlockHash().ToString().c_str()));
     result.push_back(Pair("height", pindexCheckpoint->nHeight));
-    result.push_back(Pair("timestamp", DateTimeStrFormat(pindexCheckpoint->GetBlockTime()).c_str()));
+    result.push_back(Pair("timestamp", DateTimeStrFormat("%x %H:%M:%S", pindexCheckpoint->GetBlockTime()).c_str()));
 
     result.push_back(Pair("policy", "rolling"));
 

@@ -7,6 +7,7 @@
 #include "guiconstants.h"
 #include "guiutil.h"
 #include "sync.h"
+#include "utiltime.h"
 
 #include <QDebug>
 #include <QList>
