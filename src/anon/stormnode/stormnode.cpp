@@ -191,11 +191,6 @@ void CStormnode::Check(bool forceCheck)
     //once spent, stop doing the checks
     if(activeState == STORMNODE_VIN_SPENT) return;
 
-    if(lastPing.sigTime - sigTime < STORMNODE_MIN_SNP_SECONDS){
-        activeState = STORMNODE_PRE_ENABLED;
-        return;
-    }
-
     if(!IsPingedWithin(STORMNODE_REMOVAL_SECONDS)){
         activeState = STORMNODE_REMOVE;
         return;
@@ -203,6 +198,11 @@ void CStormnode::Check(bool forceCheck)
 
     if(!IsPingedWithin(STORMNODE_EXPIRATION_SECONDS)){
         activeState = STORMNODE_EXPIRED;
+        return;
+    }
+
+    if(lastPing.sigTime - sigTime < STORMNODE_MIN_SNP_SECONDS){
+        activeState = STORMNODE_PRE_ENABLED;
         return;
     }
 
@@ -413,7 +413,10 @@ bool CStormnodeBroadcast::CheckAndUpdate(int& nDos)
     // no such stormnode, nothing to update
     if(psn == NULL) return true ;
     else {
-        // this broadcast older than we have, it's bad. 
+
+        // this broadcast is older or equal than the one that we already have - it's bad and should never happen
+        // unless someone is doing something fishy
+        // (mapSeenStormnodeBroadcast in CStormnodeMan::ProcessMessage should filter legit duplicates) 
         if(psn->sigTime > sigTime) {
             LogPrintf("CStormnodeBroadcast::CheckAndUpdate - Bad sigTime %d for Stormnode %20s %105s (existing broadcast is at %d)\n",
                           sigTime, addr.ToString(), vin.ToString(), psn->sigTime);
@@ -444,6 +447,11 @@ bool CStormnodeBroadcast::CheckInputsAndAdd(int& nDoS)
     // so nothing to do here for us
     if(fStormNode && vin.prevout == activeStormnode.vin.prevout && pubkey2 == activeStormnode.pubKeyStormnode)
         return true;
+
+    int nDos;
+    // Incorrect ping or its sigtime
+    if (lastPing == CStormnodePing() || !lastPing.CheckAndUpdate(nDos, false, true))
+        return false;
 
     // search existing Stormnode list
     CStormnode* psn = snodeman.Find(vin);
@@ -548,8 +556,20 @@ bool CStormnodeBroadcast::Sign(CKey& keyCollateralAddress)
         return false;
     }
 
+    return true;
+}
+
+bool CStormnodeBroadcast::VerifySignature()
+{
+    std::string errorMessage;
+
+    std::string vchPubKey(pubkey.begin(), pubkey.end());
+    std::string vchPubKey2(pubkey2.begin(), pubkey2.end());
+
+    std::string strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
+
     if(!sandStormSigner.VerifyMessage(pubkey, vchSig, strMessage, errorMessage)) {
-        LogPrintf("CStormnodeBroadcast::Sign() - Error: %s\n", errorMessage);
+        LogPrintf("CMasternodeBroadcast::VerifySignature() - Error: %s\n", errorMessage);
         return false;
     }
 
@@ -601,7 +621,20 @@ bool CStormnodePing::Sign(CKey& keyStormnode, CPubKey& pubKeyStormnode)
     return true;
 }
 
-bool CStormnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled)
+bool CStormnodePing::VerifySignature(CPubKey& pubKeyStormnode, int &nDos) {
+    std::string strMessage = vin.ToString() + blockHash.ToString() + boost::lexical_cast<std::string>(sigTime);
+    std::string errorMessage = "";
+
+    if(!sandStormSigner.VerifyMessage(pubKeyStormnode, vchSig, strMessage, errorMessage))
+    {
+        LogPrintf("CMasternodePing::VerifySignature - Got bad Stormnode ping signature %s Error: %s\n", vin.ToString(), errorMessage);
+        nDos = 33;
+        return false;
+    }
+    return true;
+}
+
+bool CStormnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fCheckSigTimeOnly)
 {
     if (sigTime > GetAdjustedTime() + 60 * 60) {
         LogPrintf("CStormnodePing::CheckAndUpdate - Signature rejected, too far into the future %s\n", vin.ToString());
@@ -613,6 +646,12 @@ bool CStormnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled)
         LogPrintf("CStormnodePing::CheckAndUpdate - Signature rejected, too far into the past %s - %d %d \n", vin.ToString(), sigTime, GetAdjustedTime());
         nDos = 1;
         return false;
+    }
+
+    if (fCheckSigTimeOnly) {
+        CStormnode* psn = snodeman.Find(vin);
+        if (psn) return VerifySignature(psn->pubkey2, nDos);
+        return true;
     }
 
     LogPrint("stormnode", "CStormnodePing::CheckAndUpdate - New Ping - %s - %s - %lli\n", GetHash().ToString(), blockHash.ToString(), sigTime);
@@ -628,15 +667,8 @@ bool CStormnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled)
         // last ping was more then STORMNODE_MIN_SNP_SECONDS-60 ago comparing to this one
         if(!psn->IsPingedWithin(STORMNODE_MIN_SNP_SECONDS - 60, sigTime))
         {
-            std::string strMessage = vin.ToString() + blockHash.ToString() + boost::lexical_cast<std::string>(sigTime);
-
-            std::string errorMessage = "";
-            if(!sandStormSigner.VerifyMessage(psn->pubkey2, vchSig, strMessage, errorMessage))
-            {
-                LogPrintf("CStormnodePing::CheckAndUpdate - Got bad Stormnode address signature %s\n", vin.ToString());
-                nDos = 33;
+            if (!VerifySignature(psn->pubkey2, nDos))
                 return false;
-            }
 
             //TODO (Amir): Put these lines back...
             /*
