@@ -25,7 +25,6 @@
 #include "wallet/walletdb.h"
 #include "crypter.h"
 #include "key.h"
-#include "consensus/consensus.h"
 #include "anon/stormnode/spork.h"
 #include "anon/sandstorm/sandstorm.h"
 #include "anon/instantx/instantx.h"
@@ -2598,7 +2597,7 @@ bool CWallet::HasCollateralInputs() const
 
 bool CWallet::IsCollateralAmount(CAmount nInputAmount) const
 {
-    return  nInputAmount != 0 && nInputAmount % Params().SandstormCollateral() == 0 && nInputAmount < Params().SandstormCollateral() * 5 && nInputAmount > Params().SandstormCollateral();
+    return  nInputAmount != 0 && nInputAmount % SANDSTORM_COLLATERAL == 0 && nInputAmount < SANDSTORM_COLLATERAL * 5 && nInputAmount > SANDSTORM_COLLATERAL;
 }
 
 bool CWallet::SelectCoinsWithoutDenomination(const CAmount& nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet) const
@@ -2647,9 +2646,9 @@ bool CWallet::CreateCollateralTransaction(CMutableTransaction& txCollateral, std
     BOOST_FOREACH(CTxIn v, vCoinsCollateral)
         txCollateral.vin.push_back(v);
 
-    if(nValueIn2 - Params().SandstormCollateral() - nFeeRet > 0) {
+    if(nValueIn2 - SANDSTORM_COLLATERAL - nFeeRet > 0) {
         //pay collateral charge in fees
-        CTxOut vout3 = CTxOut(nValueIn2 - Params().SandstormCollateral(), scriptChange);
+        CTxOut vout3 = CTxOut(nValueIn2 - SANDSTORM_COLLATERAL, scriptChange);
         txCollateral.vout.push_back(vout3);
     }
 
@@ -3882,10 +3881,19 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
     // start stormnode payments
     bool bStormNodePayment = false;
-    if (pindexBest->nHeight+1 >= Params().NodeStartBlock()){
-			bStormNodePayment = true;
-	}
-  
+    if ( Params().NetworkID() == CChainParams::TESTNET ){
+        if (pindexBest->nHeight+1 >= TESTNET_STORMNODE_PAYMENT_START) {
+            bStormNodePayment = true;
+        }
+    }
+    else
+    {   if ( Params().NetworkID() == CChainParams::MAIN ){
+            if (pindexBest->nHeight+1 >= STORMNODE_PAYMENT_START){
+                bStormNodePayment = true;
+            }
+        }
+    }
+
     CScript payee;
     CTxIn vin;
     bool hasPayment = false;
@@ -4100,7 +4108,7 @@ string CWallet::PrepareSandstormDenominate(int minRounds, int maxRounds)
         if minRounds >= 0 it means only denominated inputs are going in and coming out
     */
     if(minRounds >= 0){
-        if (!SelectCoinsByDenominations(sandStormPool.sessionDenom, 0.1*COIN, Params().SandstormPoolMax(), vCoins, vCoins2, nValueIn, minRounds, maxRounds))
+        if (!SelectCoinsByDenominations(sandStormPool.sessionDenom, 0.1*COIN, SANDSTORM_POOL_MAX, vCoins, vCoins2, nValueIn, minRounds, maxRounds))
             return _("Error: Can't select current denominated inputs");
     }
 

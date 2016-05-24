@@ -20,7 +20,6 @@
 #include "script/script.h"
 #include "anon/instantx/instantx.h"
 #include "ui_interface.h"
-#include "chainparams.h"
 
 using namespace std;
 using namespace boost;
@@ -235,7 +234,7 @@ void CSandstormPool::ProcessMessageSandstorm(CNode* pfrom, std::string& strComma
                 }
             }
 
-            if (nValueIn > Params().SandstormPoolMax()) {
+            if (nValueIn > SANDSTORM_POOL_MAX) {
                 LogPrintf("ssi -- more than Sandstorm pool max! %s\n", tx.ToString());
                 errorID = ERR_MAXIMUM;
                 pfrom->PushMessage("sssu", sessionID, GetState(), GetEntriesCount(), STORMNODE_REJECTED, errorID);
@@ -964,8 +963,8 @@ bool CSandstormPool::IsCollateralValid(const CTransaction& txCollateral){
         return false;
     }
 
-    //collateral transactions are required to pay out Params().SandstormCollateral() as a fee to the miners
-    if(nValueIn - nValueOut < Params().SandstormCollateral()) {
+    //collateral transactions are required to pay out SANDSTORM_COLLATERAL as a fee to the miners
+    if(nValueIn - nValueOut < SANDSTORM_COLLATERAL) {
         LogPrint("sandstorm", "CSandstormPool::IsCollateralValid - did not include enough fees in transaction %d\n%s", nValueOut-nValueIn, txCollateral.ToString());
         return false;
     }
@@ -1399,18 +1398,18 @@ bool CSandstormPool::DoAutomaticDenominating(bool fDryRun)
     CAmount nOnlyDenominatedBalance;
     CAmount nBalanceNeedsDenominated;
 
-    // should not be less than fees in Params().SandstormCollateral() + few (lets say 5) smallest denoms
+    // should not be less than fees in SANDSTORM_COLLATERAL + few (lets say 5) smallest denoms
     CAmount nLowestDenom = sandStormDenominations[sandStormDenominations.size() - 1];
 
     // if there are no confirmed SS collateral inputs yet
     if(!pwalletMain->HasCollateralInputs())
         // should have some additional amount for them
-        nLowestDenom += Params().SandstormCollateral()*4;
+        nLowestDenom += SANDSTORM_COLLATERAL*4;
 
     CAmount nBalanceNeedsAnonymized = nAnonymizeDarkSilkAmount*COIN - pwalletMain->GetAnonymizedBalance();
 
     // if balanceNeedsAnonymized is more than pool max, take the pool max
-    if(nBalanceNeedsAnonymized > Params().SandstormPoolMax()) nBalanceNeedsAnonymized = Params().SandstormPoolMax();
+    if(nBalanceNeedsAnonymized > SANDSTORM_POOL_MAX) nBalanceNeedsAnonymized = SANDSTORM_POOL_MAX;
 
     // try to overshoot target DS balance up to nLowestDenom
     nBalanceNeedsAnonymized += nLowestDenom;
@@ -1673,7 +1672,7 @@ bool CSandstormPool::MakeCollateralAmounts()
     assert(reservekeyCollateral.GetReservedKey(vchPubKey)); // should never fail, as we just unlocked
     scriptCollateral = GetScriptForDestination(vchPubKey.GetID());
 
-    vecSend.push_back(make_pair(scriptCollateral, Params().SandstormCollateral()*4));
+    vecSend.push_back(make_pair(scriptCollateral, SANDSTORM_COLLATERAL*4));
 
     // try to use non-denominated and not sn-like funds
     //             pwalletMain->CreateTransaction(scriptPubKey, nValue, sNarr, wtxNew, reservekey, nFeeRequired, NULL
@@ -1733,8 +1732,8 @@ bool CSandstormPool::CreateDenominated(CAmount nTotalValue)
 
     // ****** Add collateral outputs ************ /
     if(!pwalletMain->HasCollateralInputs()) {
-        vecSend.push_back(make_pair(scriptCollateral, Params().SandstormCollateral()*4));
-        nValueLeft -= Params().SandstormCollateral()*4;
+        vecSend.push_back(make_pair(scriptCollateral, SANDSTORM_COLLATERAL*4));
+        nValueLeft -= SANDSTORM_COLLATERAL*4;
     }
 
     // ****** Add denoms ************ /

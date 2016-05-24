@@ -26,7 +26,6 @@
 
 #include "util.h"
 #include "utilstrencodings.h"
-#include "utiltime.h"
 #include "amount.h"
 #include "chainparams.h"
 #include "sync.h"
@@ -721,6 +720,20 @@ void ShrinkDebugFile()
     }
 }
 
+static int64_t nMockTime = 0;  // For unit testing
+
+int64_t GetTime()
+{
+    if (nMockTime) return nMockTime;
+
+    return time(NULL);
+}
+
+void SetMockTime(int64_t nMockTimeIn)
+{
+    nMockTime = nMockTimeIn;
+}
+
 string FormatVersion(int nVersion)
 {
     if (nVersion%100 == 0)
@@ -814,6 +827,16 @@ std::string GetThreadName()
     // no get_name here
 #endif
     return std::string(name);
+}
+
+std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)
+{
+    // std::locale takes ownership of the pointer
+    std::locale loc(std::locale::classic(), new boost::posix_time::time_facet(pszFormat));
+    std::stringstream ss;
+    ss.imbue(loc);
+    ss << boost::posix_time::from_time_t(nTime);
+    return ss.str();
 }
 
 bool TruncateFile(FILE *file, unsigned int length) {

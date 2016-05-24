@@ -11,7 +11,6 @@
 #include <stdlib.h>
 
 #include "wallet/walletdb.h"
-#include "wallet/wallet_ismine.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
 #include "crypter.h"

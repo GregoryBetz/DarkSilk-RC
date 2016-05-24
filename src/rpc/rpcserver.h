@@ -115,13 +115,6 @@ public:
     json_spirit::Value execute(const std::string &method, const json_spirit::Array &params) const;
 };
 
-// in rest.cpp
-extern bool HTTPReq_REST(AcceptedConnection *conn,
-                  std::string& strURI,
-                  std::map<std::string, std::string>& mapHeaders,
-                  bool fRun);
-
-
 extern const CRPCTable tableRPC;
 
 extern void InitRPCMining();
