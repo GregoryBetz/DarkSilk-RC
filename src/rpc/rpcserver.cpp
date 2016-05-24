@@ -273,6 +273,7 @@ static const CRPCCommand vRPCCommands[] =
     { "spork",                  &spork,                  true,      true,      false },
     { "getpoolinfo",            &getpoolinfo,            true,      true,      false },
     { "stormnode",              &stormnode,              true,      true,      false },
+    { "stormnodebroadcast",     &stormnodebroadcast,     true,      true,      false },
     { "snbudget",               &snbudget,               true,      true,      false },
     { "snbudgetvoteraw",        &snbudgetvoteraw,        true,      true,      false },
     { "snfinalbudget",          &snfinalbudget,          true,      true,      false }, 
