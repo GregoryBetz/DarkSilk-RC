@@ -56,12 +56,6 @@ OBJS= \
     obj/allocators.o \
     obj/bloom.o \
     obj/cleanse.o \
-    obj/core_read.o \
-    obj/core_write.o \
-    obj/gen.o \
-    obj/univalue.o \
-    obj/univalue_read.o \
-    obj/univalue_write.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \
@@ -173,9 +167,14 @@ endif
 
 all: darksilkd.exe
 
-# libsecp256k1 support
-LIBS += $(CURDIR)/secp256k1/src/libsecp256k1_la-secp256k1.o
+# build libsecp256k1
+LIBS += $(CURDIR)/secp256k1/src/libsecp256k1_la-secp256k1.o 
 DEFS += $(addprefix -I,$(CURDIR)/secp256k1/include)
+
+OBJS +=  obj/script/script.o
+secp256k1/src/libsecp256k1_la-secp256k1.o:
+	@echo "Building Secp256k1 ..."; cd secp256k1; ./autogen.sh ; ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery ; make; cd ..;
+obj/scripts/script.o: secp256k1/src/libsecp256k1_la-secp256k1.o
 
 # build leveldb
 LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
@@ -186,6 +185,17 @@ OBJS += obj/txdb-leveldb.o
 leveldb/libleveldb.a:
 	@echo "Building LevelDB ..." && cd leveldb TARGET_OS=NATIVE_WINDOWS make libleveldb.a libmemenv.a cd ..
 obj/txdb-leveldb.o: leveldb/libleveldb.a
+
+# build univalue
+LIBS += $(CURDIR)/univalue/lib/libunivalue_la-univalue.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_read.o $(CURDIR)/univalue/lib/libunivalue_la-univalue_write.o
+DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
+
+OBJS += obj/core_read.o \
+        obj/core_write.o
+
+univalue/lib/libunivalue_la-univalue.o:
+	@echo "Building Univalue ..."; cd univalue; ./autogen.sh ; ./configure ; make; cd ..;
+obj/core_read.o: univalue/lib/libunivalue_la-univalue.o
 
 $(shell cp -rp $(abspath crypto) obj >/dev/null)
 

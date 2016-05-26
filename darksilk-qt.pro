@@ -146,6 +146,23 @@ QMAKE_EXTRA_TARGETS += genleveldb
 # Gross ugly hack that depends on qmake internals, unfortunately there is no other way to do it.
 QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) clean
 
+#Build Univalue
+INCLUDEPATH += src/univalue/include
+LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue.o
+LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_read.o
+LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_write.o
+!win32 {
+    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+    genUnivalue.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"
+} else {
+    #Windows ???
+}
+genUnivalue.target = $$PWD/src/univalue/lib/libunivalue_la-univalue.o
+genUnivalue.depends = FORCE
+PRE_TARGETDEPS += $$PWD/src/univalue/lib/libunivalue_la-univalue.o
+QMAKE_EXTRA_TARGETS += genUnivalue
+QMAKE_CLEAN += $$PWD/src/univalue/lib/libunivalue_la-univalue.o; cd $$PWD/src/univalue ; $(MAKE) clean
+
 # regenerate src/build.h
 !windows|contains(USE_BUILD_INFO, 1) {
     genbuild.depends = FORCE
@@ -212,8 +229,8 @@ DEPENDPATH += . \
 
 HEADERS +=  src/qt/darksilkgui.h \
             src/cryptkey.h \
-	        src/anon/stormnode/activestormnode.h \
-	        src/cryptogram/ies.h \
+            src/anon/stormnode/activestormnode.h \
+            src/cryptogram/ies.h \
             src/qt/transactiontablemodel.h \
             src/qt/addresstablemodel.h \
             src/qt/optionsdialog.h \
@@ -225,7 +242,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/aboutdialog.h \
             src/qt/editaddressdialog.h \
             src/qt/darksilkaddressvalidator.h \
-	        src/blindtext.h \
+            src/blindtext.h \
             src/alert.h \
             src/allocators.h \
             src/addrman.h \
@@ -261,8 +278,6 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/wallet/db.h \
             src/txdb.h \
             src/txmempool.h \
-            src/univalue.h \
-            src/univalue_escapes.h \
             src/wallet/walletdb.h \
             src/wallet/wallet_ismine.h \
             src/script/script.h \
@@ -411,10 +426,6 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/version.cpp \
             src/sync.cpp \
             src/txmempool.cpp \
-            src/gen.cpp \
-            src/univalue.cpp \
-            src/univalue_read.cpp \
-            src/univalue_write.cpp \
             src/random.cpp \
             src/util.cpp \
             src/utiltime.cpp \
@@ -713,4 +724,5 @@ DISTFILES += \
             src/makefile.linux-mingw \
             src/makefile.mingw \
             src/makefile.osx \
-            src/makefile.unix
+            src/makefile.unix \
+            .travis.yml
