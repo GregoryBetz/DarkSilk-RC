@@ -2,6 +2,7 @@
 #define DEBUGCONSOLE_H
 
 #include <QDialog>
+#include <QCompleter>
 
 #include "peertablemodel.h"
 
@@ -131,6 +132,7 @@ private:
     NodeId cachedNodeid;
     QMenu *peersTableContextMenu;
     QMenu *banTableContextMenu;
+    QCompleter *autoCompleter;
 };
 
 #endif // DEBUGCONSOLE_H
