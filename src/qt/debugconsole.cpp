@@ -8,6 +8,7 @@
 #include <QSignalMapper>
 #include <QUrl>
 #include <QScrollBar>
+#include <QStringList>
 
 #ifdef ENABLE_WALLET
 #include <db_cxx.h>
@@ -413,6 +414,17 @@ void DEBUGConsole::setClientModel(ClientModel *model)
 
         setNumConnections(model->getNumConnections());
         ui->isTestNet->setChecked(model->isTestNet());
+
+        // Setup autocomplete and attach it
+        QStringList wordList;
+        std::vector<std::string> commandList = tableRPC.listCommands();
+        for (size_t i = 0; i < commandList.size(); ++i)
+        {
+            wordList << commandList[i].c_str();
+        }
+
+        autoCompleter = new QCompleter(wordList, this);
+        ui->lineEdit->setCompleter(autoCompleter);
     }
 }
 
