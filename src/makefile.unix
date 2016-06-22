@@ -180,6 +180,7 @@ OBJS= \
     obj/amount.o \
     obj/undo.o \
     obj/uint256.o \
+    obj/ui_interface.o \
     obj/txdb.o \
     obj/rest.o \
     obj/cryptkey.o \

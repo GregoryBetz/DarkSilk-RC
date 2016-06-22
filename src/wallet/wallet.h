@@ -31,6 +31,9 @@ static const double MIN_FEE = 0.00001;
 const CAmount MIN_RELAY_TX_FEE = MIN_TX_FEE;
 //! -keypool default
 static const unsigned int DEFAULT_KEYPOOL_SIZE = 1000;
+
+extern const char * DEFAULT_WALLET_DAT;
+
 // Settings
 extern CAmount nTransactionFee;
 extern CAmount nReserveBalance;
@@ -453,6 +456,9 @@ public:
 
     // Get wallet transactions that conflict with given transaction (spend same outputs)
     std::set<uint256> GetConflicts(const uint256& txid) const;
+
+    //! Verify the wallet database and perform salvage if required
+    static bool Verify();
 
     void FixSpentCoins(int& nMismatchSpent, CAmount& nBalanceInQuestion, bool fCheckOnly = false);
     void DisableTransaction(const CTransaction &tx);
