@@ -483,6 +483,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/protocol.cpp \
             src/qt/notificator.cpp \
             src/qt/paymentserver.cpp \
+            src/ui_interface.cpp \
             src/qt/debugconsole.cpp \
             src/noui.cpp \
             src/kernel.cpp \

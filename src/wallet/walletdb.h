@@ -149,10 +149,10 @@ public:
     CAmount GetAccountCreditDebit(const std::string& strAccount);
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& acentries);
 
-    DBErrors ReorderTransactions(CWallet*);
+    DBErrors ReorderTransactions(CWallet* pwallet);
     DBErrors LoadWallet(CWallet* pwallet);
-    static bool Recover(CDBEnv& dbenv, std::string filename, bool fOnlyKeys);
-    static bool Recover(CDBEnv& dbenv, std::string filename);
+    static bool Recover(CDBEnv& dbenv, const std::string& filename, bool fOnlyKeys);
+    static bool Recover(CDBEnv& dbenv, const std::string& filename);
 };
 
 bool BackupWallet(const CWallet& wallet, const std::string& strDest);

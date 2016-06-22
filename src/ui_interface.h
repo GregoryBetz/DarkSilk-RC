@@ -108,6 +108,12 @@ public:
     boost::signals2::signal<void (const std::string &title, int nProgress)> ShowProgress;
 };
 
+/** Show warning message **/
+void InitWarning(const std::string& str);
+
+/** Show error message **/
+bool InitError(const std::string& str);
+
 extern CClientUIInterface uiInterface;
 
 /**
