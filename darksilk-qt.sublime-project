@@ -17,12 +17,46 @@
 		{
 			"name": "Darksilk Qt-5",
 			"shell_cmd": "qmake -qt=qt5 'USE_QRCODE=1' 'USE_NATIVE_I2P=1' && make",
-		    "working_dir": "${project_path:${folder}}"
+		    "working_dir": "${project_path:${folder}}",
+            "variants":
+            [
+                {
+                    "name": "Build All",
+                    "shell_cmd": "cd src && cd .. && qmake -qt=qt5 'USE_QRCODE=1' 'USE_NATIVE_I2P=1' && make"
+                },
+                {
+                    "name": "Build Debug",
+                    "shell_cmd": "cd src && cd .. && qmake -qt=qt5 'USE_QRCODE=1' 'USE_NATIVE_I2P=1' 'CONFIG+=debug' && make"
+                },
+                {
+                    "name": "Clean All",
+                    "shell_cmd": "cd src && cd .. && make clean"
+                }
+            ]
 		},
         {
             "name": "Darksilk Daemon",
             "shell_cmd": "cd univalue && ./autogen.sh && ./configure && make && cd ../secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && make && cd .. && make -f makefile.unix USE_UPNP=1",
-            "working_dir": "${project_path:${folder}}/src"
+            "working_dir": "${project_path:${folder}}/src",
+            "variants":
+            [
+                {
+                    "name": "Build All",
+                    "shell_cmd": "cd univalue && ./autogen.sh && ./configure && make && cd ../secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && make && cd .. && make -f makefile.unix USE_UPNP=1"
+                },
+                {
+                    "name": "Build Daemon Only",
+                    "shell_cmd": "cd .. && cd src && make -f makefile.unix USE_UPNP=1"
+                },
+                {
+                    "name": "Clean All",
+                    "shell_cmd": "cd univalue && make clean && cd ../secp256k1 && make clean && cd ../leveldb && make clean && cd .. && make -f makefile.unix clean"
+                },
+                {
+                    "name": "Clean Daemon Only",
+                    "shell_cmd": "cd .. && cd src && make -f makefile.unix clean"
+                },
+            ]
         }
     ]
 }
