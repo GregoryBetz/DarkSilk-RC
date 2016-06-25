@@ -818,7 +818,9 @@ public:
     static void SetBannedSetDirty(bool dirty=true);
     //!clean unused entries (if bantime has expired)
     static void SweepBanned();
+
     bool Misbehaving(int howmuch); // 1 == a little, 100 == a lot
+    
     void copyStats(CNodeStats &stats);
 
     static bool IsWhitelistedRange(const CNetAddr &ip);
@@ -874,7 +876,5 @@ public:
     bool Write(const banmap_t& banSet);
     bool Read(banmap_t& banSet);
 };
-
-void DumpBanlist();
 
 #endif // DARKSILK_NET_H

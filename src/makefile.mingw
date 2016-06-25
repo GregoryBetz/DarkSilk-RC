@@ -86,6 +86,7 @@ OBJS= \
     obj/script/script_error.o \
     obj/sync.o \
     obj/txmempool.o \
+    obj/ui_interface.o \
     obj/util.o \
     obj/utilstrencodings.o \
     obj/utilmoneystr.o \
