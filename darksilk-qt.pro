@@ -113,7 +113,7 @@ INCLUDEPATH += src/secp256k1/include
 LIBS += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    gensecp256k1.commands = cd $$PWD/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"
+    gensecp256k1.commands = if [ -f $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o ]; then echo "Secp256k1 already built"; else cd $$PWD/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"; fi
 } else {
     #Windows ???
 }
@@ -123,14 +123,13 @@ PRE_TARGETDEPS += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o
 QMAKE_EXTRA_TARGETS += gensecp256k1
 QMAKE_CLEAN += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o; cd $$PWD/src/secp256k1 ; $(MAKE) clean
 
-
 #Build LevelDB
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers src/leveldb/helpers/memenv
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
+    genleveldb.commands = if [ -f $$PWD/src/leveldb/libleveldb.a ]; then echo "Level DB already built"; else cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a; fi
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
@@ -153,7 +152,7 @@ LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_read.o
 LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_write.o
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genUnivalue.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"
+    genUnivalue.commands =if [ -f $$PWD/src/univalue/lib/libunivalue_la-univalue.o ]; then echo "Univalue already built"; else cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"; fi
 } else {
     #Windows ???
 }
@@ -282,6 +281,9 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/wallet/wallet_ismine.h \
             src/script/script.h \
             src/script/script_error.h \
+            src/script/sign.h \
+            src/script/standard.h \
+            src/script/interpreter.h \
             src/init.h \
             src/mruset.h \
             src/consensus/consensus.h \
@@ -432,6 +434,9 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/pubkey.cpp \
             src/script/script.cpp \
             src/script/script_error.cpp \
+            src/script/sign.cpp \
+            src/script/standard.cpp \
+            src/script/interpreter.cpp \
             src/main.cpp \
             src/miner.cpp \
             src/init.cpp \
@@ -483,7 +488,6 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/protocol.cpp \
             src/qt/notificator.cpp \
             src/qt/paymentserver.cpp \
-            src/ui_interface.cpp \
             src/qt/debugconsole.cpp \
             src/noui.cpp \
             src/kernel.cpp \
