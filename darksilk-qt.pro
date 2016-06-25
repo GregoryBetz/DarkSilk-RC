@@ -227,7 +227,7 @@ DEPENDPATH += . \
               src/leveldb/port/win \
               src/secp256k1/src/java
 
-HEADERS +=  src/qt/darksilkgui.h \
+HEADERS +=  src/qt/darksilkgui.h src/crypto/aes.h \
             src/cryptkey.h \
             src/anon/stormnode/activestormnode.h \
             src/cryptogram/ies.h \
@@ -391,7 +391,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/consensus/params.h \
             src/prevector.h
 
-SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
+SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp src/crypto/aes.cpp\
             src/blindtext.cpp \
             src/cryptkey.cpp \
             src/anon/stormnode/activestormnode.cpp \

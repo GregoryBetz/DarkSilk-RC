@@ -140,6 +140,7 @@ OBJS= \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
     obj/crypto/argon2/blake2/blake2b.o \
+    obj/crypto/aes.o \
     obj/utilstrencodings.o
 
 ifdef USE_NATIVE_I2P
