@@ -8,6 +8,7 @@
 #include <QSignalMapper>
 #include <QUrl>
 #include <QScrollBar>
+#include <QStringList>
 
 #ifdef ENABLE_WALLET
 #include <db_cxx.h>
@@ -263,6 +264,14 @@ bool DEBUGConsole::eventFilter(QObject* obj, QEvent *event)
                 return true;
             }
             break;
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+            // forward these events to lineEdit
+            if(obj == autoCompleter->popup()) {
+                QApplication::postEvent(ui->lineEdit, new QKeyEvent(*keyevt));
+                return true;
+            }
+            break;
         default:
             // Typing in messages widget brings focus to line edit, and redirects key there
             // Exclude most combinations and keys that emit no text, except paste shortcuts
@@ -413,6 +422,19 @@ void DEBUGConsole::setClientModel(ClientModel *model)
 
         setNumConnections(model->getNumConnections());
         ui->isTestNet->setChecked(model->isTestNet());
+
+        // Setup autocomplete and attach it
+        QStringList wordList;
+        std::vector<std::string> commandList = tableRPC.listCommands();
+        for (size_t i = 0; i < commandList.size(); ++i)
+        {
+            wordList << commandList[i].c_str();
+        }
+
+        autoCompleter = new QCompleter(wordList, this);
+        ui->lineEdit->setCompleter(autoCompleter);
+
+        autoCompleter->popup()->installEventFilter(this);
     }
 }
 
@@ -783,15 +805,13 @@ void DEBUGConsole::banSelectedNode(int bantime)
     // Get currently selected peer address
     QString strNode = GUIUtil::getEntryData(ui->peerWidget, 0, PeerTableModel::Address);
     // Find possible nodes, ban it and clear the selected node
-    if (CNode *bannedNode = FindNode(strNode.toStdString())) {
+    if (FindNode(strNode.toStdString())) {
         std::string nStr = strNode.toStdString();
         std::string addr;
         int port = 0;
         SplitHostPort(nStr, port, addr);
 
         CNode::Ban(CNetAddr(addr), BanReasonManuallyAdded, bantime);
-        bannedNode->fDisconnect = true;
-        DumpBanlist();
 
         clearSelectedNode();
         clientModel->getBanTableModel()->refresh();
@@ -810,7 +830,6 @@ void DEBUGConsole::unbanSelectedNode()
     if (possibleSubnet.IsValid())
     {
         CNode::Unban(possibleSubnet);
-        DumpBanlist();
         clientModel->getBanTableModel()->refresh();
     }
 }

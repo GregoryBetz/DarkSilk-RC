@@ -74,6 +74,9 @@ public:
         MSG_ERROR = (ICON_ERROR | BTN_OK | MODAL)
     };
 
+    /** A wallet has been loaded. */
+    boost::signals2::signal<void (CWallet* wallet)> LoadWallet;
+    
     /** Show message box. */
     boost::signals2::signal<void (const std::string& message, const std::string& caption, unsigned int style)> ThreadSafeMessageBox;
 
@@ -106,7 +109,16 @@ public:
 
     /** Show progress e.g. for verifychain */
     boost::signals2::signal<void (const std::string &title, int nProgress)> ShowProgress;
+
+    /** Banlist did change. */
+    boost::signals2::signal<void (void)> BannedListChanged;
 };
+
+/** Show warning message **/
+void InitWarning(const std::string& str);
+
+/** Show error message **/
+bool InitError(const std::string& str);
 
 extern CClientUIInterface uiInterface;
 

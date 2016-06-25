@@ -26,6 +26,9 @@ class CDiskTxPos;
 class COutPoint;
 class CTxIndex;
 
+static const unsigned int DEFAULT_WALLET_DBLOGSIZE = 100;
+static const bool DEFAULT_WALLET_PRIVDB = true;
+
 extern unsigned int nWalletDBUpdated;
 
 void ThreadFlushWalletDB(const std::string& strWalletFile);
@@ -36,19 +39,22 @@ class CDBEnv
 private:
     bool fDbEnvInit;
     bool fMockDb;
-    boost::filesystem::path pathEnv;
+    // Don't change into boost::filesystem::path, as that can result in
+    // shutdown problems/crashes caused by a static initialized internal pointer.
     std::string strPath;
 
     void EnvShutdown();
 
 public:
     mutable CCriticalSection cs_db;
-    DbEnv dbenv;
+    DbEnv *dbenv;
     std::map<std::string, int> mapFileUseCount;
     std::map<std::string, Db*> mapDb;
 
     CDBEnv();
     ~CDBEnv();
+    void Reset();
+
     void MakeMock();
     bool IsMock() { return fMockDb; }
 
@@ -58,8 +64,10 @@ public:
      * This must be called BEFORE strFile is opened.
      * Returns true if strFile is OK.
      */
-    enum VerifyResult { VERIFY_OK, RECOVER_OK, RECOVER_FAIL };
-    VerifyResult Verify(std::string strFile, bool (*recoverFunc)(CDBEnv& dbenv, std::string strFile));
+    enum VerifyResult { VERIFY_OK,
+                        RECOVER_OK,
+                        RECOVER_FAIL };
+    VerifyResult Verify(const std::string& strFile, bool (*recoverFunc)(CDBEnv& dbenv, const std::string& strFile));
     /*
      * Salvage data from a file that Verify says is bad.
      * fAggressive sets the DB_AGGRESSIVE flag (see berkeley DB->verify() method documentation).
@@ -68,9 +76,9 @@ public:
      * for huge databases.
      */
     typedef std::pair<std::vector<unsigned char>, std::vector<unsigned char> > KeyValPair;
-    bool Salvage(std::string strFile, bool fAggressive, std::vector<KeyValPair>& vResult);
+    bool Salvage(const std::string& strFile, bool fAggressive, std::vector<KeyValPair>& vResult);
 
-    bool Open(boost::filesystem::path pathEnv_);
+    bool Open(const boost::filesystem::path& path);
     void Close();
     void Flush(bool fShutdown);
     void CheckpointLSN(const std::string& strFile);
@@ -81,7 +89,7 @@ public:
     DbTxn *TxnBegin(int flags=DB_TXN_WRITE_NOSYNC)
     {
         DbTxn* ptxn = NULL;
-        int ret = dbenv.txn_begin(NULL, &ptxn, flags);
+        int ret = dbenv->txn_begin(NULL, &ptxn, flags);
         if (!ptxn || ret != 0)
             return NULL;
         return ptxn;
@@ -99,8 +107,9 @@ protected:
     std::string strFile;
     DbTxn* activeTxn;
     bool fReadOnly;
+    bool fFlushOnClose;
 
-    explicit CDB(const std::string& strFilename, const char* pszMode = "r+");
+    explicit CDB(const std::string& strFilename, const char* pszMode = "r+", bool fFlushOnCloseIn=true);
     ~CDB() { Close(); }
 
 public:
