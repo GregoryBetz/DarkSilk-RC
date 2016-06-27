@@ -1,0 +1,7 @@
+{
+  "name": "DarkSilk Release Candidate",
+  "description": "An online digital currency that makes cash",
+  "repository": "https://github.com/SCDeveloper/DarkSilk-Release-Candidate",
+  "logo": "https://raw.githubusercontent.com/SCDeveloper/DarkSilk-Release-Candidate/main/src/qt/res/icons/darksilk-64.png",
+  "keywords": ["darksilk", "bitcoin", "money"]
+}
