@@ -1,12 +1,20 @@
 # **DarkSilk (DRKSLK) Release Candidate**
 
-(Alpha Level)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-[![Code Climate](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate/badges/gpa.svg)](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate) [![Test Coverage](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate/badges/coverage.svg)](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate/coverage) [![Issue Count](https://codeclimate.com/github//SCDeveloper/DarkSilk-Release-Candidate/badges/issue_count.svg)](https://codeclimate.com/github/SCDeveloper/DarkSilk-Release-Candidate)
+
+[![Stories in Ready](https://badge.waffle.io/SCDeveloper/DarkSilk-Release-Candidate.png?label=ready&title=Ready)](http://waffle.io/SCDeveloper/DarkSilk-Release-Candidate)
+[![Build Status](https://travis-ci.org/SCDeveloper/DarkSilk-Release-Candidate.png?branch=master)](https://travis-ci.org/SCDeveloper/DarkSilk-Release-Candidate)
+
+
+Graph on Pull Request History
+====================================
+
+[![Throughput Graph](https://graphs.waffle.io/SCDeveloper/DarkSilk-Release-Candidate/throughput.svg)](https://waffle.io/SCDeveloper/DarkSilk-Release-Candidate/metrics/throughput)
 
 DarkSilk Integration/Staging Tree
 ================================
-![DRKSLK logo](https://scontent-lhr3-1.xx.fbcdn.net/hphotos-xfa1/v/t1.0-9/12662013_621650008001168_4546399705491232237_n.png?oh=38604d9a10c0823ac6d7d51b9c2878c9&oe=573958C0)
+[](src/qt/res/icons/darksilk-80.png)
 
 **Copyright (c) 2015-2016 Silk Network**
 
@@ -153,4 +161,3 @@ Example stormnode.conf Configuration
 > Then, start the daemon on your remote stormnode, start your local wallet, and then you can start your stormnode from the RPC console:
 
 	stormnode start
-
