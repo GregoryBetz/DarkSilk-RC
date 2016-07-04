@@ -440,58 +440,28 @@ Value stormnode(const Array& params, bool fHelp)
     }
 
     if (strCommand == "winners")
-    {   
-        //TODO: Implement after Univalue & Chainactive
-        int nHeight;
-        /*{
-            LOCK(cs_main);
-            CBlockIndex* pindex = pindexBest;
-            if(!pindex) return NullUniValue;
-
-            nHeight = pindex->nHeight;
-        }*/
-
+    {
         int nLast = 10;
-        std::string strFilter = "";
 
         if (params.size() >= 2){
             nLast = atoi(params[1].get_str());
         }
 
-        if (params.size() == 3){
-            strFilter = params[2].get_str();
-        }
-
-        if (params.size() > 3)
-            throw runtime_error("Correct usage is 'stormnode winners ( \"count\" \"filter\" )'");
-
-
         Object obj;
 
-        for(int i = nHeight - nLast; i < nHeight + 20; nHeight++)
+        for(int nHeight = pindexBest->nHeight-nLast; nHeight < pindexBest->nHeight+20; nHeight++)
         {
-            std::string strPayment = GetRequiredPaymentsString(i);
-            if(strFilter !="" && strPayment.find(strFilter) == string::npos) continue;
-            obj.push_back(Pair(strprintf("%d", i), strPayment));
+            obj.push_back(Pair(strprintf("%d", nHeight), GetRequiredPaymentsString(nHeight)));
         }
 
         return obj;
     }
 
     /*
-        Shows which stormnode wins by score each block
+        Shows which masternode wins by score each block
     */
     if (strCommand == "calcscore")
     {
-        
-        int nHeight;
-        /*{
-            LOCK(cs_main);
-            CBlockIndex* pindexPrev = pindexBest;
-            if(!pindexPrev) return NullUniValue;
-
-            nHeight = pindexPrev->nHeight;
-        }*/
 
         int nLast = 10;
 
@@ -501,18 +471,18 @@ Value stormnode(const Array& params, bool fHelp)
         Object obj;
 
         std::vector<CStormnode> vStormnodes = snodeman.GetFullStormnodeVector();
-        for(int i = nHeight - nLast; i < nHeight + 20; i++){
+        for(int nHeight = pindexBest->nHeight-nLast; nHeight < pindexBest->nHeight+20; nHeight++){
             uint256 nHigh = 0;
             CStormnode *pBestStormnode = NULL;
             BOOST_FOREACH(CStormnode& sn, vStormnodes) {
-                uint256 n = sn.CalculateScore(1, i - 100);
+                uint256 n = sn.CalculateScore(1, nHeight-100);
                 if(n > nHigh){
                     nHigh = n;
                     pBestStormnode = &sn;
                 }
             }
             if(pBestStormnode)
-                obj.push_back(Pair(strprintf("%d", i), pBestStormnode->vin.prevout.ToStringShort().c_str()));
+                obj.push_back(Pair(strprintf("%d", nHeight), pBestStormnode->vin.prevout.ToStringShort().c_str()));
         }
 
         return obj;
