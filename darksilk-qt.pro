@@ -328,6 +328,7 @@ HEADERS +=  src/qt/darksilkgui.h src/crypto/aes.h \
             src/qt/paymentserver.h \
             src/ui_interface.h \
             src/qt/debugconsole.h \
+            src/noui.h \
             src/version.h \
             src/netbase.h \
             src/clientversion.h \
