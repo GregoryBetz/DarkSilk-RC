@@ -4,11 +4,13 @@
 #ifndef DARKSILK_MRUSET_H
 #define DARKSILK_MRUSET_H
 
-#include <set>
 #include <deque>
+#include <set>
+#include <utility>
 
 /** STL-like set container that only keeps the most recent N elements. */
-template <typename T> class mruset
+template <typename T>
+class mruset
 {
 public:
     typedef T key_type;
@@ -37,10 +39,8 @@ public:
     std::pair<iterator, bool> insert(const key_type& x)
     {
         std::pair<iterator, bool> ret = set.insert(x);
-        if (ret.second)
-        {
-            if (nMaxSize && queue.size() == nMaxSize)
-            {
+        if (ret.second) {
+            if (nMaxSize && queue.size() == nMaxSize) {
                 set.erase(queue.front());
                 queue.pop_front();
             }
@@ -52,8 +52,7 @@ public:
     size_type max_size(size_type s)
     {
         if (s)
-            while (queue.size() > s)
-            {
+            while (queue.size() > s) {
                 set.erase(queue.front());
                 queue.pop_front();
             }
