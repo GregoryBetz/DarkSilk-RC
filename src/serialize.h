@@ -21,7 +21,8 @@
 
 #include <stdint.h>
 
-#include "allocators.h"
+#include "support/allocators/secure.h"
+#include "support/allocators/zeroafterfree.h"
 #include "version.h"
 
 class CScript;

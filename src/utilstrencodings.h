@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 #include "serialize.h"
-#include "allocators.h"
+#include "support/allocators/secure.h"
 
 #define BEGIN(a)            ((char*)&(a))
 #define END(a)              ((char*)&((&(a))[1]))
