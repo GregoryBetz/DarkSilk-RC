@@ -10,6 +10,8 @@
 #include "wallet/wallet.h"
 #endif
 
+class CScheduler;
+
 namespace boost 
 {
     class thread_group;
@@ -20,7 +22,7 @@ extern CWallet* pwalletMain;
 void StartShutdown();
 bool ShutdownRequested();
 void Shutdown();
-bool AppInit2(boost::thread_group& threadGroup);
+bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler);
 
 std::string HelpMessage();
 /** Returns licensing information (for -version) */

@@ -275,6 +275,8 @@ HEADERS +=  src/qt/darksilkgui.h src/crypto/aes.h \
             src/ecwrapper.h \
             src/pubkey.h \
             src/wallet/db.h \
+            src/reverselock.h \
+            src/scheduler.h \
             src/txdb.h \
             src/txmempool.h \
             src/wallet/walletdb.h \
@@ -326,6 +328,7 @@ HEADERS +=  src/qt/darksilkgui.h src/crypto/aes.h \
             src/qt/paymentserver.h \
             src/ui_interface.h \
             src/qt/debugconsole.h \
+            src/noui.h \
             src/version.h \
             src/netbase.h \
             src/clientversion.h \
@@ -429,6 +432,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp src/crypto/a
             src/key.cpp \
             src/ecwrapper.cpp \
             src/pubkey.cpp \
+            src/scheduler.cpp \
             src/script/script.cpp \
             src/script/script_error.cpp \
             src/main.cpp \
@@ -682,7 +686,7 @@ macx:QMAKE_INFO_PLIST = share/qt/Info.plist
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
 INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
-LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX -lcryptopp
+LIBS += -lssl -lboost_chrono -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX -lcryptopp
 # -lgdi32 has to happen after -lcrypto (see  #681)
 windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX

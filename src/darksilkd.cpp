@@ -9,6 +9,7 @@
 #include "rpc/rpcserver.h"
 #include "rpc/rpcclient.h"
 #include "init.h"
+#include "scheduler.h"
 
 static bool fDaemon;
 
@@ -36,6 +37,8 @@ bool AppInit(int argc, char* argv[])
 {
     boost::thread_group threadGroup;
     boost::thread* detectShutdownThread = NULL;
+    
+    CScheduler scheduler;
 
     bool fRet = false;
     try
@@ -110,7 +113,7 @@ bool AppInit(int argc, char* argv[])
         SoftSetBoolArg("-server", true);
 
         detectShutdownThread = new boost::thread(boost::bind(&DetectShutdownThread, &threadGroup));
-        fRet = AppInit2(threadGroup);
+        fRet = AppInit2(threadGroup, scheduler);
     }
     catch (std::exception& e) {
         PrintException(&e, "AppInit()");
