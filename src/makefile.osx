@@ -43,6 +43,7 @@ LIBS += \
  -lboost_filesystem \
  -lboost_program_options \
  -lboost_thread \
+ -lboost_chrono \
  -lssl \
  -lcrypto \
  -lz \
@@ -86,6 +87,7 @@ OBJS= \
     obj/net.o \
     obj/protocol.o \
     obj/random.o \
+    obj/scheduler.o \
     obj/rpc/rpcclient.o \
     obj/rpc/rpcprotocol.o \
     obj/rpc/rpcserver.o \

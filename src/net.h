@@ -34,6 +34,7 @@
 #include "uint256.h"
 
 class CAddrMan;
+class CScheduler;
 class CBlockIndex;
 class CNode;
 
@@ -78,7 +79,7 @@ CNode* ConnectNode(CAddress addrConnect, const char *strDest = NULL, bool sandSt
 void MapPort(bool fUseUPnP);
 unsigned short GetListenPort();
 bool BindListenPort(const CService &bindAddr, std::string& strError, bool fWhitelisted = false);
-void StartNode(boost::thread_group& threadGroup);
+void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler);
 bool StopNode();
 void SocketSendData(CNode *pnode);
 void RelayInv(CInv &inv, const int minProtoVersion = MIN_PEER_PROTO_VERSION);

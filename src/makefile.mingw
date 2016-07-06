@@ -24,6 +24,7 @@ LIBS= \
  -l boost_program_options-mgw49-mt-s-1_59 \
  -l boost_thread-mgw49-mt-s-1_59 \
  -l boost_chrono-mgw49-mt-s-1_59 \
+ -l boost_chrono \
  -l db_cxx \
  -l ssl \
  -l crypto \
@@ -73,6 +74,7 @@ OBJS= \
     obj/net.o \
     obj/protocol.o \
     obj/random.o \
+    obj/scheduler.o \
     obj/rpc/rpcclient.o \
     obj/rpc/rpcprotocol.o \
     obj/rpc/rpcserver.o \
