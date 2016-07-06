@@ -60,9 +60,9 @@ HEADERS = $(wildcard *.h)
 
 OBJS= \
     obj/alert.o \
-    obj/allocators.o \
+    obj/support/cleanse.o \
+    obj/support/pagelocker.o \
     obj/bloom.o \
-    obj/cleanse.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \
