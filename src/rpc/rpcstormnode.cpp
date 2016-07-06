@@ -458,7 +458,7 @@ Value stormnode(const Array& params, bool fHelp)
     }
 
     /*
-        Shows which masternode wins by score each block
+        Shows which stormnode wins by score each block
     */
     if (strCommand == "calcscore")
     {
