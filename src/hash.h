@@ -22,6 +22,8 @@
 
 static const unsigned int OUTPUT_BYTES = 32;
 
+typedef uint256 ChainCode;
+
 #ifdef WIN32
 #define UINT32_MAX 0xffffffff  /* 4294967295U */
 #endif
@@ -271,8 +273,8 @@ int HMAC_SHA512_Final(unsigned char *pmd, HMAC_SHA512_CTX *pctx);
 
 unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char>& vDataToHash);
 
-void BIP32Hash(const unsigned char chainCode[32], unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]); 
-
+void BIP32Hash(const ChainCode &chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]);
+ 
 /** Compute the 256-bit hash of the concatenation of three objects. */
 template<typename T1, typename T2, typename T3, typename T4>
 inline uint256 Hash(const T1 p1begin, const T1 p1end,
