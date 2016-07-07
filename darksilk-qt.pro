@@ -113,7 +113,7 @@ INCLUDEPATH += src/secp256k1/include
 LIBS += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    gensecp256k1.commands = cd $$PWD/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"
+    gensecp256k1.commands = if [ -f $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o ]; then echo "Secp256k1 already built"; else cd $$PWD/src/secp256k1 && ./autogen.sh && ./configure --disable-shared --with-pic --with-bignum=no --enable-module-recovery && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"; fi
 } else {
     #Windows ???
 }
@@ -123,14 +123,13 @@ PRE_TARGETDEPS += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o
 QMAKE_EXTRA_TARGETS += gensecp256k1
 QMAKE_CLEAN += $$PWD/src/secp256k1/src/libsecp256k1_la-secp256k1.o; cd $$PWD/src/secp256k1 ; $(MAKE) clean
 
-
 #Build LevelDB
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers src/leveldb/helpers/memenv
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
+    genleveldb.commands = if [ -f $$PWD/src/leveldb/libleveldb.a ]; then echo "Level DB already built"; else cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a; fi
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
@@ -153,7 +152,7 @@ LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_read.o
 LIBS += $$PWD/src/univalue/lib/libunivalue_la-univalue_write.o
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genUnivalue.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"
+    genUnivalue.commands =if [ -f $$PWD/src/univalue/lib/libunivalue_la-univalue.o ]; then echo "Univalue already built"; else cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\"; fi
 } else {
     #Windows ???
 }
@@ -227,7 +226,7 @@ DEPENDPATH += . \
               src/leveldb/port/win \
               src/secp256k1/src/java
 
-HEADERS +=  src/qt/darksilkgui.h \
+HEADERS +=  src/qt/darksilkgui.h src/crypto/aes.h \
             src/cryptkey.h \
             src/anon/stormnode/activestormnode.h \
             src/cryptogram/ies.h \
@@ -244,7 +243,6 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/darksilkaddressvalidator.h \
             src/blindtext.h \
             src/alert.h \
-            src/allocators.h \
             src/addrman.h \
             src/base58.h \
             src/bignum.h \
@@ -252,7 +250,6 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/chainparams.h \
             src/chainparamsseeds.h \
             src/checkpoints.h \
-            src/cleanse.h \
             src/compat/compat.h \
             src/coincontrol.h \
             src/core_io.h \
@@ -276,6 +273,8 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/ecwrapper.h \
             src/pubkey.h \
             src/wallet/db.h \
+            src/reverselock.h \
+            src/scheduler.h \
             src/txdb.h \
             src/txmempool.h \
             src/wallet/walletdb.h \
@@ -295,6 +294,10 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/json/json_spirit_reader.h \
             src/json/json_spirit_error_position.h \
             src/json/json_spirit.h \
+            src/support/allocators/secure.h \
+            src/support/allocators/zeroafterfree.h \
+            src/support/cleanse.h \
+            src/support/pagelocker.h \
             src/qt/clientmodel.h \
             src/qt/guiutil.h \
             src/qt/transactionrecord.h \
@@ -327,6 +330,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/qt/paymentserver.h \
             src/ui_interface.h \
             src/qt/debugconsole.h \
+            src/noui.h \
             src/version.h \
             src/netbase.h \
             src/clientversion.h \
@@ -391,7 +395,7 @@ HEADERS +=  src/qt/darksilkgui.h \
             src/consensus/params.h \
             src/prevector.h
 
-SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
+SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp src/crypto/aes.cpp\
             src/blindtext.cpp \
             src/cryptkey.cpp \
             src/anon/stormnode/activestormnode.cpp \
@@ -411,12 +415,11 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/qt/peertablemodel.cpp \
             src/qt/bantablemodel.cpp \
             src/alert.cpp \
-            src/allocators.cpp \
             src/bloom.cpp \
             src/core_read.cpp \
             src/core_write.cpp \
             src/chainparams.cpp \
-            src/cleanse.cpp \
+            src/support/cleanse.cpp \
             src/version.cpp \
             src/sync.cpp \
             src/txmempool.cpp \
@@ -430,6 +433,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/key.cpp \
             src/ecwrapper.cpp \
             src/pubkey.cpp \
+            src/scheduler.cpp \
             src/script/script.cpp \
             src/script/script_error.cpp \
             src/main.cpp \
@@ -471,6 +475,7 @@ SOURCES +=  src/qt/darksilk.cpp src/qt/darksilkgui.cpp src/rest.cpp \
             src/wallet/rpcwallet.cpp \
             src/rpc/rpcblockchain.cpp \
             src/rpc/rpcrawtransaction.cpp \
+            src/support/pagelocker.cpp \
             src/timedata.cpp \
             src/qt/overviewpage.cpp \
             src/qt/csvmodelwriter.cpp \
@@ -683,7 +688,7 @@ macx:QMAKE_INFO_PLIST = share/qt/Info.plist
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
 INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
-LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX -lcryptopp
+LIBS += -lssl -lboost_chrono -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX -lcryptopp
 # -lgdi32 has to happen after -lcrypto (see  #681)
 windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX

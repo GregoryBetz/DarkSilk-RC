@@ -26,6 +26,7 @@
 #include "clientversion.h"
 #include "consensus/consensus.h"
 #include "primitives/transaction.h"
+#include "scheduler.h"
 #include "ui_interface.h"
 #include "utilstrencodings.h"
 #include "anon/sandstorm/sandstorm.h"
@@ -2063,7 +2064,7 @@ void static Discover(boost::thread_group& threadGroup)
 
 }
 
-void StartNode(boost::thread_group& threadGroup)
+void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler)
 {
     uiInterface.InitMessage(_("Loading addresses..."));
     // Load addresses for peers.dat

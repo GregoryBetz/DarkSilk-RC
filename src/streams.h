@@ -12,14 +12,14 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <stdint.h>
+#include <stdio.h>
 #include <string>
 #include <string.h>
 #include <utility>
 #include <vector>
 
-#include <stdint.h>
-
-#include "allocators.h"
+#include "support/allocators/zeroafterfree.h"
 #include "serialize.h"
 
 /// Double ended buffer combining vector and stream-like interfaces.

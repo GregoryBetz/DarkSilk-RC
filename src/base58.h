@@ -21,7 +21,8 @@
 #include "pubkey.h"
 #include "key.h"
 #include "script/script.h"
-#include "allocators.h"
+#include "support/allocators/secure.h"
+
 
 /**
  * Encode a byte sequence as a base58-encoded string.

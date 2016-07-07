@@ -24,6 +24,7 @@ LIBS= \
  -l boost_program_options-mgw49-mt-s-1_59 \
  -l boost_thread-mgw49-mt-s-1_59 \
  -l boost_chrono-mgw49-mt-s-1_59 \
+ -l boost_chrono \
  -l db_cxx \
  -l ssl \
  -l crypto \
@@ -53,9 +54,9 @@ HEADERS = $(wildcard *.h)
 
 OBJS= \
     obj/alert.o \
-    obj/allocators.o \
+    obj/support/cleanse.o \
+    obj/support/pagelocker.o \
     obj/bloom.o \
-    obj/cleanse.o \
     obj/version.o \
     obj/checkpoints.o \
     obj/netbase.o \
@@ -73,6 +74,7 @@ OBJS= \
     obj/net.o \
     obj/protocol.o \
     obj/random.o \
+    obj/scheduler.o \
     obj/rpc/rpcclient.o \
     obj/rpc/rpcprotocol.o \
     obj/rpc/rpcserver.o \
@@ -140,6 +142,7 @@ OBJS= \
     obj/crypto/argon2/thread.o \
     obj/crypto/argon2/opt.o \
     obj/crypto/argon2/blake2/blake2b.o \
+    obj/crypto/aes.o \
     obj/utilstrencodings.o
 
 ifdef USE_NATIVE_I2P

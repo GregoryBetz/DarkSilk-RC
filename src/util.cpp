@@ -35,7 +35,7 @@
 #include "uint256.h"
 #include "version.h"
 #include "netbase.h"
-#include "allocators.h"
+#include "support/allocators/secure.h"
 
 #ifdef WIN32
 #ifdef _MSC_VER

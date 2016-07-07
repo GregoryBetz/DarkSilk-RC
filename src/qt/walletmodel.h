@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 
-#include "allocators.h" /* for SecureString */
+#include "support/allocators/secure.h"
 #include "anon/instantx/instantx.h"
 #include "wallet/wallet.h"
 

@@ -10,7 +10,7 @@
 #include <map>
 
 #include "uint256.h"
-#include "allocators.h" /* for SecureString */
+#include "support/allocators/secure.h"
 #include "smessage.h"
 
 class MessageTablePriv;

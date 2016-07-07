@@ -23,6 +23,7 @@
 #include "guiconstants.h"
 #include "init.h"
 #include "util.h"
+#include "scheduler.h"
 #include "wallet/wallet.h"
 #include "ui_interface.h"
 #include "paymentserver.h"
@@ -297,7 +298,9 @@ int main(int argc, char *argv[])
         QObject::connect(pollShutdownTimer, SIGNAL(timeout()), guiref, SLOT(detectShutdown()));
         pollShutdownTimer->start(200);
 
-        if(AppInit2(threadGroup))
+        CScheduler scheduler;
+
+        if(AppInit2(threadGroup, scheduler))
         {
             {
                 // Put this in a block, so that the Model objects are cleaned up before
