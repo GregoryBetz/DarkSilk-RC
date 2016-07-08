@@ -977,10 +977,9 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache) const
         return nAvailableCreditCached;
 
     CAmount nCredit = 0;
-    uint256 hashTx = GetHash();
     for (unsigned int i = 0; i < vout.size(); i++)
     {
-        if (!pwallet->IsSpent(hashTx, i))
+        if (!IsSpent(i))
         {
             const CTxOut &txout = vout[i];
             nCredit += pwallet->GetCredit(txout, ISMINE_SPENDABLE);
