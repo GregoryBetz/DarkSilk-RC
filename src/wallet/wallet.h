@@ -666,10 +666,15 @@ public:
     {
         fCreditCached = false;
         fAvailableCreditCached = false;
-        fWatchDebitCached = false;
-        fWatchCreditCached = false;
+        fImmatureCreditCached = false;
+        fAnonymizableCreditCached = false;
+        fAnonymizableCreditCached = false;
+        fDenomUnconfCreditCached = false;
+        fDenomConfCreditCached = false;
         fAvailableWatchCreditCached = false;
         fImmatureWatchCreditCached = false;
+        fWatchDebitCached = false;
+        fWatchCreditCached = false;
         fDebitCached = false;
         fChangeCached = false;
     }
