@@ -1,6 +1,8 @@
 #ifndef TRANSACTIONTABLEMODEL_H
 #define TRANSACTIONTABLEMODEL_H
 
+#include "darksilkunits.h"
+
 #include <QAbstractTableModel>
 #include <QStringList>
 
