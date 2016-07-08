@@ -184,7 +184,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
     status.cur_num_blocks = nBestHeight;
     status.cur_num_ix_locks = nCompleteTXLocks;
 
-    if (!IsFinalTx(wtx, nBestHeight + 1))
+    if (!CheckFinalTx(wtx))
     {
         if (wtx.nLockTime < LOCKTIME_THRESHOLD)
         {
