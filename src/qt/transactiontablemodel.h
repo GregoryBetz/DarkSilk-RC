@@ -22,11 +22,11 @@ public:
 
     enum ColumnIndex {
         Status = 0,
-        Date = 1,
-        Type = 2,
-        ToAddress = 3,
-        Amount = 4,
-        Watchonly = 5
+        Watchonly = 1,
+        Date = 2,
+        Type = 3,
+        ToAddress = 4,
+        Amount = 5
     };
 
     /** Roles to get specific information from a transaction row.

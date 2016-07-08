@@ -24,6 +24,15 @@
 #include "utilstrencodings.h"
 #include "anon/stealth/stealth.h"
 
+extern CWallet* pwalletMain;
+
+// Settings
+extern CAmount nTransactionFee;
+extern CAmount nReserveBalance;
+extern CAmount nMinimumInputValue;
+extern bool fWalletUnlockStakingOnly;
+extern bool fConfChange;
+
 const CAmount MIN_TX_FEE = 10000; // 0.00001 DRKSLK Minimum Transaction Fee
 // Minimum Transaction Fee of 0.00001 DRKSLK, Fees smaller than this are considered zero fee (for transaction creation)
 static const double MIN_FEE = 0.00001;
@@ -33,13 +42,6 @@ const CAmount MIN_RELAY_TX_FEE = MIN_TX_FEE;
 static const unsigned int DEFAULT_KEYPOOL_SIZE = 1000;
 
 extern const char * DEFAULT_WALLET_DAT;
-
-// Settings
-extern CAmount nTransactionFee;
-extern CAmount nReserveBalance;
-extern CAmount nMinimumInputValue;
-extern bool fWalletUnlockStakingOnly;
-extern bool fConfChange;
 
 class CAccountingEntry;
 class CCoinControl;
@@ -470,6 +472,65 @@ static void WriteOrderPos(const int64_t& nOrderPos, mapValue_t& mapValue)
     mapValue["n"] = i64tostr(nOrderPos);
 }
 
+/** A transaction with a merkle branch linking it to the block chain. */
+class CMerkleTx : public CTransaction
+{
+private:
+    int GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const;
+public:
+    uint256 hashBlock;
+    std::vector<uint256> vMerkleBranch;
+    int nIndex;
+
+    // memory only
+    mutable bool fMerkleVerified;
+
+
+    CMerkleTx()
+    {
+        Init();
+    }
+
+    CMerkleTx(const CTransaction& txIn) : CTransaction(txIn)
+    {
+        Init();
+    }
+
+    void Init()
+    {
+        hashBlock = 0;
+        nIndex = -1;
+        fMerkleVerified = false;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        //TODO (Amir): Review translation below.
+        //nSerSize += SerReadWrite(s, *(CTransaction*)this, nType, nVersion, ser_action);
+        READWRITE(*(CTransaction*)this);
+        nVersion = this->nVersion;
+        READWRITE(hashBlock);
+        READWRITE(vMerkleBranch);
+        READWRITE(nIndex);
+    }
+
+    int SetMerkleBranch(const CBlock* pblock=NULL);
+
+    // Return depth of transaction in blockchain:
+    // -1  : not in blockchain, and not in memory pool (conflicted transaction)
+    //  0  : in memory pool, waiting to be included in a block
+    // >=1 : this many blocks deep in the main chain
+    int GetDepthInMainChain(CBlockIndex* &pindexRet, bool enableIX=true) const;
+    int GetDepthInMainChain(bool enableIX=true) const { CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet, enableIX); }
+    bool IsInMainChain() const { CBlockIndex *pindexRet; return GetDepthInMainChainINTERNAL(pindexRet) > 0; }
+    int GetBlocksToMaturity() const;
+    bool AcceptToMemoryPool(bool fLimitFree=true, bool fRejectInsaneFee=true, bool ignoreFees=false);
+    int GetTransactionLockSignatures() const;
+    bool IsTransactionLockTimedOut() const;
+    
+};
 
 /** A transaction with a bunch of additional info that only the owner cares about.
  * It includes any unrecorded transactions needed to link it back to the block chain.
