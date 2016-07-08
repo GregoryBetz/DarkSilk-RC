@@ -1087,7 +1087,7 @@ CAmount CWalletTx::GetDenominatedCredit(const bool& unconfirmed, const bool& fUs
     int nDepth = GetDepthInMainChain(false);
     if(nDepth < 0) return 0;
 
-    bool isUnconfirmed = !IsFinalTx(*this) || (!IsTrusted() && nDepth == 0);
+    bool isUnconfirmed = !CheckFinalTx(*this) || (!IsTrusted() && nDepth == 0);
     if(unconfirmed != isUnconfirmed) return 0;
 
     if (fUseCache) {
@@ -1140,7 +1140,7 @@ bool CWalletTx::InMempool() const
 bool CWalletTx::IsTrusted() const
 {
     // Quick answer in most cases
-    if (!IsFinalTx(*this))
+    if (!CheckFinalTx(*this))
         return false;
     int nDepth = GetDepthInMainChain();
     if (nDepth >= 1)
@@ -1811,7 +1811,7 @@ CAmount CWallet::GetAnonymizedBalance() const
                     //isminetype mine = IsMine(pcoin->vout[i]);
                     bool mine = IsMine(pcoin->vout[i]);
                     //COutput out = COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO);
-                    COutput out = COutput(pcoin, i, nDepth, mine);
+                    COutput out = COutput(pcoin, i, nDepth, mine, true);
                     CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
 
                     //if(IsSpent(out.tx->GetHash(), i) || !IsMine(pcoin->vout[i]) || !IsDenominated(vin)) continue;
@@ -1953,7 +1953,7 @@ double CWallet::GetAverageAnonymizedRounds() const
                     //isminetype mine = IsMine(pcoin->vout[i]);
                     bool mine = IsMine(pcoin->vout[i]);
                     //COutput out = COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO);
-                    COutput out = COutput(pcoin, i, nDepth, mine);
+                    COutput out = COutput(pcoin, i, nDepth, mine, true);
                     CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
 
                     //if(IsSpent(out.tx->GetHash(), i) || !IsMine(pcoin->vout[i]) || !IsDenominated(vin)) continue;
@@ -1992,7 +1992,7 @@ CAmount CWallet::GetNormalizedAnonymizedBalance() const
                     //isminetype mine = IsMine(pcoin->vout[i]);
                     bool mine = IsMine(pcoin->vout[i]);
                     //COutput out = COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO);
-                    COutput out = COutput(pcoin, i, nDepth, mine);
+                    COutput out = COutput(pcoin, i, nDepth, mine, true);
                     CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
 
                     //if(IsSpent(out.tx->GetHash(), i) || !IsMine(pcoin->vout[i]) || !IsDenominated(vin)) continue;
@@ -2056,7 +2056,7 @@ CAmount CWallet::GetUnconfirmedBalance() const
         {
             const CWalletTx* pcoin = &(*it).second;
             if (!IsFinalTx(*pcoin) || (!pcoin->IsTrusted() && pcoin->GetDepthInMainChain() == 0))
-                nTotal += pcoin->GetAvailableCredit();
+                 nTotal += pcoin->GetAvailableWatchOnlyCredit();
         }
     }
     return nTotal;
@@ -2180,6 +2180,10 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                 }
                 if(!found) continue;
 
+                // We should not consider coins which aren't at least in our mempool
+                // It's possible for these to be conflicted via ancestors which we may never be able to detect
+                if (nDepth == 0 && !pcoin->InMempool())
+                continue;
 
                 bool mine = IsMine(pcoin->vout[i]);
 
@@ -2187,12 +2191,16 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                         !IsLockedCoin((*it).first, i) && pcoin->vout[i].nValue > 0 &&
                         (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
                     {
-                       vCoins.push_back(COutput(pcoin, i, nDepth, ISMINE_SPENDABLE));
+                       vCoins.push_back(COutput(pcoin, i, nDepth,
+                                                 ((mine & ISMINE_SPENDABLE) != ISMINE_NO) ||
+                                                  (coinControl && coinControl->fAllowWatchOnly && (mine & ISMINE_WATCH_SOLVABLE) != ISMINE_NO),
+                                                 (mine & (ISMINE_SPENDABLE | ISMINE_WATCH_SOLVABLE)) != ISMINE_NO));
                     }
+
                 }
             }
         }
-}
+    }
 
 void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins, unsigned int nSpendTime) const
 {
@@ -2248,7 +2256,7 @@ void CWallet::AvailableCoinsForStaking(vector<COutput>& vCoins, unsigned int nSp
 
             for (unsigned int i = 0; i < pcoin->vout.size(); i++)
                 if (!(pcoin->IsSpent(i)) && IsMine(pcoin->vout[i]) && pcoin->vout[i].nValue >= nMinimumInputValue)
-                    vCoins.push_back(COutput(pcoin, i, nDepth, true));
+                    vCoins.push_back(COutput(pcoin, i, nDepth, true, true));
         }
     }
 }
@@ -3000,7 +3008,7 @@ int CWallet::CountInputsWithAmount(int64_t nInputAmount)
                     //isminetype mine = IsMine(pcoin->vout[i]);
                     bool mine = IsMine(pcoin->vout[i]);
                     //COutput out = COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO);
-                    COutput out = COutput(pcoin, i, nDepth, mine);
+                    COutput out = COutput(pcoin, i, nDepth, mine, true);
                     CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
 
                     if(out.tx->vout[out.i].nValue != nInputAmount) continue;

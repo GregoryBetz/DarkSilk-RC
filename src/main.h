@@ -345,7 +345,20 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const MapPrevTx& mapInput
 */
 bool IsStandardTx(const CTransaction& tx, std::string& reason);
 
+/**
+ * Check if transaction is final and can be included in a block with the
+ * specified height and time. Consensus critical.
+ */
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight = 0, int64_t nBlockTime = 0);
+
+/**
+ * Check if transaction will be final in the next block to be created.
+ *
+ * Calls IsFinalTx() with current block height and appropriate block time.
+ *
+ * See consensus/consensus.h for flag definitions.
+ */
+bool CheckFinalTx(const CTransaction &tx, int flags = -1);
 
 /// Functions for disk access for blocks
 bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart);
