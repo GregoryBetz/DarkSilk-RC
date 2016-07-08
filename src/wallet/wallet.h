@@ -40,7 +40,6 @@ extern CAmount nReserveBalance;
 extern CAmount nMinimumInputValue;
 extern bool fWalletUnlockStakingOnly;
 extern bool fConfChange;
-extern bool bSpendZeroConfChange;
 
 class CAccountingEntry;
 class CCoinControl;
