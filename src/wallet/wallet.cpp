@@ -3168,17 +3168,14 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend, 
     BOOST_FOREACH (const PAIRTYPE(CScript, CAmount)& s, vecSend)
     {
         if (nValue < 0)
-        {
            strFailReason = _("Transaction amounts must be positive");
                return false;
-        }
         nValue += s.second;
     }
+    
     if (vecSend.empty() || nValue < 0)
-    {
         strFailReason = _("Transaction amounts must be positive");
         return false;
-    }
 
     wtxNew.fTimeReceivedIsTxTime = true;//TODO (AA): put this back??
     wtxNew.BindWallet(this);
