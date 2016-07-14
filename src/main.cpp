@@ -699,43 +699,10 @@ bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
         nBlockTime = GetAdjustedTime();
     if ((int64_t)tx.nLockTime < ((int64_t)tx.nLockTime < LOCKTIME_THRESHOLD ? (int64_t)nBlockHeight : nBlockTime))
         return true;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-        if (!(txin.nSequence == CTxIn::SEQUENCE_FINAL))
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+        if (!txin.IsFinal())
             return false;
-    }
     return true;
-}
-
-bool CheckFinalTx(const CTransaction &tx, int flags)
-{
-    AssertLockHeld(cs_main);
-
-    // By convention a negative value for flags indicates that the
-    // current network-enforced consensus rules should be used. In
-    // a future soft-fork scenario that would mean checking which
-    // rules would be enforced for the next block and setting the
-    // appropriate flags. At the present time no soft-forks are
-    // scheduled, so no flags are set.
-    flags = std::max(flags, 0);
-
-    // CheckFinalTx() uses chainActive.Height()+1 to evaluate
-    // nLockTime because when IsFinalTx() is called within
-    // CBlock::AcceptBlock(), the height of the block *being*
-    // evaluated is what is used. Thus if we want to know if a
-    // transaction can be part of the *next* block, we need to call
-    // IsFinalTx() with one more than chainActive.Height().
-    const int nBlockHeight = nBestHeight + 1;
-
-    // BIP113 will require that time-locked transactions have nLockTime set to
-    // less than the median time of the previous block they're contained in.
-    // When the next block is created its previous block will be the current
-    // chain tip, so we use that to calculate the median time passed to
-    // IsFinalTx() if LOCKTIME_MEDIAN_TIME_PAST is set.
-    const int64_t nBlockTime = (flags & LOCKTIME_MEDIAN_TIME_PAST)
-                             ? pindexBest->GetMedianTimePast()
-                             : GetAdjustedTime();
-
-    return IsFinalTx(tx, nBlockHeight, nBlockTime);
 }
 
 //
@@ -839,6 +806,51 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const MapPrevTx& inputs)
             nSigOps += prevout.scriptPubKey.GetSigOpCount(tx.vin[i].scriptSig);
     }
     return nSigOps;
+}
+
+int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
+{
+    AssertLockHeld(cs_main);
+
+    CBlock blockTmp;
+    if (pblock == NULL)
+    {
+        // Load the block this tx is in
+        CTxIndex txindex;
+        if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
+            return 0;
+        if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
+            return 0;
+        pblock = &blockTmp;
+    }
+
+    // Update the tx's hashBlock
+    hashBlock = pblock->GetHash();
+
+    // Locate the transaction
+    for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
+        if (pblock->vtx[nIndex] == *(CTransaction*)this)
+            break;
+    if (nIndex == (int)pblock->vtx.size())
+    {
+        vMerkleBranch.clear();
+        nIndex = -1;
+        LogPrintf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        return 0;
+    }
+
+    // Fill in merkle branch
+    vMerkleBranch = pblock->GetMerkleBranch(nIndex);
+
+    // Is the tx in a block that's in the main chain
+    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+    if (mi == mapBlockIndex.end())
+        return 0;
+    CBlockIndex* pindex = (*mi).second;
+    if (!pindex || !pindex->IsInMainChain())
+        return 0;
+
+    return nBestHeight - pindex->nHeight + 1;
 }
 
 CAmount GetMinFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree, enum GetMinFee_mode mode)
@@ -1385,6 +1397,116 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, CTransaction &t
            pool.mapTx.size());
     */
     return true;
+}
+
+int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
+{
+    if (hashBlock == 0 || nIndex == -1)
+        return 0;
+    AssertLockHeld(cs_main);
+
+    // Find the block it claims to be in
+    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+    if (mi == mapBlockIndex.end())
+        return 0;
+    CBlockIndex* pindex = (*mi).second;
+    if (!pindex || !pindex->IsInMainChain())
+        return 0;
+
+    // Make sure the merkle branch connects to this block
+    if (!fMerkleVerified)
+    {
+        if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
+            return 0;
+        fMerkleVerified = true;
+    }
+
+    pindexRet = pindex;
+    return pindexBest->nHeight - pindex->nHeight + 1;
+}
+
+int CMerkleTx::GetTransactionLockSignatures() const
+{
+    if(!IsSporkActive(SPORK_2_INSTANTX)) return -3;
+    if(!fEnableInstantX) return -1;
+
+    //compile consessus vote
+    std::map<uint256, CTransactionLock>::iterator i = mapTxLocks.find(GetHash());
+    if (i != mapTxLocks.end()){
+        return (*i).second.CountSignatures();
+    }
+
+    return -1;
+}
+
+bool CMerkleTx::IsTransactionLockTimedOut() const
+{
+    if(!fEnableInstantX) return 0;
+
+    //compile consessus vote
+    std::map<uint256, CTransactionLock>::iterator i = mapTxLocks.find(GetHash());
+    if (i != mapTxLocks.end()){
+        return GetTime() > (*i).second.nTimeout;
+    }
+
+    return false;
+}
+
+int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet, bool enableIX) const
+{
+    AssertLockHeld(cs_main);
+    int nResult = GetDepthInMainChainINTERNAL(pindexRet);
+    if (nResult == 0 && !mempool.exists(GetHash()))
+        return -1; // Not in chain, not in mempool
+
+    if(enableIX){
+        if (nResult < 6){
+            int signatures = GetTransactionLockSignatures();
+            if(signatures >= INSTANTX_SIGNATURES_REQUIRED){
+                return nInstantXDepth+nResult;
+            }
+        }
+    }
+
+    return nResult;
+}
+
+int CMerkleTx::GetBlocksToMaturity() const
+{
+    if (!(IsCoinBase() || IsCoinStake()))
+        return 0;
+    return max(0, nCoinbaseMaturity - GetDepthInMainChain());
+}
+
+bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)
+{   
+    CValidationState state;
+    return ::AcceptToMemoryPool(mempool, state, *this, fLimitFree, NULL, ignoreFees);
+}
+
+bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb)
+{
+
+    {
+        // Add previous supporting transactions first
+        BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
+        {
+            if (!(tx.IsCoinBase() || tx.IsCoinStake()))
+            {
+                uint256 hash = tx.GetHash();
+                if (!mempool.exists(hash) && !txdb.ContainsTx(hash))
+                    tx.AcceptToMemoryPool(false);
+            }
+        }
+        return AcceptToMemoryPool(false);
+    }
+    return false;
+}
+
+bool CWalletTx::AcceptWalletTransaction()
+{
+    CTxDB txdb("r");
+    return AcceptWalletTransaction(txdb);
 }
 
 int GetInputAge(CTxIn& vin)
