@@ -52,7 +52,7 @@ CTxIn MultisigInputEntry::getInput()
 CAmount MultisigInputEntry::getAmount()
 {
     CAmount amount = 0;
-    int nOutput = ui->transactionOutput->currentIndex();
+    unsigned int nOutput = ui->transactionOutput->currentIndex();
     CTransaction tx;
     uint256 blockHash = 0;
 
