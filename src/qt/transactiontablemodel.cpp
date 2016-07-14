@@ -1,27 +1,20 @@
-#include "transactiontablemodel.h"
-
-#include "addresstablemodel.h"
-#include "guiconstants.h"
-#include "guiutil.h"
-#include "optionsmodel.h"
-#include "transactionrecord.h"
-#include "transactiondesc.h"
-#include "walletmodel.h"
-
-#include "core_io.h"
-#include "main.h"
-#include "sync.h"
-#include "uint256.h"
-#include "util.h"
-#include "wallet/wallet.h"
-
 #include <QList>
 #include <QColor>
 #include <QIcon>
 #include <QDateTime>
 #include <QDebug>
 
-#include <boost/foreach.hpp>  
+#include "transactiontablemodel.h"
+#include "guiutil.h"
+#include "transactionrecord.h"
+#include "guiconstants.h"
+#include "transactiondesc.h"
+#include "walletmodel.h"
+#include "optionsmodel.h"
+#include "addresstablemodel.h"
+#include "darksilkunits.h"
+#include "wallet/wallet.h"
+#include "ui_interface.h"
 
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
