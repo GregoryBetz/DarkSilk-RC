@@ -38,7 +38,6 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out, bool fIncludeH
     int nRequired;
 
     out.push_back(Pair("asm", scriptPubKey.ToString()));
-
     if (fIncludeHex)
         out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
@@ -181,6 +180,8 @@ Value getrawtransaction(const Array& params, bool fHelp)
             + HelpExampleRpc("getrawtransaction", "\"mytxid\", 1")
         );
 
+    LOCK(cs_main);
+
     uint256 hash;
     hash.SetHex(params[0].get_str());
 
@@ -189,7 +190,7 @@ Value getrawtransaction(const Array& params, bool fHelp)
         fVerbose = (params[1].get_int() != 0);
 
     CTransaction tx;
-    uint256 hashBlock = 0;
+    uint256 hashBlock;
     if (!GetTransaction(hash, tx, hashBlock))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available about transaction");
 
@@ -796,4 +797,3 @@ Value searchrawtransactions(const Array &params, bool fHelp)
     }
     return result;
 }
-
