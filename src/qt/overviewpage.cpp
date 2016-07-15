@@ -58,7 +58,15 @@ public:
         }
 
         painter->setPen(fUseBlackTheme ? QColor(255, 255, 255) : foreground);
+        QRect boundingRect;
         painter->drawText(addressRect, Qt::AlignLeft|Qt::AlignVCenter, address);
+
+        if (index.data(TransactionTableModel::WatchonlyRole).toBool())
+        {
+            QIcon iconWatchonly = qvariant_cast<QIcon>(index.data(TransactionTableModel::WatchonlyDecorationRole));
+            QRect watchonlyRect(boundingRect.right() + 5, mainRect.top()+ypad+halfheight, 16, halfheight);
+            iconWatchonly.paint(painter, watchonlyRect);
+        }
 
         if(amount < 0)
         {
@@ -207,11 +215,16 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& stake, cons
     ui->labelWatchPending->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchUnconfBalance));
     ui->labelWatchImmature->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchImmatureBalance));
     ui->labelWatchTotal->setText(DarkSilkUnits::floorWithUnit(nDisplayUnit, watchOnlyBalance + watchUnconfBalance + watchImmatureBalance));
+    
     // only show immature (newly mined) balance if it's non-zero, so as not to complicate things
     // for the non-mining users
     bool showImmature = immatureBalance != 0;
-    ui->labelImmature->setVisible(showImmature);
-    ui->labelImmatureText->setVisible(showImmature);
+    bool showWatchOnlyImmature = watchImmatureBalance != 0;
+
+    // for symmetry reasons also show immature label when the watch-only one is shown
+    ui->labelImmature->setVisible(showImmature || showWatchOnlyImmature);
+    ui->labelImmatureText->setVisible(showImmature || showWatchOnlyImmature);
+    ui->labelWatchImmature->setVisible(showWatchOnlyImmature); // show watch-only immature balance
 
     if(cachedTxLocks != nCompleteTXLocks){
         cachedTxLocks = nCompleteTXLocks;
