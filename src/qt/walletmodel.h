@@ -44,8 +44,7 @@ class WalletModel : public QObject
 public:
     explicit WalletModel(CWallet *wallet, OptionsModel *optionsModel, QObject *parent = 0);
     ~WalletModel();
-    bool fHaveWatchOnly;
-
+    
     enum StatusCode // Returned by sendCoins
     {
         OK,
@@ -146,6 +145,7 @@ public:
 
 private:
     CWallet *wallet;
+    bool fHaveWatchOnly;
     bool fForceCheckBalanceChanged;
 
     // Wallet has an options model for wallet-specific options
