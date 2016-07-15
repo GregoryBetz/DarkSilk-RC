@@ -183,6 +183,7 @@ void TransactionView::setModel(WalletModel *model)
         transactionView->verticalHeader()->hide();
 
         transactionView->horizontalHeader()->resizeSection(TransactionTableModel::Status, 23);
+        transactionView->horizontalHeader()->resizeSection(TransactionTableModel::Watchonly, 23);
         transactionView->horizontalHeader()->resizeSection(TransactionTableModel::Date, 120);
         transactionView->horizontalHeader()->resizeSection(TransactionTableModel::Type, 120);
         transactionView->horizontalHeader()->setResizeMode(TransactionTableModel::ToAddress, QHeaderView::Stretch);
@@ -304,6 +305,8 @@ void TransactionView::exportClicked()
     // name, column, role
     writer.setModel(transactionProxyModel);
     writer.addColumn(tr("Confirmed"), 0, TransactionTableModel::ConfirmedRole);
+    if (model && model->haveWatchOnly())
+        writer.addColumn(tr("Watch-only"), TransactionTableModel::Watchonly);
     writer.addColumn(tr("Date"), 0, TransactionTableModel::DateRole);
     writer.addColumn(tr("Type"), TransactionTableModel::Type, Qt::EditRole);
     writer.addColumn(tr("Label"), 0, TransactionTableModel::LabelRole);
