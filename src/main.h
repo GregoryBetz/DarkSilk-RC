@@ -29,6 +29,8 @@ struct CNodeStateStats;
 static const CAmount STATIC_POS_REWARD = COIN * 0.01;
 // Static Proof-of-Work Reward of 1.0 DRKSLK
 static const CAmount STATIC_POW_REWARD = COIN * 1; //TODO (Amir): Change to 1.25 before release.
+/** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
+static const int COINBASE_MATURITY = 10;
 // Number of blocks that can be requested at any given time from a single peer.
 static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 128;
 // Timeout in seconds before considering a block download peer unresponsive.
@@ -69,7 +71,6 @@ extern CBlockIndex* pindexGenesisBlock;
 extern int nStakeMinConfirmations;
 extern unsigned int nStakeMinAge;
 extern unsigned int nNodeLifespan;
-extern int nCoinbaseMaturity;
 extern int nBestHeight;
 extern uint256 nBestChainTrust;
 extern uint256 nBestInvalidTrust;

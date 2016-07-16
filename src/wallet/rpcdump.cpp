@@ -215,19 +215,16 @@ Value importaddress(const Array& params, bool fHelp)
         if (::IsMine(*pwalletMain, script) == ISMINE_SPENDABLE)
             throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script");
 
+        pwalletMain->MarkDirty();
+
         // add to address book or update label
         if (address.IsValid())
             pwalletMain->SetAddressBookName(address.Get(), strLabel);
 
-        // Don't throw error in case an address is already there
-        if (pwalletMain->HaveWatchOnly(script))
-            return Value::null;
-
-        pwalletMain->MarkDirty();
-        pwalletMain->SetAddressBookName(address.Get(), strLabel);
-
-        if (!pwalletMain->AddWatchOnly(script))
+        if (!pwalletMain->HaveWatchOnly(script) && !pwalletMain->AddWatchOnly(script))
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
+
+        pwalletMain->SetAddressBookName(address.Get(), strLabel);
 
         if (fRescan)
         {

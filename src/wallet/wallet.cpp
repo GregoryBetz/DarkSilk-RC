@@ -38,6 +38,7 @@
 using namespace std;
 
 const char * DEFAULT_WALLET_DAT = "wallet.dat";
+const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80000000;
 
 // Settings
 CAmount nTransactionFee = MIN_TX_FEE;

@@ -70,7 +70,6 @@ set<pair<COutPoint, unsigned int> > setStakeSeen;
 unsigned int nStakeMinAge = 10 * 60; // 1 day
 unsigned int nModifierInterval = 10 * 60; // 10 minutes to elapse before new modifier is computed
 int nStakeMinConfirmations = 10; // 2790 blocks or ~1 day before coins can be staked
-int nCoinbaseMaturity = 10; // 100 blocks until coins are mature
 bool fTxIndex = true;
 
 CBlockIndex* pindexGenesisBlock = NULL;
@@ -1475,7 +1474,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 {
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
-    return max(0, nCoinbaseMaturity - GetDepthInMainChain());
+    return max(0, COINBASE_MATURITY - GetDepthInMainChain());
 }
 
 bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)
@@ -2094,12 +2093,6 @@ void UnloadBlockIndex()
 bool LoadBlockIndex(bool fAllowNew)
 {
     LOCK(cs_main);
-
-    if (TestNet())
-    {
-        nStakeMinConfirmations = 10;
-        nCoinbaseMaturity = 10; // test maturity is 10 blocks
-    }
 
     //
     // Load block index
@@ -4024,7 +4017,7 @@ bool CTransactionPoS::ConnectInputs(CTransaction& tx, CTxDB& txdb, MapPrevTx inp
             if (txPrev.IsCoinBase() || txPrev.IsCoinStake())
             {
                 int nSpendDepth;
-                if (IsConfirmedInNPrevBlocks(txindex, pindexBlock, nCoinbaseMaturity, nSpendDepth))
+                if (IsConfirmedInNPrevBlocks(txindex, pindexBlock, COINBASE_MATURITY, nSpendDepth))
                     return error("ConnectInputs() : tried to spend %s at depth %d", txPrev.IsCoinBase() ? "coinbase" : "coinstake", nSpendDepth);
             }
             // ppcoin: check transaction timestamp
